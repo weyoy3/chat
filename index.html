@@ -6,27 +6,34 @@
 <title>شات عربي | دردشة عشوائية</title>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
-.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; }
-.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; }
-.header b { color: lavender; }
-#conv { padding: 3px; overflow-y: auto; height: 350px; direction: rtl; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; }
+body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; display: flex; flex-direction: column; height: 100vh; }
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; flex-shrink: 0; }
+.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 26px; padding: 5px 10px; display: inline-block; }
+.header b { color: lavender; font-size: 16px; }
+
+#chat { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+#conv { padding: 5px; overflow-y: auto; flex: 1; direction: rtl; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 5px 8px; margin: 5px; display: table; font-size: 16px; font-weight: normal; max-width: 75%; word-break: break-word; }
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
 #conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); }
 #conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; }
-#send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
-#send p { display: table-cell; text-align: center; padding: 2px 4px; }
-#inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; }
-#snd { padding: 6px 15px; cursor: pointer; background: rgb(24, 149, 210); color: white; border: none; border-radius: 5px; font-size: 16px; }
-#out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
+
+/* تنسيق شريط الإرسال ليطابق الموقع الأصلي تماماً بجانب بعضهما بدون أي خطأ */
+#send { display: flex; width: 100%; background: rgb(248, 248, 248); padding: 8px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); flex-shrink: 0; gap: 8px; align-items: center; }
+#inp { flex: 1; padding: 8px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; }
+#snd { padding: 8px 18px; cursor: pointer; background: rgb(24, 149, 210); color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; }
+#snd:hover { background: rgb(20, 125, 178); }
+
+#out { font-size: 18px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 30px; }
 #out span { color: red; }
-#out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; }
+#out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 5px 10px; border-radius: 3px; display: inline-block; margin-top: 10px; }
 </style>
 </head>
 <body>
   <div class="header">
-   <a href="https://araby.co/">شات عربي</a>
+   <a href="index.html">شات عربي</a>
    <b>دردشة عربية مجانية بدون تسجيل</b>
   </div>
   
@@ -36,8 +43,8 @@
     <span id="hi">تم الاتصال, قل مرحبا</span>
    </div>
    <div id="send">
-     <p style="width: 85%;"><input id="inp" type="text" autocomplete="off"></p>
-     <p style="width: 15%;"><button id="snd">Send</button></p>
+     <input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالتك هنا..." disabled>
+     <button id="snd" disabled>Send</button>
    </div>
   </div>
 
@@ -57,13 +64,16 @@
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
 
-    // طلب البحث عن متصل فور فتح الصفحة
+    // طلب البحث عن متصل فور دخول الصفحة
     socket.emit('find_partner');
 
-    // عندما يتم العثور على شخص وتتم المطابقة بنجاح
+    // عندما يتم العثور على شخص حقيقي متصل بالفعل
     socket.on('matched', () => {
       sr.style.display = 'none';
       hi.style.display = 'table';
+      inp.disabled = false;
+      snd.disabled = false;
+      inp.focus();
     });
 
     socket.on('message', (msg) => {
