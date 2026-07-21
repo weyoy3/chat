@@ -13,19 +13,19 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
 
 #chat { width: 100%; direction: rtl; }
 
-/* منطقة المحادثة تتسع طبيعياً مع الكلام ولا تبقى مثبتة بارتفاع وهمي */
-#conv { padding: 3px; direction: rtl; min-height: 350px; }
+#conv { padding: 3px; direction: rtl; }
 #conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
 
-/* رسائل الطرف الآخر */
-#conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); }
-/* رسائل المستخدم نفسه (تظهر على اليسار) */
-#conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; }
+/* رسائل الطرف الآخر تظهر على اليمين بلون رمادي */
+#conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 
-/* شريط الإرسال يتحرك مع المحادثة ولا يتثبت في الأسفل */
+/* رسائل المستخدم نفسه تظهر على اليسار بلون أزرق */
+#conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
+
+/* شريط الإرسال يتحرك وينزل للأسفل تدريجياً مع الكلام */
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
 #inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; }
@@ -69,17 +69,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
 
-    // طلب البحث عن متصل فور فتح الصفحة
     socket.emit('find_partner');
 
-    // عند العثور على شخص متصل حقيقي، يظهر اتصال ونحافظ على عبارة البحث كما بالموقع الأصلي
     socket.on('matched', () => {
       sr.style.display = 'none';
       hi.style.display = 'table';
       inp.focus();
     });
 
-    // استقبال رسائل الطرف الآخر وتنزيل صندوق المحادثة تدريجياً
+    // استقبال رسالة الطرف الآخر وتثبيتها على اليمين
     socket.on('message', (msg) => {
       const p = document.createElement('p');
       p.textContent = msg;
