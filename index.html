@@ -6,19 +6,30 @@
 <title>شات عربي | دردشة عشوائية</title>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
-.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; }
+html, body { height: 100%; display: flex; flex-direction: column; }
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; flex-shrink: 0; }
 .header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; }
 .header b { color: lavender; }
-#conv { padding: 3px; overflow-y: auto; height: 350px; direction: rtl; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; }
+
+#chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+#conv { padding: 8px; overflow-y: auto; flex: 1; direction: rtl; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 6px 10px; margin: 5px; display: table; font-size: 18px; font-weight: normal; }
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
 #conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); }
 #conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; }
-#send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
-#send p { display: table-cell; text-align: center; padding: 2px 4px; }
-#inp { width: 100%; padding: 3px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; }
-#snd { padding: 3px; width: 100%; cursor: pointer; }
+
+#send { display: flex; width: 100%; background: rgb(248, 248, 248); padding: 5px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); flex-shrink: 0; gap: 5px; }
+#send p { display: flex; width: 100%; margin: 0; }
+#inp { width: 100%; padding: 8px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; }
+#snd { padding: 8px 20px; cursor: pointer; background: rgb(24, 149, 210); color: white; border: none; border-radius: 5px; font-size: 16px; }
+
 #out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
 #out span { color: red; }
 #out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; }
@@ -57,7 +68,9 @@
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
 
-    socket.on('connected', () => {
+    socket.emit('find_partner');
+
+    socket.on('matched', () => {
       sr.style.display = 'none';
       hi.style.display = 'table';
     });
