@@ -11,29 +11,28 @@ app.use(express.static(__dirname));
 let waitingUser = null;
 
 io.on('connection', (socket) => {
-    console.log('مستخدم متصل: ' + socket.id);
+    console.log('مستخدم متصل:', socket.id);
 
     socket.on('find_partner', () => {
         if (waitingUser && waitingUser.id !== socket.id) {
-            const room = 'room_' + socket.id + '_' + waitingUser.id;
-            socket.join(room);
-            waitingUser.join(room);
-
-            socket.room = room;
-            waitingUser.room = room;
-
-            io.to(room).emit('matched');
-            
+            const partner = waitingUser;
             waitingUser = null;
+
+            const room = 'room_' + partner.id + '_' + socket.id;
+            socket.join(room);
+            partner.join(room);
+
+            io.to(room).emit('matched'); // إخبار الطرفين أنه تم الاتصال بشخص حقيقي
+            socket.roomName = room;
+            partner.roomName = room;
         } else {
             waitingUser = socket;
-            socket.emit('waiting');
         }
     });
 
-    socket.on('message', (data) => {
-        if (socket.room) {
-            socket.to(socket.room).emit('message', data);
+    socket.on('message', (msg) => {
+        if (socket.roomName) {
+            socket.to(socket.roomName).emit('message', msg);
         }
     });
 
@@ -41,14 +40,14 @@ io.on('connection', (socket) => {
         if (waitingUser === socket) {
             waitingUser = null;
         }
-        if (socket.room) {
-            socket.to(socket.room).emit('partner_disconnected');
+        if (socket.roomName) {
+            socket.to(socket.roomName).emit('partner_disconnected');
         }
-        console.log('مستخدم غادر: ' + socket.id);
+        console.log('مستخدم غادر:', socket.id);
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log('Server is running on port ' + PORT);
 });
