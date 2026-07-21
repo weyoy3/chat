@@ -6,21 +6,26 @@
 <title>شات عربي | دردشة عشوائية</title>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
+body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
 .header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; }
-.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; }
-.header b { color: lavender; }
+.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; display: inline-block; }
+.header b { color: lavender; font-size: 14px; }
 
-#conv { padding: 3px; overflow-y: auto; height: 350px; direction: rtl; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; }
+#chat { width: 100%; direction: rtl; }
 
-/* إخفاء رسالة الاتصال تماماً في البداية وإظهار البحث فقط */
-#sr { background: rgb(245, 245, 245); color: tomato; display: table !important; }
-#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
+/* منطقة المحادثة تتسع طبيعياً مع الكلام ولا تبقى مثبتة بارتفاع وهمي */
+#conv { padding: 3px; direction: rtl; min-height: 350px; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
+#sr { background: rgb(245, 245, 245); color: tomato; }
+#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
+
+/* رسائل الطرف الآخر */
 #conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); }
+/* رسائل المستخدم نفسه (تظهر على اليسار) */
 #conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; }
 
-/* تنسيق شريط الإرسال وزر Send */
+/* شريط الإرسال يتحرك مع المحادثة ولا يتثبت في الأسفل */
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
 #inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; }
@@ -43,7 +48,7 @@
     <span id="hi">تم الاتصال, قل مرحبا</span>
    </div>
    <div id="send">
-     <p style="width: 85%;"><input id="inp" type="text" autocomplete="off" placeholder="انتظر حتى يتم اتصال شخص..."></p>
+     <p style="width: 85%;"><input id="inp" type="text" autocomplete="off"></p>
      <p style="width: 15%;"><button id="snd">Send</button></p>
    </div>
   </div>
@@ -64,29 +69,22 @@
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
 
-    // قفل خانة الكتابة وزر الإرسال افتراضياً طالما ليس هناك شخص متصل
-    inp.disabled = true;
-    snd.disabled = true;
-
-    // طلب البحث عن متصل
+    // طلب البحث عن متصل فور فتح الصفحة
     socket.emit('find_partner');
 
-    // عندما يتم ربطك بشخص حقيقي فعلياً من السيرفر
+    // عند العثور على شخص متصل حقيقي، يظهر اتصال ونحافظ على عبارة البحث كما بالموقع الأصلي
     socket.on('matched', () => {
-      sr.style.display = 'none !important';
-      sr.remove(); // إزالة عنصر البحث نهائياً من الصفحة
-      hi.style.display = 'table !important'; // إظهار رسالة الاتصال فقط عند المطابقة الحقيقية
-      inp.disabled = false;
-      snd.disabled = false;
-      inp.placeholder = "اكتب رسالتك هنا...";
+      sr.style.display = 'none';
+      hi.style.display = 'table';
       inp.focus();
     });
 
+    // استقبال رسائل الطرف الآخر وتنزيل صندوق المحادثة تدريجياً
     socket.on('message', (msg) => {
       const p = document.createElement('p');
       p.textContent = msg;
       conv.appendChild(p);
-      conv.scrollTop = conv.scrollHeight;
+      window.scrollTo(0, document.body.scrollHeight);
     });
 
     socket.on('partner_disconnected', () => {
@@ -96,13 +94,13 @@
 
     function sendMsg() {
       const text = inp.value.trim();
-      if(text !== "" && !inp.disabled) {
+      if(text !== "") {
         socket.emit('message', text);
         const div = document.createElement('div');
         div.textContent = text;
         conv.appendChild(div);
         inp.value = "";
-        conv.scrollTop = conv.scrollHeight;
+        window.scrollTo(0, document.body.scrollHeight);
       }
     }
 
