@@ -22,7 +22,8 @@ io.on('connection', (socket) => {
             socket.join(room);
             partner.join(room);
 
-            io.to(room).emit('matched'); // إخبار الطرفين أنه تم الاتصال بشخص حقيقي
+            // إعلام الطرفين حصرياً بأنه تم الاتصال بشخص حقيقي
+            io.to(room).emit('matched');
             socket.roomName = room;
             partner.roomName = room;
         } else {
@@ -43,11 +44,10 @@ io.on('connection', (socket) => {
         if (socket.roomName) {
             socket.to(socket.roomName).emit('partner_disconnected');
         }
-        console.log('مستخدم غادر:', socket.id);
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log('Server is running on port ' + PORT);
+    console.log('Server running on port ' + PORT);
 });
