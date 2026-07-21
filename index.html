@@ -19,13 +19,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
 
-/* رسائل الطرف الآخر تظهر على اليمين بلون رمادي */
-#conv p { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-left: auto; margin-right: 0; }
+/* رسائل المستخدم نفسه (أنت) تظهر على اليمين */
+#conv div { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 
-/* رسائل المستخدم نفسه (أنت) تظهر على اليسار بلون أزرق */
-#conv div { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-right: auto; margin-left: 0; }
+/* رسائل الطرف الآخر تظهر على اليسار */
+#conv p { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
 
-/* شريط الإرسال يتحرك مع الكلام */
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
 #inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; }
@@ -48,15 +47,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
     <span id="hi">تم الاتصال, قل مرحبا</span>
    </div>
    <div id="send">
-     <p style="width: 85%;"><input id="inp" type="text" autocomplete="off"></p>
      <p style="width: 15%;"><button id="snd">Send</button></p>
+     <p style="width: 85%;"><input id="inp" type="text" autocomplete="off"></p>
    </div>
   </div>
 
   <h5 id="out">
     <span>المستخدم غادر الدردشة</span><br><br>
     <a href="index.html">بحث عن متصل</a>
-   </h5>
+  </h5>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -69,15 +68,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
 
-    // قفل خانة الكتابة وزر الإرسال حتى يتم الاتصال بشخص حقيقي
     inp.disabled = true;
     snd.disabled = true;
 
     socket.emit('find_partner');
 
-    // لا تظهر عبارة "تم الاتصال" ولا يتم تفعيل الكتابة إلا عند حدوث الاتصال الفعلي من السيرفر
     socket.on('matched', () => {
-      sr.style.display = 'none';
       hi.style.display = 'table';
       inp.disabled = false;
       snd.disabled = false;
