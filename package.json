@@ -1,7 +1,7 @@
 {
-  "name": "arabic-chat",
+  "name": "araby-chat-clone",
   "version": "1.0.0",
-  "description": "Random Arabic Chat",
+  "description": "Anonymous chat application clone",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
