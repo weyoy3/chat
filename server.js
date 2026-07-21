@@ -11,19 +11,18 @@ app.use(express.static(__dirname));
 let waitingUser = null;
 
 io.on('connection', (socket) => {
-    console.log('A user connected: ' + socket.id);
+    console.log('مستخدم متصل: ' + socket.id);
 
     socket.on('find_partner', () => {
         if (waitingUser && waitingUser.id !== socket.id) {
-            // ربط المستخدمين ببعضهما في غرفة واحدة
             const room = 'room_' + socket.id + '_' + waitingUser.id;
             socket.join(room);
             waitingUser.join(room);
 
-            io.to(room).emit('matched');
-            
             socket.room = room;
             waitingUser.room = room;
+
+            io.to(room).emit('matched');
             
             waitingUser = null;
         } else {
@@ -45,7 +44,7 @@ io.on('connection', (socket) => {
         if (socket.room) {
             socket.to(socket.room).emit('partner_disconnected');
         }
-        console.log('User disconnected: ' + socket.id);
+        console.log('مستخدم غادر: ' + socket.id);
     });
 });
 
