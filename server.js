@@ -22,7 +22,6 @@ io.on('connection', (socket) => {
             socket.join(room);
             partner.join(room);
 
-            // إعلام الطرفين حصرياً بأنه تم الاتصال بشخص حقيقي
             io.to(room).emit('matched');
             socket.roomName = room;
             partner.roomName = room;
