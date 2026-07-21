@@ -17,12 +17,14 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
 #conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
-#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none; }
 
-/* رسائل المستخدم نفسه (أنت) تظهر على اليمين */
+/* إخفاء تام وإلزامي لعبارة تم الاتصال لكي لا تظهر أبداً وحدها */
+#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
+
+/* رسائل المستخدم نفسه (أنت) على اليمين */
 #conv div { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 
-/* رسائل الطرف الآخر تظهر على اليسار */
+/* رسائل الطرف الآخر على اليسار */
 #conv p { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
 
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
@@ -73,8 +75,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; }
 
     socket.emit('find_partner');
 
+    // لا تظهر عبارة تم الاتصال إلا عند قدوم الحدث الفعلي من السيرفر عند دخول شخص ثاني
     socket.on('matched', () => {
-      hi.style.display = 'table';
+      hi.style.setProperty('display', 'table', 'important');
       inp.disabled = false;
       snd.disabled = false;
       inp.focus();
