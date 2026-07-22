@@ -1,14 +1,13 @@
 {
-  "name": "araby-chat-clone",
+  "name": "arabic-chat",
   "version": "1.0.0",
-  "description": "Anonymous chat application clone",
+  "description": "شات عربي عشوائي مع لوحة تحكم مدمجة",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "mongoose": "^8.3.1",
     "socket.io": "^4.7.5"
   }
 }
