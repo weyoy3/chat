@@ -8,9 +8,13 @@
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
 body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; }
 
-.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; }
-.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; display: inline-block; cursor: pointer; }
-.header b { color: lavender; font-size: 14px; }
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 10px; display: flex; justify-content: space-between; align-items: center; }
+.header-left { display: flex; flex-direction: column; }
+.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 26px; cursor: pointer; display: inline-block; }
+.header b { color: lavender; font-size: 13px; }
+
+/* المؤشر الزمني في الهيدر */
+#timer { color: #fff; font-size: 14px; background: rgba(0,0,0,0.15); padding: 3px 8px; border-radius: 4px; display: none; }
 
 #chat { width: 100%; direction: rtl; }
 
@@ -20,18 +24,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
 
-/* مؤشر الكتابة بتنسيق نظيف وهادئ */
 #typing-indicator { background: rgb(245, 245, 245) !important; color: rgb(150, 150, 150) !important; font-style: italic; font-size: 14px !important; margin-left: 0 !important; margin-right: auto !important; display: none; }
 
-/* رسائل المستخدم نفسه على اليمين */
 #conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
-
-/* رسائل الطرف الآخر على اليسار */
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
+#conv p.partner-msg a { color: #ffeb3b; text-decoration: underline; }
+#conv div.my-msg a { color: #0066cc; text-decoration: underline; }
 
 #conv img, #conv video { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
 
-/* شريط الإرسال الكلاسيكي المرتب باستخدام الجدول تماماً مثل التصميم الأصلي */
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send .send-row { display: table-row; }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
@@ -50,8 +51,11 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 </head>
 <body>
   <div class="header">
-   <a onclick="location.reload()">شات عربي</a>
-   <b>دردشة عربية مجانية بدون تسجيل</b>
+    <div class="header-left">
+      <a onclick="location.reload()">شات عربي</a>
+      <b>دردشة عربية مجانية بدون تسجيل</b>
+    </div>
+    <div id="timer">00:00</div>
   </div>
   
   <div id="chat">
@@ -90,9 +94,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     const out = document.getElementById('out');
     const fileInput = document.getElementById('file-input');
     const micBtn = document.getElementById('mic-btn');
+    const timerEl = document.getElementById('timer');
 
     let typingTimeout;
     let typingSpan = null;
+    let timerInterval;
+    let secondsElapsed = 0;
 
     inp.disabled = true;
     snd.disabled = true;
@@ -104,6 +111,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       inp.disabled = false;
       snd.disabled = false;
       inp.focus();
+      startTimer(); // بدء العداد فور الاتصال
     });
 
     socket.on('message', (data) => {
@@ -122,7 +130,23 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     socket.on('partner_disconnected', () => {
       chat.style.display = 'none';
       out.style.display = 'block';
+      stopTimer();
     });
+
+    function startTimer() {
+      secondsElapsed = 0;
+      timerEl.style.display = 'block';
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+        const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
 
     inp.addEventListener('input', () => {
       socket.emit('typing', true);
@@ -150,6 +174,11 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       }
     }
 
+    function linkify(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
+    }
+
     function sendMsg() {
       const text = inp.value.trim();
       if(text !== "" && !inp.disabled) {
@@ -165,7 +194,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       element.className = isMe ? 'my-msg' : 'partner-msg';
       
       if (data.type === 'text') {
-        element.textContent = data.content;
+        element.innerHTML = linkify(data.content);
       } else if (data.type === 'image') {
         const img = document.createElement('img');
         img.src = data.content;
