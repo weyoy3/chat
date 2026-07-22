@@ -284,6 +284,11 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
+
+            // ملء الخلفية باللون الأبيض لمنع تحول الشفافية إلى اللون الأسود
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             ctx.drawImage(img, 0, 0, width, height);
 
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
