@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شات عربي | دردشة عشوائية</title>
+<style>
+* { margin: 0px; padding: 0px; box-sizing: border-box; }
+body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; }
+
+/* هيدر اللوجو بتنسيق دقيق ومضبوط كلاسيكياً */
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
+.header-right { display: flex; flex-direction: column; }
+.header > .header-right > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1.1; }
+.header b { color: lavender; font-size: 13px; font-weight: normal; margin-top: 2px; }
+
+#timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
+
+#chat { width: 100%; direction: rtl; }
+
+#conv { padding: 4px; direction: rtl; height: 330px; overflow-y: auto; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 4px 8px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
+
+#sr { background: rgb(245, 245, 245); color: tomato; }
+#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
+
+/* مؤشر الكتابة: صغير، تحته ايموشن، مع نقاط */
+#typing-indicator { 
+  background: rgb(245, 245, 245) !important; 
+  color: rgb(110, 110, 110) !important; 
+  font-size: 13px !important; 
+  font-weight: normal !important;
+  margin-left: 0 !important; 
+  margin-right: auto !important; 
+  display: none; 
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+}
+
+#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
+#conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
+#conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; }
+
+#conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; transition: opacity 0.2s; }
+#conv img:hover { opacity: 0.9; }
+#conv video, #conv audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
+
+/* شريط الإرسال الكلاسيكي */
+#send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
+#send .send-row { display: table-row; }
+#send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
+
+#inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; background: #fff; }
+#snd, .file-btn, #mic-btn { padding: 6px 12px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 14px; text-align: center; display: inline-block; width: 100%; }
+.file-btn { background: #fdfdfd; }
+#mic-btn { background: #fdfdfd; }
+#mic-btn.recording { background: red !important; color: white !important; }
+#file-input { display: none; }
+
+#out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
+#out span { color: red; }
+#out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
+
+/* نافذة تكبير الصور (Modal) */
+#image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); text-align: center; justify-content: center; align-items: center; }
+#image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+#image-modal span { position: absolute; top: 15px; left: 25px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-right">
+      <a onclick="location.reload()">شات عربي</a>
+      <b>دردشة عربية مجانية بدون تسجيل</b>
+    </div>
+    <div id="timer">00:00</div>
+  </div>
+  
+  <div id="chat">
+   <div id="conv">
+    <span id="sr">جاري البحث عن متصل</span>
+    <span id="hi">تم الاتصال, قل مرحبا</span>
+   </div>
+   
+   <div id="send">
+     <div class="send-row">
+       <p style="width: 12%;"><button id="snd">إرسال</button></p>
+       <p style="width: 12%;"><button id="mic-btn" title="تسجيل صوت">🎤</button></p>
+       <p style="width: 12%;">
+         <input type="file" id="file-input" accept="image/*,video/*,audio/*">
+         <label for="file-input" class="file-btn" title="إرسال ملف/صورة">📁</label>
+       </p>
+       <p style="width: 64%;"><input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة..."></p>
+     </div>
+   </div>
+  </div>
+
+  <h5 id="out">
+    <span>المستخدم غادر الدردشة</span><br><br>
+    <a onclick="location.reload()">بحث عن متصل</a>
+  </h5>
+
+  <!-- نافذة عرض الصورة مكبرة -->
+  <div id="image-modal" onclick="closeModal()">
+    <span onclick="closeModal()">&times;</span>
+    <img id="modal-img">
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const sr = document.getElementById('sr');
+    const hi = document.getElementById('hi');
+    const conv = document.getElementById('conv');
+    const inp = document.getElementById('inp');
+    const snd = document.getElementById('snd');
+    const chat = document.getElementById('chat');
+    const out = document.getElementById('out');
+    const fileInput = document.getElementById('file-input');
+    const micBtn = document.getElementById('mic-btn');
+    const timerEl = document.getElementById('timer');
+    const imageModal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
+
+    let typingTimeout;
+    let typingSpan = null;
+    let timerInterval;
+    let secondsElapsed = 0;
+
+    inp.disabled = true;
+    snd.disabled = true;
+
+    socket.emit('find_partner');
+
+    socket.on('matched', () => {
+      hi.style.setProperty('display', 'table', 'important');
+      inp.disabled = false;
+      snd.disabled = false;
+      inp.focus();
+      startTimer();
+    });
+
+    socket.on('message', (data) => {
+      removeTypingIndicator();
+      appendMessage(data, false);
+    });
+
+    socket.on('display_typing', (isTyping) => {
+      if (isTyping) {
+        showTypingIndicator();
+      } else {
+        removeTypingIndicator();
+      }
+    });
+
+    socket.on('partner_disconnected', () => {
+      chat.style.display = 'none';
+      out.style.display = 'block';
+      stopTimer();
+    });
+
+    function startTimer() {
+      secondsElapsed = 0;
+      timerEl.style.display = 'block';
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+        const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    inp.addEventListener('input', () => {
+      socket.emit('typing', true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit('typing', false);
+      }, 1000);
+    });
+
+    function showTypingIndicator() {
+      if (!typingSpan) {
+        typingSpan = document.createElement('span');
+        typingSpan.id = 'typing-indicator';
+        typingSpan.innerHTML = '✍️ يكتب...';
+        typingSpan.style.display = 'table';
+        conv.appendChild(typingSpan);
+        conv.scrollTop = conv.scrollHeight;
+      }
+    }
+
+    function removeTypingIndicator() {
+      if (typingSpan) {
+        typingSpan.remove();
+        typingSpan = null;
+      }
+    }
+
+    function linkify(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
+    }
+
+    function sendMsg() {
+      const text = inp.value.trim();
+      if(text !== "" && !inp.disabled) {
+        socket.emit('message', { type: 'text', content: text });
+        appendMessage({ type: 'text', content: text }, true);
+        inp.value = "";
+        socket.emit('typing', false);
+      }
+    }
+
+    function appendMessage(data, isMe) {
+      const element = document.createElement(isMe ? 'div' : 'p');
+      element.className = isMe ? 'my-msg' : 'partner-msg';
+      
+      if (data.type === 'text') {
+        element.innerHTML = linkify(data.content);
+      } else if (data.type === 'image') {
+        const img = document.createElement('img');
+        img.src = data.content;
+        img.onclick = () => {
+          modalImg.src = data.content;
+          imageModal.style.display = 'flex';
+        };
+        element.appendChild(img);
+      } else if (data.type === 'video') {
+        const video = document.createElement('video');
+        video.src = data.content;
+        video.controls = true;
+        element.appendChild(video);
+      } else if (data.type === 'audio') {
+        const audio = document.createElement('audio');
+        audio.src = data.content;
+        audio.controls = true;
+        element.appendChild(audio);
+      }
+
+      conv.appendChild(element);
+      conv.scrollTop = conv.scrollHeight;
+    }
+
+    function closeModal() {
+      imageModal.style.display = 'none';
+    }
+
+    snd.addEventListener('click', sendMsg);
+    inp.addEventListener('keypress', (e) => {
+      if(e.key === 'Enter') sendMsg();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        let type = 'image';
+        if (file.type.startsWith('video')) {
+          type = 'video';
+        } else if (file.type.startsWith('audio')) {
+          type = 'audio';
+        }
+
+        const payload = { type: type, content: event.target.result };
+        socket.emit('message', payload);
+        appendMessage(payload, true);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    micBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const payload = { type: 'audio', content: e.target.result };
+              socket.emit('message', payload);
+              appendMessage(payload, true);
+            };
+            reader.readAsDataURL(audioBlob);
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          micBtn.classList.add('recording');
+        } catch (err) {
+          alert('تعذر الوصول إلى الميكروفون');
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        micBtn.classList.remove('recording');
+      }
+    });
+  </script>
+</body>
+</html>
