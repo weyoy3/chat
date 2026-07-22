@@ -25,7 +25,8 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
-app.use(express.static(path.join(__dirname, 'public'))); // تأكد من وضع index.html داخل مجلد public أو في نفس المجلد حسب رغبتك
+// التعديل هنا: قراءة الملفات من المجلد الرئيسي مباشرة ليعمل index.html بدون أخطاء
+app.use(express.static(__dirname));
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'mySuperSecretAdmin123';
 
