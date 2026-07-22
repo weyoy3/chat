@@ -8,31 +8,44 @@
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
 body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; }
 
-.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 10px; display: flex; justify-content: space-between; align-items: center; }
-.header-left { display: flex; flex-direction: column; }
-.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 26px; cursor: pointer; display: inline-block; }
-.header b { color: lavender; font-size: 13px; }
+/* هيدر اللوجو بتنسيق دقيق ومضبوط كلاسيكياً */
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
+.header-right { display: flex; flex-direction: column; }
+.header > .header-right > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1.1; }
+.header b { color: lavender; font-size: 13px; font-weight: normal; margin-top: 2px; }
 
-/* المؤشر الزمني في الهيدر */
-#timer { color: #fff; font-size: 14px; background: rgba(0,0,0,0.15); padding: 3px 8px; border-radius: 4px; display: none; }
+#timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 
 #chat { width: 100%; direction: rtl; }
 
-#conv { padding: 3px; direction: rtl; height: 350px; overflow-y: auto; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
+#conv { padding: 4px; direction: rtl; height: 330px; overflow-y: auto; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 4px 8px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
 
-#typing-indicator { background: rgb(245, 245, 245) !important; color: rgb(150, 150, 150) !important; font-style: italic; font-size: 14px !important; margin-left: 0 !important; margin-right: auto !important; display: none; }
+/* مؤشر الكتابة: صغير، تحته ايموشن، مع نقاط */
+#typing-indicator { 
+  background: rgb(245, 245, 245) !important; 
+  color: rgb(110, 110, 110) !important; 
+  font-size: 13px !important; 
+  font-weight: normal !important;
+  margin-left: 0 !important; 
+  margin-right: auto !important; 
+  display: none; 
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+}
 
 #conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
-#conv p.partner-msg a { color: #ffeb3b; text-decoration: underline; }
-#conv div.my-msg a { color: #0066cc; text-decoration: underline; }
+#conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; }
 
-#conv img, #conv video { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
+#conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; transition: opacity 0.2s; }
+#conv img:hover { opacity: 0.9; }
+#conv video, #conv audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
 
+/* شريط الإرسال الكلاسيكي */
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send .send-row { display: table-row; }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
@@ -47,11 +60,16 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
 #out span { color: red; }
 #out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
+
+/* نافذة تكبير الصور (Modal) */
+#image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); text-align: center; justify-content: center; align-items: center; }
+#image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+#image-modal span { position: absolute; top: 15px; left: 25px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
   <div class="header">
-    <div class="header-left">
+    <div class="header-right">
       <a onclick="location.reload()">شات عربي</a>
       <b>دردشة عربية مجانية بدون تسجيل</b>
     </div>
@@ -82,6 +100,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     <a onclick="location.reload()">بحث عن متصل</a>
   </h5>
 
+  <!-- نافذة عرض الصورة مكبرة -->
+  <div id="image-modal" onclick="closeModal()">
+    <span onclick="closeModal()">&times;</span>
+    <img id="modal-img">
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -95,6 +119,8 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     const fileInput = document.getElementById('file-input');
     const micBtn = document.getElementById('mic-btn');
     const timerEl = document.getElementById('timer');
+    const imageModal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
 
     let typingTimeout;
     let typingSpan = null;
@@ -111,7 +137,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       inp.disabled = false;
       snd.disabled = false;
       inp.focus();
-      startTimer(); // بدء العداد فور الاتصال
+      startTimer();
     });
 
     socket.on('message', (data) => {
@@ -160,7 +186,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       if (!typingSpan) {
         typingSpan = document.createElement('span');
         typingSpan.id = 'typing-indicator';
-        typingSpan.textContent = 'الطرف الآخر يكتب الآن...';
+        typingSpan.innerHTML = '✍️ يكتب...';
         typingSpan.style.display = 'table';
         conv.appendChild(typingSpan);
         conv.scrollTop = conv.scrollHeight;
@@ -198,6 +224,10 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       } else if (data.type === 'image') {
         const img = document.createElement('img');
         img.src = data.content;
+        img.onclick = () => {
+          modalImg.src = data.content;
+          imageModal.style.display = 'flex';
+        };
         element.appendChild(img);
       } else if (data.type === 'video') {
         const video = document.createElement('video');
@@ -215,6 +245,10 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       conv.scrollTop = conv.scrollHeight;
     }
 
+    function closeModal() {
+      imageModal.style.display = 'none';
+    }
+
     snd.addEventListener('click', sendMsg);
     inp.addEventListener('keypress', (e) => {
       if(e.key === 'Enter') sendMsg();
@@ -223,17 +257,53 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        let type = 'image';
-        if (file.type.startsWith('video')) type = 'video';
-        else if (file.type.startsWith('audio')) type = 'audio';
 
-        const payload = { type: type, content: event.target.result };
-        socket.emit('message', payload);
-        appendMessage(payload, true);
-      };
-      reader.readAsDataURL(file);
+      if (file.type.startsWith('image')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const payload = { type: 'image', content: compressedDataUrl };
+            socket.emit('message', payload);
+            appendMessage(payload, true);
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          let type = file.type.startsWith('video') ? 'video' : 'audio';
+          const payload = { type: type, content: event.target.result };
+          socket.emit('message', payload);
+          appendMessage(payload, true);
+        };
+        reader.readAsDataURL(file);
+      }
     });
 
     let mediaRecorder;
