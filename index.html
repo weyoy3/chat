@@ -2,49 +2,50 @@
 <html lang="ar">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>شات عربي | دردشة عشوائية</title>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
-body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction: rtl; }
 
-.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 6px 10px; flex-shrink: 0; }
-.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 26px; font-weight: bold; cursor: pointer; display: inline-block; }
-.header b { color: lavender; font-size: 13px; margin-right: 8px; }
+.header { background-color: rgb(24, 149, 210); direction: rtl; padding: 5px 0px; }
+.header > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 30px; padding: 5px 10px; display: inline-block; cursor: pointer; }
+.header b { color: lavender; font-size: 14px; }
 
-#chat { flex: 1; display: flex; flex-direction: column; direction: rtl; overflow: hidden; }
+#chat { width: 100%; direction: rtl; }
 
-#conv { flex: 1; padding: 10px; overflow-y: auto; direction: rtl; background: #fff; }
-#conv span, #conv p, #conv div { border-radius: 6px; padding: 6px 10px; margin: 6px 0; display: table; font-size: 16px; font-weight: normal; max-width: 82%; word-break: break-word; line-height: 1.4; }
+#conv { padding: 3px; direction: rtl; height: 350px; overflow-y: auto; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 3px 5px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
 
-/* مؤشر الكتابة الاحترافي بتنسيق خفيف وهادئ */
-#typing-indicator { background: rgb(245, 245, 245) !important; color: rgb(140, 140, 140) !important; font-style: italic; font-size: 13px !important; margin-right: 0 !important; margin-left: auto !important; display: none; }
+/* مؤشر الكتابة بتنسيق نظيف وهادئ */
+#typing-indicator { background: rgb(245, 245, 245) !important; color: rgb(150, 150, 150) !important; font-style: italic; font-size: 14px !important; margin-left: 0 !important; margin-right: auto !important; display: none; }
 
 /* رسائل المستخدم نفسه على اليمين */
-#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(50, 50, 50); margin-right: 0; margin-left: auto; }
+#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: 0; margin-left: auto; }
 
 /* رسائل الطرف الآخر على اليسار */
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
 
-#conv img, #conv video { max-width: 220px; border-radius: 6px; display: block; margin-top: 5px; }
+#conv img, #conv video { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
 
-/* شريط الإرسال السفلي المرتب تماماً والمتجاوب مع الموبايل */
-#send { background: rgb(248, 248, 248); padding: 8px; border-top: 1px solid rgb(230, 230, 230); flex-shrink: 0; display: flex; align-items: center; gap: 6px; direction: rtl; }
+/* شريط الإرسال الكلاسيكي المرتب باستخدام الجدول تماماً مثل التصميم الأصلي */
+#send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
+#send .send-row { display: table-row; }
+#send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
 
-#inp { flex: 1; padding: 8px 10px; border: 1px solid rgb(210, 210, 210); border-radius: 5px; outline: none; font-size: 15px; direction: rtl; background: #fff; }
-
-.action-btn, #snd { padding: 8px 12px; cursor: pointer; background: rgb(240, 240, 240); color: rgb(60, 60, 60); border: 1px solid rgb(200, 200, 200); border-radius: 5px; font-size: 14px; text-align: center; display: inline-flex; align-items: center; justify-content: center; user-select: none; }
-#snd { background: rgb(24, 149, 210); color: #fff; border-color: rgb(20, 130, 185); font-weight: bold; }
-#mic-btn.recording { background: red !important; color: white !important; border-color: darkred; }
-
+#inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; background: #fff; }
+#snd, .file-btn, #mic-btn { padding: 6px 12px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 14px; text-align: center; display: inline-block; width: 100%; }
+.file-btn { background: #fdfdfd; }
+#mic-btn { background: #fdfdfd; }
+#mic-btn.recording { background: red !important; color: white !important; }
 #file-input { display: none; }
 
-#out { font-size: 18px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 30px; }
-#out span { color: red; font-weight: bold; }
-#out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; display: inline-block; margin-top: 10px; }
+#out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
+#out span { color: red; }
+#out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -60,11 +61,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; height: 1
    </div>
    
    <div id="send">
-     <input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة...">
-     <button id="mic-btn" class="action-btn" title="تسجيل صوت">🎤</button>
-     <label for="file-input" class="action-btn" title="إرسال ملف أو صورة">📁</label>
-     <input type="file" id="file-input" accept="image/*,video/*,audio/*">
-     <button id="snd">إرسال</button>
+     <div class="send-row">
+       <p style="width: 12%;"><button id="snd">إرسال</button></p>
+       <p style="width: 12%;"><button id="mic-btn" title="تسجيل صوت">🎤</button></p>
+       <p style="width: 12%;">
+         <input type="file" id="file-input" accept="image/*,video/*,audio/*">
+         <label for="file-input" class="file-btn" title="إرسال ملف/صورة">📁</label>
+       </p>
+       <p style="width: 64%;"><input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة..."></p>
+     </div>
    </div>
   </div>
 
@@ -189,7 +194,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; height: 1
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(event) {
         let type = 'image';
