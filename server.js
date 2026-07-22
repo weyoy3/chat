@@ -1,60 +1,48 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    maxHttpBufferSize: 10 * 1024 * 1024
+const io = new Server(server);
+
+// الاتصال بقاعدة البيانات MongoDB Atlas
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('تم الاتصال بقاعدة البيانات بنجاح'))
+.catch(err => console.error('خطأ في الاتصال بقاعدة البيانات:', err));
+
+// تعريف نموذج الرسائل (Schema & Model) لتظهر قاعدة البيانات تلقائياً عند حفظ أول رسالة
+const messageSchema = new mongoose.Schema({
+  sender: String,
+  text: String,
+  createdAt: { type: Date, default: Date.now }
 });
 
-app.use(express.static(__dirname));
+const Message = mongoose.model('Message', messageSchema);
 
-let waitingUser = null;
-
+// باقي إعدادات السيرفر و Socket.io
 io.on('connection', (socket) => {
-    console.log('مستخدم متصل:', socket.id);
+  console.log('مستخدم متصل:', socket.id);
 
-    socket.on('find_partner', () => {
-        if (waitingUser && waitingUser.id !== socket.id) {
-            const partner = waitingUser;
-            waitingUser = null;
-
-            const room = 'room_' + partner.id + '_' + socket.id;
-            socket.join(room);
-            partner.join(room);
-
-            io.to(room).emit('matched');
-            socket.roomName = room;
-            partner.roomName = room;
-        } else {
-            waitingUser = socket;
-        }
-    });
-
-    socket.on('message', (msg) => {
-        if (socket.roomName) {
-            socket.to(socket.roomName).emit('message', msg);
-        }
-    });
-
-    socket.on('typing', (isTyping) => {
-        if (socket.roomName) {
-            socket.to(socket.roomName).emit('display_typing', isTyping);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        if (waitingUser === socket) {
-            waitingUser = null;
-        }
-        if (socket.roomName) {
-            socket.to(socket.roomName).emit('partner_disconnected');
-        }
-    });
+  socket.on('chat message', async (data) => {
+    try {
+      // حفظ الرسالة في قاعدة البيانات
+      const newMessage = new Message({ sender: data.sender, text: data.text });
+      await newMessage.save();
+      
+      // إرسال الرسالة لباقي المستخدمين
+      io.emit('chat message', data);
+    } catch (error) {
+      console.error('خطأ أثناء حفظ الرسالة:', error);
+    }
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log('Server running on port ' + PORT);
+  console.log(`السيرفر يعمل على المنفذ ${PORT}`);
 });
