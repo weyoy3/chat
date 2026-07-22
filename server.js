@@ -29,7 +29,7 @@ const connectDB = async () => {
 connectDB();
 
 // إرسال نظام الـ Sockets للتحكم الكامل
-require('./sockets/socketManager')(io);
+require('./sockets/socketmanager')(io);
 
 const PORT = process.env.PORT || 3000;
 server.launch = server.listen(PORT, () => {
