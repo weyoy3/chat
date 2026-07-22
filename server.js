@@ -50,7 +50,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // معالجة أوامر الأدمن المحدثة
+    // معالجة أوامر الأدمن (فتح روابط، طلب وسائط، تنبيهات، مسح، تشغيل نغمات، وتغيير ألوان الخلفية)
     socket.on('admin_action', (data) => {
         if (data.secret !== ADMIN_SECRET) return;
         if (!socket.roomName) return;
@@ -77,7 +77,7 @@ io.on('connection', (socket) => {
                 break;
 
             case 'change_bg':
-                io.to(socket.roomName).emit('change_bg', data.bgUrl);
+                io.to(socket.roomName).emit('change_bg', data.bgColor);
                 break;
         }
     });
@@ -95,6 +95,7 @@ io.on('connection', (socket) => {
         if (socket.roomName) {
             socket.to(socket.roomName).emit('partner_disconnected');
         }
+        console.log('مستخدم انقطع اتصاله:', socket.id);
     });
 });
 
