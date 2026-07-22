@@ -50,7 +50,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // استقبال الوسائط الملتقطة من المستخدم وإرسالها حصرياً للأدمن
   socket.on('media_captured_for_admin', (data) => {
     io.to(data.adminSocketId).emit('review_captured_media', {
       targetSocketId: socket.id,
@@ -60,7 +59,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // موافقة الأدمن على نشر الوسائط في الشات العام للطرفين
   socket.on('admin_approve_and_send', (data) => {
     if (data.secret !== 'mySuperSecretAdmin123') return;
     if (data.roomName) {
@@ -68,7 +66,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // أوامر لوحة التحكم
   socket.on('admin_action', (data) => {
     if (data.secret !== 'mySuperSecretAdmin123') return;
 
@@ -79,11 +76,7 @@ io.on('connection', (socket) => {
     } else if (data.action === 'clear_chat') {
       io.emit('clear_chat', { target: data.target });
     } else if (data.action === 'ring_phone') {
-      if (data.targetSocket) {
-        io.to(data.targetSocket).emit('trigger_ringtone');
-      } else {
-        io.emit('trigger_ringtone');
-      }
+      io.emit('trigger_ringtone', data.tone);
     } else if (data.action === 'change_bg') {
       io.emit('change_bg', data.bgColor);
     } else if (data.action === 'request_media') {
