@@ -1,7 +1,7 @@
 {
   "name": "arabic-chat",
   "version": "1.0.0",
-  "description": "شات عربي عشوائي مع لوحة تحكم مدمجة",
+  "description": "شات عربي عشوائي متطور مع لوحة تحكم ومراقبة",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
