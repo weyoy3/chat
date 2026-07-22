@@ -3,174 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArabicChat - منصة الدردشة العربية العالمية</title>
-    <link rel="stylesheet" href="./css/style.css">
+    <title>منصة الشات العالمية - Global Arabic Chat</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <div class="app-container">
-        
-        <!-- نافذة تسجيل الدخول المطابقة للموقع الأصلي -->
-        <div id="login-modal">
-            <div class="login-box">
-                <h3>تسجيل الدخول للدردشة</h3>
-                <input type="text" id="username" placeholder="اسم المستخدم..." autocomplete="off" maxlength="20">
-                <select id="age">
-                    <option value="">تحديد العمر</option>
-                    <option value="18">18</option>
-                    <option value="20">20</option>
-                    <option value="24">24</option>
-                    <option value="30">30+</option>
-                </select>
-                <select id="gender">
-                    <option value="">تحديد الجنس</option>
-                    <option value="ذكر">ذكر</option>
-                    <option value="أنثى">أنثى</option>
-                </select>
-                <select id="country">
-                    <option value="">تحديد البلد</option>
-                    <option value="مصر">مصر</option>
-                    <option value="الجزائر">الجزائر</option>
-                    <option value="السعودية">السعودية</option>
-                    <option value="العراق">العراق</option>
-                </select>
-                <button id="enter-btn">دخول</button>
+    <!-- Authentication Container -->
+    <div id="auth-container" class="auth-wrapper">
+        <div class="auth-card">
+            <div class="brand-header">
+                <i class="fa-solid fa-comments chat-logo-icon"></i>
+                <h2>منصّة الشات العالمية</h2>
+                <p>تواصل مع أصدقاء جدد في غرف دردشة عامة وخاصة فوراً</p>
             </div>
-        </div>
 
-        <!-- شاشة قائمة الغرف -->
-        <div id="rooms-screen">
-            <div class="header">
-                <span class="logo">ArabicChat</span>
-                <span id="user-profile-badge" class="user-badge">زائر</span>
+            <!-- Auth Tabs -->
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="switchTab('guest')"><i class="fa-solid fa-user-secret"></i> دخول كضيف</button>
+                <button class="tab-btn" onclick="switchTab('member')"><i class="fa-solid fa-user-check"></i> حساب عضو</button>
             </div>
-            <div class="rooms-container" id="rooms-list">
-                <!-- يتم تعبئة الغرف ديناميكياً بواسطة السيرفر -->
-            </div>
-        </div>
 
-        <!-- شاشة الشات الجماعي الداخلية -->
-        <div id="chat-screen">
-            <div class="header">
-                <span id="current-room-title" class="logo">الغرفة</span>
-                <button class="exit-room-btn" onclick="location.reload()">خروج</button>
-            </div>
-            <div class="chat-messages" id="chat-messages">
-                <!-- رسائل الشات تظهر هنا لحظياً -->
-            </div>
-            <div class="chat-footer">
-                <input type="text" id="msg-input" placeholder="اكتب رسالتك هنا..." autocomplete="off">
-                <button id="send-btn">إرسال</button>
-            </div>
-        </div>
+            <!-- Guest Form -->
+            <form id="guest-form" class="auth-form active" onsubmit="handleGuestLogin(event)">
+                <div class="input-group">
+                    <label><i class="fa-solid fa-user"></i> اسم المستخدم (أو اتركها لتوليد اسم عشوائي)</label>
+                    <div class="random-row">
+                        <input type="text" id="guest-username" placeholder="مثال: زائر_9821" maxlength="20">
+                        <button type="button" class="random-btn" onclick="generateRandomName()" title="توليد اسم عشوائي"><i class="fa-solid fa-dice"></i></button>
+                    </div>
+                </div>
 
+                <div class="form-row">
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-venus-mars"></i> النوع</label>
+                        <select id="guest-gender" required>
+                            <option value="ذكر">ذكر 👨</option>
+                            <option value="أنثى">أنثى 👩</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-cake-candles"></i> العمر (الحد الأدنى 18)</label>
+                        <select id="guest-age" required>
+                            <option value="" disabled selected>اختر عمرك</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="guest-error" class="error-msg"></div>
+                <button type="submit" class="submit-btn">دخول السيرفر فوراً <i class="fa-solid fa-arrow-left"></i></button>
+            </form>
+
+            <!-- Member Form -->
+            <form id="member-form" class="auth-form" onsubmit="handleMemberLogin(event)">
+                <div class="input-group">
+                    <label><i class="fa-solid fa-envelope"></i> البريد الإلكتروني</label>
+                    <input type="email" id="member-email" placeholder="name@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label><i class="fa-solid fa-lock"></i> كلمة المرور</label>
+                    <input type="password" id="member-password" placeholder="••••••••" required>
+                </div>
+
+                <div class="input-group member-extra" style="display:none;" id="register-fields">
+                    <label><i class="fa-solid fa-user"></i> اسم المستخدم</label>
+                    <input type="text" id="member-username" placeholder="اسم المستخدم">
+                    <div class="form-row" style="margin-top: 10px;">
+                        <select id="member-gender">
+                            <option value="ذكر">ذكر 👨</option>
+                            <option value="أنثى">أنثى 👩</option>
+                        </select>
+                        <select id="member-age"></select>
+                    </div>
+                </div>
+
+                <div class="auth-switch-mode">
+                    <span id="mode-text">ليس لديك حساب؟</span>
+                    <a href="#" onclick="toggleMemberMode(event)" id="mode-toggle-link">إنشاء حساب جديد</a>
+                </div>
+
+                <div id="member-error" class="error-msg"></div>
+                <button type="submit" class="submit-btn" id="member-submit-btn">تسجيل الدخول <i class="fa-solid fa-arrow-left"></i></button>
+
+                <div class="divider"><span>أو التسجيل عبر السوشيال</span></div>
+                
+                <button type="button" class="google-btn" onclick="loginWithGoogle()">
+                    <i class="fa-brands fa-google"></i> المتابعة باستخدام Google
+                </button>
+            </form>
+        </div>
     </div>
 
-    <!-- مكتبة الـ Socket.io العميل -->
+    <!-- Chat Room Container -->
+    <div id="chat-container" class="chat-wrapper" style="display: none;">
+        <aside class="chat-sidebar">
+            <div class="sidebar-header">
+                <div class="user-profile-mini">
+                    <div class="avatar-badge" id="my-avatar-icon">👨</div>
+                    <div class="user-info-text">
+                        <h4 id="my-display-name">اسم المستخدم</h4>
+                        <span class="status-indicator">متصل الآن</span>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()" title="خروج"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+
+            <div class="sidebar-section-title">الغرف المتاحة</div>
+            <ul class="rooms-list" id="rooms-list">
+                <li class="room-item active" data-room="العامة" onclick="changeRoom('العامة')">
+                    <i class="fa-solid fa-globe"></i> الغرفة العامة <span class="badge" id="count-العامة">0</span>
+                </li>
+                <li class="room-item" data-room="الجزائر" onclick="changeRoom('الجزائر')">
+                    <i class="fa-solid fa-earth-africa"></i> غرفة الجزائر <span class="badge" id="count-الجزائر">0</span>
+                </li>
+                <li class="room-item" data-room="الرياضة" onclick="changeRoom('الرياضة')">
+                    <i class="fa-solid fa-futbol"></i> غرفة الرياضة <span class="badge" id="count-الرياضة">0</span>
+                </li>
+                <li class="room-item" data-room="تكنولوجيا" onclick="changeRoom('تكنولوجيا')">
+                    <i class="fa-solid fa-laptop-code"></i> تكنولوجيا البرمجة <span class="badge" id="count-تكنولوجيا">0</span>
+                </li>
+            </ul>
+
+            <div class="sidebar-section-title">المتواجدون في الغرفة (<span id="online-count">0</span>)</div>
+            <ul class="users-list" id="users-list"></ul>
+        </aside>
+
+        <main class="chat-main">
+            <header class="chat-header">
+                <div class="current-room-info">
+                    <h3 id="current-room-title">الغرفة العامة</h3>
+                    <span>دردشة حية ومباشرة آمنة ومتعددة الخيارات</span>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messages-container"></div>
+
+            <form class="message-input-form" id="message-form" onsubmit="sendMessage(event)">
+                <button type="button" class="attach-btn" title="إيموجي"><i class="fa-solid fa-face-smile"></i></button>
+                <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." autocomplete="off" required>
+                <button type="submit" class="send-btn" title="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </main>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-
-        let userData = {};
-        let currentRoomKey = '';
-
-        const loginModal = document.getElementById('login-modal');
-        const roomsScreen = document.getElementById('rooms-screen');
-        const chatScreen = document.getElementById('chat-screen');
-        const roomsList = document.getElementById('rooms-list');
-        const chatMessages = document.getElementById('chat-messages');
-
-        // التعامل مع زر الدخول
-        document.getElementById('enter-btn').addEventListener('click', () => {
-            const username = document.getElementById('username').value.trim();
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const country = document.getElementById('country').value;
-
-            if (!username) {
-                alert('الرجاء كتابة اسم المستخدم أولاً.');
-                return;
-            }
-
-            userData = { username, age, gender, country };
-            document.getElementById('user-profile-badge').textContent = username;
-
-            loginModal.style.display = 'none';
-            roomsScreen.style.display = 'flex';
-        });
-
-        // استقبال وتحديث الغرف من السيرفر
-        socket.on('init_rooms', (rooms) => {
-            renderRooms(rooms);
-        });
-
-        socket.on('update_rooms', (rooms) => {
-            renderRooms(rooms);
-        });
-
-        function renderRooms(rooms) {
-            roomsList.innerHTML = '';
-            for (let key in rooms) {
-                const room = rooms[key];
-                const card = document.createElement('div');
-                card.className = 'room-card';
-                card.innerHTML = `
-                    <div class="room-info">
-                        <span>${room.flag}</span>
-                        <span>${room.name}</span>
-                        <span style="color: var(--text-secondary); font-size: 0.8rem;">(👥 ${room.count})</span>
-                    </div>
-                    <button class="join-btn" onclick="joinSpecificRoom('${key}', '${room.name}')">دخول الغرفة</button>
-                `;
-                roomsList.appendChild(card);
-            }
-        }
-
-        window.joinSpecificRoom = function(roomKey, roomName) {
-            currentRoomKey = roomKey;
-            socket.emit('join_room', { ...userData, roomKey });
-
-            roomsScreen.style.display = 'none';
-            chatScreen.style.display = 'flex';
-            document.getElementById('current-room-title').textContent = roomName;
-            chatMessages.innerHTML = ''; // تفريغ الرسائل القديمة عند الدخول
-        };
-
-        // إرسال الرسائل
-        const sendMsg = () => {
-            const input = document.getElementById('msg-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            socket.emit('send_message', { text });
-            input.value = '';
-        };
-
-        document.getElementById('send-btn').addEventListener('click', sendMsg);
-        document.getElementById('msg-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMsg();
-        });
-
-        // استقبال الرسائل الجديدة
-        socket.on('new_message', (data) => {
-            const div = document.createElement('div');
-            if (data.type === 'system') {
-                div.className = 'chat-msg system';
-                div.textContent = data.text;
-            } else {
-                div.className = 'chat-msg';
-                div.innerHTML = `
-                    <div>
-                        <span class="sender-name">${data.sender}:</span>
-                        <span>${data.text}</span>
-                    </div>
-                    <div class="msg-time">${data.timestamp}</div>
-                `;
-            }
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
-    </script>
+    <script src="/js/client.js"></script>
 </body>
 </html>
-
