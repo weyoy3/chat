@@ -38,7 +38,8 @@ io.on('connection', (socket) => {
     socket.on('message', (msg) => {
         if (socket.roomName) {
             // إضافة معرف فريد لكل رسالة لكي يتمكن الأدمن من حذفها أو تعديلها لاحقاً
-            msg.id = 'msg_' + Math.random().toString(36.substring(2, 9));
+            msg.id = 'msg_' + Math.random().toString(36).substring(2, 9);
+
             socket.to(socket.roomName).emit('message', msg);
         }
     });
