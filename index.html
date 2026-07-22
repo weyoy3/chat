@@ -17,31 +17,58 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #system-alert-banner { background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; display: none; font-size: 14px; }
 
 #chat { width: 100%; direction: rtl; position: relative; }
-#conv { padding: 6px; direction: rtl; height: 320px; overflow-y: auto; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 5px 10px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; position: relative; unicode-bidi: plaintext; text-align: right; }
+#conv { padding: 6px; direction: rtl; height: 320px; overflow-y: auto; display: flex; flex-direction: column; }
 
-#sr { background: rgb(245, 245, 245); color: tomato; }
-#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
+/* تنسيق عام لجميع الرسائل لمنع أي تقطيع أو أخطاء في الحروف */
+#conv span, #conv p, #conv div { 
+  border-radius: 8px; 
+  padding: 8px 12px; 
+  margin: 4px 0; 
+  font-size: 18px; 
+  font-weight: normal; 
+  max-width: 80%; 
+  word-break: break-word; 
+  overflow-wrap: break-word;
+  unicode-bidi: plaintext; 
+  text-align: right;
+  display: inline-block;
+  clear: both;
+}
 
-/* مؤشر يكتب يظهر בדיוק في مكان رسالة الطرف الآخر تماماً (جهة اليمين) */
+#sr { background: rgb(245, 245, 245); color: tomato; align-self: center; display: table; }
+#hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); align-self: center; display: none !important; }
+
+/* مؤشر يكتب يظهر في مكان رسالة الطرف الآخر تماماً على اليمين */
 #typing-indicator { 
   background: rgb(24, 149, 210) !important; 
   color: rgb(255, 255, 255) !important; 
-  font-size: 15px !important; 
+  font-size: 14px !important; 
   font-weight: normal !important;
-  margin-right: 5px !important; 
-  margin-left: auto !important; 
   display: none; 
-  padding: 5px 10px !important;
-  border-radius: 5px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
   width: fit-content;
-  margin-bottom: 5px;
-  direction: rtl;
+  margin: 4px 0;
+  align-self: flex-start; /* جهة اليمين في تخطيط RTL */
   text-align: right;
 }
 
-#conv div.my-msg { background: rgb(233, 236, 241); color: rgb(119, 119, 119); margin-right: auto; margin-left: 0; }
-#conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: auto; margin-right: 0; }
+/* رسائلك أنت: تظهر على اليسار (أو العكس حسب رغبتك، هنا مقننة ومنظمة بوضوح) */
+#conv div.my-msg { 
+  background: rgb(233, 236, 241); 
+  color: rgb(119, 119, 119); 
+  align-self: flex-end; /* جهة اليسار لشات عربي كلاسيكي */
+  text-align: right;
+}
+
+/* رسائل الشخص الآخر: تظهر على اليمين تماماً كما طلبت */
+#conv p.partner-msg { 
+  background: rgb(24, 149, 210); 
+  color: rgb(255, 255, 255); 
+  align-self: flex-start; /* جهة اليمين */
+  text-align: right;
+}
+
 #conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; color: inherit; }
 
 #conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
@@ -132,7 +159,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
      <input type="file" id="file-input" accept="image/*,video/*,audio/*">
      <label for="file-input" class="file-btn" title="إرسال ملف">📁</label>
      <button id="mic-btn" title="تسجيل صوت">🎤</button>
-     <button id="snd">إرسال</button>
+     <button id="snd">Send</button>
    </div>
   </div>
 
@@ -213,7 +240,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
     socket.on('display_typing', (isTyping) => {
       const indicator = document.getElementById('typing-indicator');
-      indicator.style.display = isTyping ? 'table' : 'none';
+      indicator.style.display = isTyping ? 'block' : 'none';
       conv.scrollTop = conv.scrollHeight;
     });
 
