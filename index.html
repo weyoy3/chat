@@ -56,8 +56,8 @@
     .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
     .logo span { color: #fde68a; }
     .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 5px 11px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; }
-    .me-pill .av.emoji-av { background: rgba(255,255,255,0.85); }
+    .me-pill .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; }
+    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); }
     .head-right { display: flex; align-items: center; gap: 8px; }
     .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 18px; cursor: pointer; }
     .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
@@ -83,30 +83,28 @@
     /* ===== Chat ===== */
     #screenChat { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
     #watermark { position: absolute; inset: 0; display: grid; place-items: center; font-size: 230px; opacity: 0.05; pointer-events: none; z-index: 0; user-select: none; }
-    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 11px; background: var(--chat-bg); position: relative; z-index: 1; }
+    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: var(--chat-bg); position: relative; z-index: 1; }
 
-    .row { display: flex; gap: 9px; align-items: flex-start; animation: slideIn .2s ease; }
+    .row { display: flex; gap: 10px; align-items: flex-start; animation: slideIn .2s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     .row.sys { align-self: center; max-width: 92%; }
 
-    .av { width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
-    .av.emoji-av { background: #f1ede2; font-size: 19px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .av { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; margin-top: 1px; }
+    .av svg { display: block; }
+    .av.emoji-av { background: #f1ede2 !important; font-size: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* النص inline: اسم + رسالة + راية/توقيت في سطر واحد يلف */
-    .body { flex: 1; min-width: 0; line-height: 2.05; font-size: 15px; }
+    /* سطر واحد: اسم عريض + : + رسالة، يلف طبيعي */
+    .body { flex: 1; min-width: 0; line-height: 2.0; font-size: 15px; padding-top: 3px; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 15px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
+    .colon { font-weight: 800; color: #475569; margin: 0 1px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
     .badge.join { background: rgba(22,163,74,0.14); color: #15803d; }
     .badge.leave { background: rgba(107,114,128,0.12); color: #6b7280; }
     .msg { word-break: break-word; white-space: pre-wrap; color: #243042; }
-    .tail { display: inline-block; white-space: nowrap; margin-inline-start: 6px; vertical-align: middle; }
-    .flag { filter: grayscale(1) opacity(0.45); font-size: 11px; margin-inline-end: 3px; }
-    .tm { color: #8a93a3; font-size: 11.5px; font-weight: 600; }
 
-    /* المنشن */
     .mention { color: var(--chat-accent); font-weight: 800; }
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 0 3px; }
 
@@ -129,8 +127,8 @@
     #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
     #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; }
-    .u-item .av.emoji-av { font-size: 16px; }
+    .u-item .av { width: 32px; height: 32px; flex: 0 0 32px; font-size: 12px; cursor: pointer; margin-top: 0; }
+    .u-item .av.emoji-av { font-size: 17px; }
     .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
     .u-item .nm2:hover { text-decoration: underline; }
 
@@ -249,13 +247,15 @@
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
     let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null;
 
-    const fmt = (t) => new Date(t || Date.now()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
-    // ---- أفاتار حسب النوع (5 لكل نوع) ----
-    const MALE = ['🧑', '👨', '🧔', '', '🧑🦰'];
-    const FEMALE = ['👩', '👧', '🧕', '‍🦰', '👩‍🦳'];
+    // صورة الشخص الافتراضية (silhouette) - للعضو، وللزائر اللي من غير نوع
+    const SILHOUETTE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
+
+    // إيموجيات بسيطة (كود واحد) - مش مركّبة - عشان ما تتكسرش
+    const MALE = ['🧑', '', '', '🧓', '🧔'];
+    const FEMALE = ['👩', '👧', '', '👸', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -266,7 +266,6 @@
     function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-    // رسم النص مع تظليل المنشن (الأصفر للمذكور بس)
     function renderText(text, mentions) {
       let html = escapeHtml(text);
       const list = [...(mentions || [])].sort((a, b) => b.length - a.length);
@@ -286,8 +285,8 @@
       clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, isMention ? 3000 : 1300);
     }
 
-    // منشن بالضغط على اسم: الاسم + مسافة + المسطرة في الآخر (بدون @)
     function mentionUser(name) {
+      if (!name) return;
       const cur = msgInput.value;
       if (cur.trim() === '') msgInput.value = name + ' ';
       else msgInput.value = cur + (cur.endsWith(' ') ? '' : ' ') + name + ' ';
@@ -295,6 +294,24 @@
       const len = msgInput.value.length;
       msgInput.setSelectionRange(len, len);
       msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash');
+    }
+
+    // ---------- بناء الأفاتار: عضو = silhouette | زائر بنوع = إيموجي | زائر بدون نوع = silhouette ----------
+    function buildAvatar(opts) {
+      const av = document.createElement('div'); av.className = 'av';
+      const role = opts.role || opts.senderRole || '';
+      const gender = opts.gender || opts.senderGender || '';
+      const name = opts.name || opts.senderName || '';
+      const color = opts.color || opts.senderColor || '#94a3b8';
+      if (role === 'member') {
+        av.style.background = color;
+        av.innerHTML = SILHOUETTE;
+      } else {
+        const emoji = pickAvatar(gender, name);
+        if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; }
+        else { av.style.background = color; av.innerHTML = SILHOUETTE; }
+      }
+      return av;
     }
 
     // ---------- Auth UI ----------
@@ -336,9 +353,13 @@
 
     function setMyAvatar() {
       const av = $('myAv');
-      const emoji = pickAvatar(myGender, myName);
-      if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; av.style.background = ''; }
-      else { av.classList.remove('emoji-av'); av.textContent = ini(myName); av.style.background = myColor; }
+      av.className = 'av';
+      if (myRole === 'member') { av.style.background = myColor; av.innerHTML = SILHOUETTE; }
+      else {
+        const emoji = pickAvatar(myGender, myName);
+        if (emoji) { av.classList.add('emoji-av'); av.style.background = ''; av.textContent = emoji; }
+        else { av.style.background = myColor; av.innerHTML = SILHOUETTE; }
+      }
     }
 
     function enterApp(user, isMember) {
@@ -349,15 +370,7 @@
       screenRooms.classList.remove('hidden');
     }
 
-    // ---------- Messages ----------
-    function buildAvatar(opts) {
-      const av = document.createElement('div'); av.className = 'av';
-      const emoji = pickAvatar(opts.gender, opts.name);
-      if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; }
-      else { av.style.background = opts.color || '#94a3b8'; av.textContent = ini(opts.name); }
-      return av;
-    }
-
+    // ---------- رسم الرسالة (اسم عريض + : + نص، من غير وقت ولا راية) ----------
     function addRow(text, who, opts = {}) {
       const row = document.createElement('div');
       row.className = 'row ' + who;
@@ -365,29 +378,34 @@
         const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
         row.appendChild(b);
       } else {
-        row.appendChild(buildAvatar(opts));
+        // توحيد الحقول (يصلح الرسائل الحية + السجل المحفوظ)
+        const name = opts.name || opts.senderName || '';
+        const color = opts.color || opts.senderColor || '#94a3b8';
+        const role = opts.role || opts.senderRole || '';
+        const gender = opts.gender || opts.senderGender || '';
+
+        const av = buildAvatar({ role, gender, name, color });
+        row.appendChild(av);
+
         const body = document.createElement('div'); body.className = 'body';
 
         const nm = document.createElement('span'); nm.className = 'nm';
-        nm.textContent = opts.name || ''; nm.style.color = opts.color || '#374151';
-        nm.addEventListener('click', () => mentionUser(opts.name));
+        nm.textContent = name; nm.style.color = color;
+        nm.addEventListener('click', () => mentionUser(name));
         body.appendChild(nm);
 
-        if (opts.role) { const rb = document.createElement('span'); rb.className = 'badge ' + (opts.role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(opts.role); body.appendChild(rb); }
+        if (role) { const rb = document.createElement('span'); rb.className = 'badge ' + (role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(role); body.appendChild(rb); }
         if (opts.event === 'join') { const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول'; body.appendChild(eb); }
         else if (opts.event === 'leave') { const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج'; body.appendChild(eb); }
 
         if (text) {
-          const sp = document.createElement('span'); sp.textContent = ' '; body.appendChild(sp);
+          const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
+          body.appendChild(colon);
           const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, opts.mentions);
           tx.title = 'اضغط للنسخ';
           tx.addEventListener('click', () => navigator.clipboard?.writeText(text).then(() => showToast('تم نسخ الرسالة')));
           body.appendChild(tx);
         }
-
-        const tail = document.createElement('span'); tail.className = 'tail';
-        tail.innerHTML = '<span class="flag">🚩</span><span class="tm">' + fmt(opts.time) + '</span>';
-        body.appendChild(tail);
 
         row.appendChild(body);
       }
@@ -430,7 +448,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','','😢','😡','👍','👋','❤️','🔥','💔','🌹','','🙏','','🎉','','✨','😅','😊','😉','😘','🥺','😴','🤝','','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','','🤔','😢','😡','👍','👋','❤️','🔥','','🌹','','🙏','','🎉','','✨','😅','😊','😉','😘','','😴','','💪','','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -476,8 +494,8 @@
 
     socket.on('message', (d) => addRow(d.text, 'row', d));
     socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
-    socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, gender: d.gender, event: 'join', time: Date.now() }));
-    socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, gender: d.gender, event: 'leave', time: Date.now() }));
+    socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, gender: d.gender, event: 'join' }));
+    socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, gender: d.gender, event: 'leave' }));
 
     socket.on('room_users', (list) => {
       roomCount.textContent = list.length;
