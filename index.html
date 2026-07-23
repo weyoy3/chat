@@ -92,7 +92,7 @@
       width: 100%; max-width: 760px; height: 100vh; height: 100dvh;
       display: flex; flex-direction: column; background: var(--chat-bg); z-index: 10;
     }
-    #watermark { display: none; } /* مخفية حاليًا */
+    #watermark { display: none; }
     #messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
 
     .row { display: flex; gap: 8px; align-items: flex-start; }
@@ -109,7 +109,8 @@
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    .msg { word-break: break-word; white-space: pre-wrap; color: #243042; font-weight: 500; }
+    /* نص الرسالة: أسود غامق + أعرض (600) */
+    .msg { word-break: break-word; white-space: pre-wrap; color: #111827; font-weight: 600; }
     .sys-action { color: var(--join-red); font-weight: 700; }
 
     .mention { color: var(--chat-accent); font-weight: 800; }
@@ -118,7 +119,7 @@
     .sys .bubble { background: rgba(15,23,42,0.06); color: var(--muted); font-size: 12px; border-radius: 999px; padding: 5px 13px; }
     .typing { padding: 0 14px 5px; color: var(--muted); font-size: 12px; min-height: 16px; position: relative; z-index: 1; }
 
-    /* ===== Footer بتنسيق المرجعي: دائرة إرسال + كبسولة + إيموجي داخلي ===== */
+    /* ===== Footer بتنسيق المرجعي ===== */
     footer { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.9); position: relative; z-index: 2; flex: 0 0 auto; }
     .send-circle { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); display: grid; place-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); transition: transform .1s ease; }
     .send-circle:active { transform: scale(.93); }
@@ -147,7 +148,6 @@
 
     #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(16px); background: #1f2937; color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: .25s; z-index: 60; font-family: "Cairo"; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #toast.mention-toast { background: linear-gradient(135deg, #d97706, #b45309); }
 
     @media (max-width: 480px) { #roomsGrid { grid-template-columns: 1fr; } #emojiPanel { grid-template-columns: repeat(7, 1fr); } }
   </style>
@@ -265,15 +265,16 @@
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
     let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null, authTimer = null;
     let currentRoomId = null;
-    const joinSeen = {}; // debounce للانضمام اللحظي فقط (مش للسجل)
+    let lastRoomUsers = [];
+    const joinSeen = {}; // debounce 120 ثانية للانضمام اللحظي
 
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '👦', '🧓', ''];
-    const FEMALE = ['👩', '', '🧕', '👩‍🦰', ''];
+    const MALE = ['🧑', '', '👦', '🧓', '🧔'];
+    const FEMALE = ['👩', '👧', '', '👩🦰', ''];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -297,10 +298,10 @@
       return html;
     }
 
-    function showToast(m, isMention) {
+    function showToast(m) {
       toast.textContent = m;
-      toast.className = 'show' + (isMention ? ' mention-toast' : '');
-      clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, isMention ? 3000 : 1300);
+      toast.className = 'show';
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, 1300);
     }
 
     function setConn(cls, txt) { connStatus.className = 'conn-status ' + cls; connStatus.textContent = txt; }
@@ -328,6 +329,18 @@
       const len = msgInput.value.length;
       msgInput.setSelectionRange(len, len);
       msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash');
+    }
+
+    // منشن محلي (للإضافة اللحظية للمرسل) من الموجودين في الغرفة
+    function localMentions(text) {
+      const found = [];
+      for (const u of lastRoomUsers) {
+        if (!u.name || u.name === myName) continue;
+        if (found.some((f) => f.toLowerCase() === u.name.toLowerCase())) continue;
+        const re = new RegExp('^' + escapeRegExp(u.name) + '($|[^\\u0600-\\u06FF\\w])');
+        if (re.test(text)) found.push(u.name);
+      }
+      return found;
     }
 
     function buildAvatar(opts) {
@@ -416,7 +429,7 @@
       if (saved) { try { const r = JSON.parse(saved); socket.emit('join_room', r.id); } catch (e) {} }
     }
 
-    // ---------- رسم سطر الانضمام (fromHistory = بدون debounce) ----------
+    // ---------- رسم سطر الانضمام ----------
     function renderJoinRow(opts, fromHistory) {
       const name = opts.name || opts.senderName || '';
       const color = opts.color || opts.senderColor || '#94a3b8';
@@ -426,7 +439,7 @@
       if (!fromHistory) {
         const key = (currentRoomId || '?') + '|' + (name || '?').toLowerCase();
         const now = Date.now();
-        if (joinSeen[key] && now - joinSeen[key] < 60000) return null;
+        if (joinSeen[key] && now - joinSeen[key] < 120000) return null;
         joinSeen[key] = now;
       }
 
@@ -495,11 +508,10 @@
       });
     }
 
-    // ---------- إرسال: إضافة محلية فورية (لحظي) + تجاهل النسخة الراجعة ----------
     function send() {
       const t = msgInput.value.trim();
       if (!t) return;
-      addMessageRow({ text: t, senderId: socket.id, senderName: myName, senderColor: myColor, senderRole: myRole, senderGender: myGender });
+      addMessageRow({ text: t, senderId: socket.id, senderName: myName, senderColor: myColor, senderRole: myRole, senderGender: myGender, mentions: localMentions(t) });
       socket.emit('message', t);
       msgInput.value = '';
       emojiPanel.classList.add('hidden');
@@ -513,7 +525,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','🥺','😴','🤝','','⭐','🌸','☕','🎵','⚽','🕋','','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -569,7 +581,7 @@
         messagesEl.innerHTML = '';
         if (d.history && d.history.length) {
           d.history.forEach((m) => {
-            if (m.kind === 'join') renderJoinRow(m, true);   // من السجل: بدون debounce
+            if (m.kind === 'join') renderJoinRow(m, true);
             else addMessageRow(m);
           });
         }
@@ -588,14 +600,13 @@
       localStorage.removeItem('curRoom');
     });
 
-    // تجاهل نسخة المرسل الراجعة (مضافة محليًا بالفعل) -> منع التكرار + لحظي مضمون
     socket.on('message', (d) => { if (d.senderId === socket.id) return; addMessageRow(d); });
-    socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
 
     socket.on('user_joined', (d) => { renderJoinRow(d, false); bumpCount(1); });
     socket.on('user_left', (d) => { bumpCount(-1); });
 
     socket.on('room_users', (list) => {
+      lastRoomUsers = list;
       roomCount.textContent = list.length;
       usersList.innerHTML = '';
       list.forEach((u) => {
