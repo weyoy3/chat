@@ -52,14 +52,15 @@
 
     /* ===== Header ===== */
     header { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 4px 18px rgba(13,148,136,0.25); position: sticky; top: 0; z-index: 20; }
-    #screenChat header { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
+    #screenChat header { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); box-shadow: 0 4px 18px rgba(0,0,0,0.18); position: static; }
     .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
     .logo span { color: #fde68a; }
-    .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 5px 11px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; }
-    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); }
+    .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 4px 10px 4px 12px; border-radius: 999px; font-size: 13px; }
+    .me-pill .av { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; }
+    .me-pill .av svg { width: 13px; height: 13px; }
+    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); font-size: 13px; }
     .head-right { display: flex; align-items: center; gap: 8px; }
-    .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 18px; cursor: pointer; }
+    .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 17px; cursor: pointer; }
     .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
     .online-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 13px; cursor: pointer; font-weight: 700; font-family: "Cairo"; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.7); animation: pulse 1.8s infinite; }
@@ -73,62 +74,65 @@
     .room-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
     .room-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.09); }
     .room-top { display: flex; align-items: center; gap: 8px; }
-    .room-emoji { font-size: 24px; }
-    .room-flag { font-size: 20px; margin-right: auto; }
+    .room-emoji { font-size: 22px; }
+    .room-flag { font-size: 19px; margin-right: auto; }
     .room-name { font-weight: 800; font-size: 15px; font-family: "Cairo"; }
     .room-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent2); background: rgba(13,148,136,0.1); padding: 4px 10px; border-radius: 999px; width: fit-content; font-weight: 700; }
     .room-count .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
     .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: "Cairo"; }
 
-    /* ===== Chat ===== */
-    #screenChat { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-    #watermark { position: absolute; inset: 0; display: grid; place-items: center; font-size: 230px; opacity: 0.05; pointer-events: none; z-index: 0; user-select: none; }
-    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: var(--chat-bg); position: relative; z-index: 1; }
+    /* ===== Chat (ثابت بملء الشاشة - الصندوق مش بيختفي) ===== */
+    #screenChat {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 760px; height: 100vh; height: 100dvh;
+      display: flex; flex-direction: column; background: var(--chat-bg); z-index: 10;
+    }
+    #watermark { position: absolute; inset: 0; display: grid; place-items: center; font-size: 210px; opacity: 0.05; pointer-events: none; z-index: 0; user-select: none; }
+    #messages { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
 
-    .row { display: flex; gap: 10px; align-items: flex-start; animation: slideIn .2s ease; }
+    .row { display: flex; gap: 8px; align-items: flex-start; animation: slideIn .2s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     .row.sys { align-self: center; max-width: 92%; }
 
-    .av { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; margin-top: 1px; }
-    .av svg { display: block; }
-    .av.emoji-av { background: #f1ede2 !important; font-size: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .av { width: 30px; height: 30px; border-radius: 50%; flex: 0 0 30px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; margin-top: 1px; line-height: 1; }
+    .av svg { width: 18px; height: 18px; display: block; }
+    .av.emoji-av { background: #f1ede2 !important; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* سطر واحد: اسم عريض + : + رسالة، يلف طبيعي */
-    .body { flex: 1; min-width: 0; line-height: 2.0; font-size: 15px; padding-top: 3px; }
-    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 15px; cursor: pointer; }
+    .body { flex: 1; min-width: 0; line-height: 1.85; font-size: 14px; padding-top: 2px; }
+    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    .colon { font-weight: 800; color: #475569; margin: 0 1px; }
-    .badge { display: inline-block; vertical-align: middle; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
+    .colon { font-weight: 700; color: #475569; margin: 0 1px; }
+    .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    .badge.join { background: rgba(22,163,74,0.14); color: #15803d; }
-    .badge.leave { background: rgba(107,114,128,0.12); color: #6b7280; }
-    .msg { word-break: break-word; white-space: pre-wrap; color: #243042; }
+    .msg { word-break: break-word; white-space: pre-wrap; color: #243042; font-weight: 500; }
+    .msg.muted-msg { color: var(--muted); font-weight: 500; }
 
     .mention { color: var(--chat-accent); font-weight: 800; }
-    .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 0 3px; }
+    .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
 
     .sys .bubble { background: rgba(15,23,42,0.06); color: var(--muted); font-size: 12px; border-radius: 999px; padding: 5px 13px; }
-    .typing { padding: 0 16px 6px; color: var(--muted); font-size: 12.5px; min-height: 18px; position: relative; z-index: 1; }
+    .typing { padding: 0 14px 5px; color: var(--muted); font-size: 12px; min-height: 16px; position: relative; z-index: 1; }
 
-    footer { display: flex; gap: 9px; padding: 11px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.7); position: relative; z-index: 2; }
-    footer input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 15px; outline: none; font-family: inherit; }
+    footer { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.85); position: relative; z-index: 2; flex: 0 0 auto; }
+    footer input { flex: 1; padding: 11px 13px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit; }
     footer input:focus { border-color: var(--chat-accent); }
     footer input.flash { animation: flashIn .6s ease; }
     @keyframes flashIn { 0% { background: #fef9c3; } 100% { background: #fff; } }
-    .emoji-btn { border: none; border-radius: 12px; padding: 0 13px; font-size: 20px; cursor: pointer; background: #f1ede2; }
-    footer .send-btn { border: none; border-radius: 12px; padding: 12px 18px; color: #fff; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); font-family: "Cairo"; }
+    .emoji-btn { border: none; border-radius: 12px; padding: 0 12px; font-size: 19px; cursor: pointer; background: #f1ede2; flex: 0 0 auto; }
+    footer .send-btn { border: none; border-radius: 12px; padding: 11px 16px; color: #fff; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); font-family: "Cairo"; flex: 0 0 auto; }
 
-    #emojiPanel { position: absolute; bottom: 64px; right: 11px; left: 11px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 200px; overflow-y: auto; z-index: 5; }
-    #emojiPanel span { font-size: 22px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; }
+    #emojiPanel { position: absolute; bottom: 60px; right: 10px; left: 10px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 190px; overflow-y: auto; z-index: 5; }
+    #emojiPanel span { font-size: 21px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; }
     #emojiPanel span:hover { background: #f1ede2; }
 
     #drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: flex; justify-content: flex-end; }
     #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
     #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 32px; height: 32px; flex: 0 0 32px; font-size: 12px; cursor: pointer; margin-top: 0; }
-    .u-item .av.emoji-av { font-size: 17px; }
+    .u-item .av { width: 28px; height: 28px; flex: 0 0 28px; font-size: 11px; cursor: pointer; margin-top: 0; }
+    .u-item .av svg { width: 16px; height: 16px; }
+    .u-item .av.emoji-av { font-size: 15px; }
     .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
     .u-item .nm2:hover { text-decoration: underline; }
 
@@ -212,7 +216,7 @@
       <header>
         <div class="head-right">
           <button class="back-btn" id="backBtn">→</button>
-          <div class="logo" id="roomTitle" style="font-size:17px">الغرفة</div>
+          <div class="logo" id="roomTitle" style="font-size:16px">الغرفة</div>
         </div>
         <button class="online-pill" id="usersBtn"><span class="live-dot"></span><span id="roomCount">0</span> في الغرفة</button>
       </header>
@@ -222,7 +226,7 @@
       <div id="emojiPanel" class="hidden"></div>
       <footer>
         <button class="emoji-btn" id="emojiBtn" type="button">😀</button>
-        <input id="msgInput" type="text" placeholder="اكتب رسالة... (اضغط على اسم لمنشن)" autocomplete="off" />
+        <input id="msgInput" type="text" placeholder="اكتب رسالتك ..." autocomplete="off" />
         <button class="send-btn" id="sendBtn">إرسال</button>
       </footer>
     </section>
@@ -233,7 +237,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    const socket = io();
+    const socket = io({ reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000, reconnectionDelayMax: 5000, timeout: 20000 });
     const $ = (id) => document.getElementById(id);
 
     const screenAuth = $('screenAuth'), screenRooms = $('screenRooms'), screenChat = $('screenChat');
@@ -250,12 +254,10 @@
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
-    // صورة الشخص الافتراضية (silhouette) - للعضو، وللزائر اللي من غير نوع
-    const SILHOUETTE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
+    const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    // إيموجيات بسيطة (كود واحد) - مش مركّبة - عشان ما تتكسرش
-    const MALE = ['🧑', '', '', '🧓', '🧔'];
-    const FEMALE = ['👩', '👧', '', '👸', '👵'];
+    const MALE = ['🧑', '👨', '👦', '🧓', ''];
+    const FEMALE = ['👩', '', '🧕', '👸', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -296,17 +298,14 @@
       msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash');
     }
 
-    // ---------- بناء الأفاتار: عضو = silhouette | زائر بنوع = إيموجي | زائر بدون نوع = silhouette ----------
     function buildAvatar(opts) {
       const av = document.createElement('div'); av.className = 'av';
       const role = opts.role || opts.senderRole || '';
       const gender = opts.gender || opts.senderGender || '';
       const name = opts.name || opts.senderName || '';
       const color = opts.color || opts.senderColor || '#94a3b8';
-      if (role === 'member') {
-        av.style.background = color;
-        av.innerHTML = SILHOUETTE;
-      } else {
+      if (role === 'member') { av.style.background = color; av.innerHTML = SILHOUETTE; }
+      else {
         const emoji = pickAvatar(gender, name);
         if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; }
         else { av.style.background = color; av.innerHTML = SILHOUETTE; }
@@ -349,7 +348,7 @@
       socket.emit('guest_login', pendingGuest);
     });
 
-    logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); location.reload(); });
+    logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); localStorage.removeItem('curRoom'); location.reload(); });
 
     function setMyAvatar() {
       const av = $('myAv');
@@ -367,10 +366,12 @@
       $('myName').textContent = myName;
       setMyAvatar();
       screenAuth.classList.add('hidden');
-      screenRooms.classList.remove('hidden');
+      screenRooms.classList.remove('hidden'); // fallback آمن
+      const saved = localStorage.getItem('curRoom');
+      if (saved) { try { const r = JSON.parse(saved); socket.emit('join_room', r.id); } catch (e) {} }
     }
 
-    // ---------- رسم الرسالة (اسم عريض + : + نص، من غير وقت ولا راية) ----------
+    // ---------- رسم الرسالة ----------
     function addRow(text, who, opts = {}) {
       const row = document.createElement('div');
       row.className = 'row ' + who;
@@ -378,14 +379,12 @@
         const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
         row.appendChild(b);
       } else {
-        // توحيد الحقول (يصلح الرسائل الحية + السجل المحفوظ)
         const name = opts.name || opts.senderName || '';
         const color = opts.color || opts.senderColor || '#94a3b8';
         const role = opts.role || opts.senderRole || '';
         const gender = opts.gender || opts.senderGender || '';
 
-        const av = buildAvatar({ role, gender, name, color });
-        row.appendChild(av);
+        row.appendChild(buildAvatar({ role, gender, name, color }));
 
         const body = document.createElement('div'); body.className = 'body';
 
@@ -395,13 +394,11 @@
         body.appendChild(nm);
 
         if (role) { const rb = document.createElement('span'); rb.className = 'badge ' + (role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(role); body.appendChild(rb); }
-        if (opts.event === 'join') { const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول'; body.appendChild(eb); }
-        else if (opts.event === 'leave') { const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج'; body.appendChild(eb); }
 
         if (text) {
           const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
           body.appendChild(colon);
-          const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, opts.mentions);
+          const tx = document.createElement('span'); tx.className = 'msg' + (opts.mutedText ? ' muted-msg' : ''); tx.innerHTML = renderText(text, opts.mentions);
           tx.title = 'اضغط للنسخ';
           tx.addEventListener('click', () => navigator.clipboard?.writeText(text).then(() => showToast('تم نسخ الرسالة')));
           body.appendChild(tx);
@@ -448,10 +445,20 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','','🤔','😢','😡','👍','👋','❤️','🔥','','🌹','','🙏','','🎉','','✨','😅','😊','😉','😘','','😴','','💪','','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','','😎','','😢','😡','👍','👋','❤️','🔥','💔','🌹','','🎉','✨','😅','😊','😉','😘','🥺','😴','🤝','','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
+
+    // ---------- ثبات الصندوق مع الكيبورد ----------
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const adjust = () => { screenChat.style.height = vv.height + 'px'; screenChat.style.top = vv.offsetTop + 'px'; };
+      vv.addEventListener('resize', adjust);
+      vv.addEventListener('scroll', adjust);
+    }
+    // رجوع التاب الخفي
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 
     // ---------- Socket ----------
     socket.on('connect', () => {
@@ -480,37 +487,8 @@
     socket.on('rooms_list', renderRooms);
 
     socket.on('joined_room', (d) => {
-      screenRooms.classList.add('hidden'); screenChat.classList.remove('hidden');
+      screenRooms.classList.add('hidden');
+      screenChat.classList.remove('hidden');
       roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name;
       applyTheme(d.room.theme);
-      messagesEl.innerHTML = '';
-      if (d.history && d.history.length) d.history.forEach((m) => addRow(m.text, 'row', m));
-      addRow('دخلت غرفة ' + d.room.name, 'sys');
-      socket.emit('request_users');
-      msgInput.focus();
-    });
-
-    socket.on('left_room', () => { screenChat.classList.add('hidden'); screenRooms.classList.remove('hidden'); drawer.classList.add('hidden'); emojiPanel.classList.add('hidden'); });
-
-    socket.on('message', (d) => addRow(d.text, 'row', d));
-    socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
-    socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, gender: d.gender, event: 'join' }));
-    socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, gender: d.gender, event: 'leave' }));
-
-    socket.on('room_users', (list) => {
-      roomCount.textContent = list.length;
-      usersList.innerHTML = '';
-      list.forEach((u) => {
-        const it = document.createElement('div'); it.className = 'u-item';
-        const av = buildAvatar(u); av.addEventListener('click', () => mentionUser(u.name));
-        const nm = document.createElement('span'); nm.className = 'nm2'; nm.textContent = u.name; nm.style.color = u.color; nm.addEventListener('click', () => mentionUser(u.name));
-        const bd = document.createElement('span'); bd.className = 'badge ' + (u.role === 'member' ? 'member' : 'guest'); bd.textContent = roleLabel(u.role);
-        it.append(av, nm, bd); usersList.appendChild(it);
-      });
-    });
-
-    socket.on('typing', (d) => { typingEl.textContent = d.name + ' بيكتب...'; clearTimeout(typingTimer); typingTimer = setTimeout(() => typingEl.textContent = '', 2200); });
-    socket.on('stop_typing', () => { typingEl.textContent = ''; });
-  </script>
-</body>
-</html>
+      localStorage.setItem('curRoom', JSON.stringify({ id: d.room
