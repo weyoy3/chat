@@ -2,7 +2,6 @@ require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
-const path = require('path');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 
@@ -10,22 +9,20 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: '*'
-  }
+  cors: { origin: '*' }
 });
 
-// تقديم الملفات الثابتة (index.html وغيره)
 app.use(express.static(__dirname));
 
 // =========================================================
-// 1) Models الخاصة بقاعدة البيانات
+// 1) Models
 // =========================================================
-
 const conversationSchema = new mongoose.Schema({
   room: { type: String, unique: true, index: true },
   userA: { type: String, index: true },
   userB: { type: String, index: true },
+  nameA: { type: String, default: '' },
+  nameB: { type: String, default: '' },
   startedAt: { type: Date, default: Date.now },
   endedAt: { type: Date, default: null }
 });
@@ -33,20 +30,20 @@ const conversationSchema = new mongoose.Schema({
 const messageSchema = new mongoose.Schema({
   room: { type: String, index: true },
   senderId: { type: String, index: true },
+  senderName: { type: String, default: '' },
   text: { type: String, maxlength: 2000 },
   createdAt: { type: Date, default: Date.now }
 });
 
-// حذف الرسائل تلقائيًا بعد 30 يوم (غيّرها لو عايز مدة تانية)
+// حذف تلقائي بعد 30 يوم
 messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 
 const Conversation = mongoose.model('Conversation', conversationSchema);
 const Message = mongoose.model('Message', messageSchema);
 
 // =========================================================
-// 2) الاتصال بقاعدة البيانات + دوال الحفظ
+// 2) Database
 // =========================================================
-
 function isDbConnected() {
   return mongoose.connection.readyState === 1;
 }
@@ -65,70 +62,87 @@ async function connectDB() {
 }
 connectDB();
 
-async function saveConversation(room, userA, userB) {
+async function saveConversation(room, a, b) {
   if (!isDbConnected()) return;
   try {
-    await Conversation.create({ room, userA, userB, startedAt: new Date() });
-  } catch (error) {
-    console.error('saveConversation error:', error.message);
-  }
+    await Conversation.create({
+      room,
+      userA: a.id, userB: b.id,
+      nameA: a.name, nameB: b.name,
+      startedAt: new Date()
+    });
+  } catch (e) { console.error('saveConversation error:', e.message); }
 }
 
 async function endConversation(room) {
   if (!room || !isDbConnected()) return;
   try {
     await Conversation.findOneAndUpdate({ room }, { endedAt: new Date() });
-  } catch (error) {
-    console.error('endConversation error:', error.message);
-  }
+  } catch (e) { console.error('endConversation error:', e.message); }
 }
 
-async function saveMessage({ room, senderId, text }) {
+async function saveMessage({ room, senderId, senderName, text }) {
   if (!room || !text || !isDbConnected()) return;
   try {
-    await Message.create({ room, senderId, text });
-  } catch (error) {
-    console.error('saveMessage error:', error.message);
-  }
+    await Message.create({ room, senderId, senderName, text });
+  } catch (e) { console.error('saveMessage error:', e.message); }
 }
 
 // =========================================================
-// 3) منطق الشات
+// 3) أدوات مساعدة
 // =========================================================
+function generateName() {
+  return 'ضيف_' + Math.floor(1000 + Math.random() * 9000);
+}
+
+function broadcastOnlineCount() {
+  const count = io.sockets.sockets.size;
+  io.emit('online_count', { count });
+}
 
 const waitingQueue = [];
 
 function removeFromQueue(socket) {
-  const index = waitingQueue.findIndex((s) => s.id === socket.id);
-  if (index !== -1) waitingQueue.splice(index, 1);
+  const i = waitingQueue.findIndex((s) => s.id === socket.id);
+  if (i !== -1) waitingQueue.splice(i, 1);
 }
 
-function clearRoomForRemaining(roomName, disconnectedSocket) {
+function notifyPartnerAndClearRoom(roomName, leaverSocket, reason) {
   const clients = io.sockets.adapter.rooms.get(roomName);
   if (!clients) return;
   for (const clientId of clients) {
-    if (clientId === disconnectedSocket.id) continue;
+    if (clientId === leaverSocket.id) continue;
     const remaining = io.sockets.sockets.get(clientId);
     if (remaining) {
+      remaining.emit('partner_disconnected', { reason });
+      remaining.emit('chat_ended', { reason });
       remaining.data.roomName = null;
       remaining.data.partnerId = null;
-      remaining.emit('chat_ended', { reason: 'partner_disconnected' });
     }
   }
 }
 
+// =========================================================
+// 4) منطق الشات
+// =========================================================
 io.on('connection', (socket) => {
-  console.log('مستخدم متصل:', socket.id);
   socket.data.roomName = null;
   socket.data.partnerId = null;
+  socket.data.displayName = generateName();
+  socket.data.lastMsg = 0;
 
-  // البحث عن شريك
-  socket.on('find_partner', () => {
+  console.log('مستخدم متصل:', socket.data.displayName, socket.id);
+
+  // نبعتله هويته + عدد الأونلاين
+  socket.emit('your_identity', { name: socket.data.displayName });
+  broadcastOnlineCount();
+
+  // دالة البحث عن شريك (تتنادى من find_partner و next_partner)
+  function tryMatch() {
     if (socket.data.roomName) {
       socket.emit('system_message', { text: 'أنت متصل بالفعل في دردشة.', time: Date.now() });
       return;
     }
-
     removeFromQueue(socket);
 
     while (waitingQueue.length > 0) {
@@ -146,35 +160,65 @@ io.on('connection', (socket) => {
       partner.data.roomName = room;
       partner.data.partnerId = socket.id;
 
-      // حفظ بداية المحادثة في قاعدة البيانات
-      saveConversation(room, partner.id, socket.id);
+      saveConversation(room,
+        { id: partner.id, name: partner.data.displayName },
+        { id: socket.id, name: socket.data.displayName }
+      );
 
-      io.to(room).emit('matched', { room, time: Date.now() });
+      socket.emit('matched', { room, partnerName: partner.data.displayName, time: Date.now() });
+      partner.emit('matched', { room, partnerName: socket.data.displayName, time: Date.now() });
+
       io.to(room).emit('system_message', { text: 'تم الاتصال، قل مرحبا 👋', time: Date.now() });
       return;
     }
 
     waitingQueue.push(socket);
     socket.emit('searching', { time: Date.now() });
+  }
+
+  socket.on('find_partner', tryMatch);
+
+  // زر التالي: يسيب الشريك الحالي ويبحث عن واحد جديد
+  socket.on('next_partner', () => {
+    removeFromQueue(socket);
+    const roomName = socket.data.roomName;
+    if (roomName) {
+      socket.to(roomName).emit('partner_disconnected', { reason: 'next' });
+      notifyPartnerAndClearRoom(roomName, socket, 'next');
+      endConversation(roomName);
+      socket.leave(roomName);
+      socket.data.roomName = null;
+      socket.data.partnerId = null;
+    }
+    socket.emit('system_message', { text: 'جاري البحث عن شريك جديد...', time: Date.now() });
+    tryMatch();
   });
 
-  // استقبال رسالة
+  // رسالة + rate limit
   socket.on('message', (msg) => {
     if (typeof msg !== 'string') return;
     const text = msg.trim().slice(0, 1000);
     if (!text || !socket.data.roomName) return;
 
-    // حفظ الرسالة في قاعدة البيانات
-    saveMessage({ room: socket.data.roomName, senderId: socket.id, text });
+    const now = Date.now();
+    if (now - socket.data.lastMsg < 400) return; // حماية من السبام
+    socket.data.lastMsg = now;
+
+    saveMessage({
+      room: socket.data.roomName,
+      senderId: socket.id,
+      senderName: socket.data.displayName,
+      text
+    });
 
     socket.to(socket.data.roomName).emit('message', {
       text,
       senderId: socket.id,
-      time: Date.now()
+      senderName: socket.data.displayName,
+      time: now
     });
   });
 
-  // مؤشر الكتابة
   socket.on('typing', () => {
     if (!socket.data.roomName) return;
     socket.to(socket.data.roomName).emit('typing', { from: socket.id });
@@ -184,13 +228,12 @@ io.on('connection', (socket) => {
     socket.to(socket.data.roomName).emit('stop_typing', { from: socket.id });
   });
 
-  // إنهاء الدردشة يدويًا
   socket.on('leave_chat', () => {
     removeFromQueue(socket);
     const roomName = socket.data.roomName;
     if (roomName) {
-      socket.to(roomName).emit('partner_disconnected');
-      clearRoomForRemaining(roomName, socket);
+      socket.to(roomName).emit('partner_disconnected', { reason: 'leave' });
+      notifyPartnerAndClearRoom(roomName, socket, 'leave');
       endConversation(roomName);
       socket.leave(roomName);
       socket.data.roomName = null;
@@ -199,16 +242,16 @@ io.on('connection', (socket) => {
     socket.emit('left', { time: Date.now() });
   });
 
-  // عند قطع الاتصال
   socket.on('disconnect', () => {
     removeFromQueue(socket);
     const roomName = socket.data.roomName;
     if (roomName) {
-      socket.to(roomName).emit('partner_disconnected');
-      clearRoomForRemaining(roomName, socket);
+      socket.to(roomName).emit('partner_disconnected', { reason: 'disconnect' });
+      notifyPartnerAndClearRoom(roomName, socket, 'disconnect');
       endConversation(roomName);
     }
-    console.log('مستخدم قطع الاتصال:', socket.id);
+    broadcastOnlineCount();
+    console.log('مستخدم قطع الاتصال:', socket.data.displayName);
   });
 });
 
