@@ -29,7 +29,7 @@
     .app { max-width: 760px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
     .hidden { display: none !important; }
 
-    /* ===== Auth (سكرول داخلي + تمركز) ===== */
+    /* ===== Auth ===== */
     #screenAuth { height: 100%; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
     .auth-card { width: 100%; max-width: 400px; margin: auto; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); }
     .auth-logo { text-align: center; font-family: "Reem Kufi", "Cairo"; font-size: 28px; font-weight: 700; color: var(--header); margin-bottom: 4px; }
@@ -71,7 +71,7 @@
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.7); animation: pulse 1.8s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
 
-    /* ===== Rooms (سكرول داخلي للقائمة) ===== */
+    /* ===== Rooms ===== */
     #screenRooms:not(.hidden) { display: flex; flex-direction: column; height: 100%; }
     .rooms-head { padding: 18px 16px 6px; flex: 0 0 auto; }
     .rooms-head h2 { margin: 0 0 4px; font-size: 18px; font-family: "Cairo"; font-weight: 800; }
@@ -108,14 +108,17 @@
     .av svg { width: 18px; height: 18px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    .body { flex: 1; min-width: 0; line-height: 1.85; font-size: 14px; padding-top: 2px; }
-    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
+    /* ✅ overflow:hidden = شبكة أمان: أي نص طويل ما يفيضش بره العمود */
+    .body { flex: 1 1 auto; min-width: 0; overflow: hidden; line-height: 1.85; font-size: 14px; padding-top: 2px; }
+    /* ✅ overflow-wrap:anywhere = يكسر الأسماء الطويلة بدل ما تكسر الـ layout */
+    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; overflow-wrap: anywhere; }
     .nm:hover { text-decoration: underline; }
     .colon { font-weight: 700; color: #475569; margin: 0 1px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    .msg { word-break: break-word; white-space: pre-wrap; color: #111827; font-weight: 600; }
+    /* ✅ overflow-wrap:anywhere = يكسر الأعلام/الإيموجي المتتالية جوه العمود */
+    .msg { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
     .sys-action { color: var(--join-red); font-weight: 700; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
@@ -128,7 +131,7 @@
     .send-circle:active:not(:disabled) { transform: scale(.93); }
     .send-circle:disabled { opacity: .5; cursor: not-allowed; }
     .send-circle svg { width: 21px; height: 21px; fill: #fff; transform: scaleX(-1); }
-    .msg-wrap { flex: 1; position: relative; }
+    .msg-wrap { flex: 1; position: relative; min-width: 0; }
     .msg-wrap input { width: 100%; padding: 13px 46px 13px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
     .msg-wrap input:focus { border-color: var(--chat-accent); }
     .msg-wrap input:disabled { opacity: .6; cursor: not-allowed; }
@@ -141,7 +144,7 @@
     #emojiPanel span { font-size: 21px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; }
     #emojiPanel span:hover { background: #f1ede2; }
 
-    /* ===== Pull-to-refresh مخصص ===== */
+    /* ===== Pull-to-refresh ===== */
     #ptr { position: fixed; left: 0; right: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; z-index: 30; opacity: 0; transition: opacity .15s ease; }
     #ptr .ptr-dot { width: 36px; height: 36px; border-radius: 50%; background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.18); display: grid; place-items: center; color: var(--accent); transition: transform .1s ease; will-change: transform; }
     #ptr .ptr-ico { font-size: 17px; line-height: 1; display: inline-block; font-weight: 800; }
@@ -304,8 +307,8 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '', '👦', '🧓', ''];
-    const FEMALE = ['👩', '', '🧕', '👩‍🦰', ''];
+    const MALE = ['🧑', '👨', '👦', '🧓', ''];
+    const FEMALE = ['👩', '👧', '🧕', '👩‍', ''];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -476,7 +479,7 @@
       try { localStorage.setItem('chatCache_' + currentRoomId, JSON.stringify(cacheItems)); } catch (e) {}
     }
 
-    // ===== Pull-to-refresh مخصص =====
+    // ===== Pull-to-refresh =====
     function ptrTopFor(el) {
       try {
         if (el === messagesEl) { const h = screenChat.querySelector('header'); return h ? Math.round(h.getBoundingClientRect().bottom) : 0; }
@@ -642,7 +645,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
