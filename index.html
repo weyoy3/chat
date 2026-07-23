@@ -4,17 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>شات عربي | غرف دردشة</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f6f2e9; --bg2: #efe9da; --card: #ffffff;
       --header: #0d9488; --header2: #0f766e;
       --text: #1f2937; --muted: #6b7280; --line: rgba(15,23,42,0.10);
       --accent: #0d9488; --accent2: #14b8a6; --gold: #d4a017; --danger: #dc2626;
+      --chat-bg: linear-gradient(180deg,#f7f4ec,#efe9da);
+      --chat-accent: #0d9488; --chat-accent2: #14b8a6;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body {
-      font-family: Tahoma, "Segoe UI", Arial, sans-serif; color: var(--text);
+      font-family: "Tajawal", Tahoma, Arial, sans-serif; color: var(--text);
       background:
         radial-gradient(700px 400px at 90% -10%, #e7f5f2 0%, transparent 60%),
         radial-gradient(600px 400px at -10% 110%, #fbf3da 0%, transparent 55%),
@@ -23,128 +28,125 @@
     .app { max-width: 760px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
     .hidden { display: none !important; }
 
-    /* ===== Auth screen ===== */
+    /* ===== Auth ===== */
     #screenAuth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .auth-card {
-      width: 100%; max-width: 400px; background: var(--card); border-radius: 22px;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line);
-    }
-    .auth-logo { text-align: center; font-size: 26px; font-weight: 800; color: var(--header); margin-bottom: 4px; }
+    .auth-card { width: 100%; max-width: 400px; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); }
+    .auth-logo { text-align: center; font-family: "Cairo"; font-size: 27px; font-weight: 800; color: var(--header); margin-bottom: 4px; }
     .auth-logo span { color: var(--gold); }
     .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
     .tabs { display: flex; background: #f1ede2; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
-    .tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted); transition: .2s; }
+    .tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted); transition: .2s; font-family: "Cairo"; }
     .tab.active { background: var(--card); color: var(--header); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
-    .field input, .field select {
-      width: 100%; padding: 11px 13px; border-radius: 11px; border: 1px solid var(--line);
-      background: #fbfaf6; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit;
-    }
+    .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; font-weight: 700; }
+    .field input, .field select { width: 100%; padding: 11px 13px; border-radius: 11px; border: 1px solid var(--line); background: #fbfaf6; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit; }
     .field input:focus, .field select:focus { border-color: var(--accent); background: #fff; }
     .row2 { display: flex; gap: 10px; }
     .row2 .field { flex: 1; }
-    .btn-primary {
-      width: 100%; border: none; border-radius: 12px; padding: 13px; color: #fff; font-weight: 800;
-      font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent2)); margin-top: 4px;
-    }
-    .btn-ghost {
-      width: 100%; border: 1.5px dashed var(--accent); background: transparent; color: var(--header);
-      border-radius: 12px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 12px;
-    }
+    .btn-primary { width: 100%; border: none; border-radius: 12px; padding: 13px; color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent2)); margin-top: 4px; font-family: "Cairo"; }
+    .btn-ghost { width: 100%; border: 1.5px dashed var(--accent); background: transparent; color: var(--header); border-radius: 12px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 12px; font-family: "Cairo"; }
+    .btn-link { background: none; border: none; color: var(--muted); font-size: 12.5px; cursor: pointer; margin-top: 10px; width: 100%; text-align: center; }
     .auth-err { color: var(--danger); font-size: 12.5px; text-align: center; min-height: 16px; margin-top: 8px; }
     .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0 4px; }
+    .form-title { font-family: "Cairo"; font-weight: 800; font-size: 16px; text-align: center; margin-bottom: 14px; color: var(--header); }
 
     /* ===== Header ===== */
-    header {
-      background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 13px 16px;
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      box-shadow: 0 4px 18px rgba(13,148,136,0.25); position: sticky; top: 0; z-index: 20;
-    }
-    .logo { font-size: 20px; font-weight: 800; }
+    header { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 4px 18px rgba(13,148,136,0.25); position: sticky; top: 0; z-index: 20; }
+    #screenChat header { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
+    .logo { font-family: "Cairo"; font-size: 20px; font-weight: 800; }
     .logo span { color: #fde68a; }
     .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 5px 11px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: #fff; font-weight: bold; }
+    .me-pill .av { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: #fff; font-weight: bold; font-family: "Cairo"; }
     .head-right { display: flex; align-items: center; gap: 8px; }
-    .icon-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 7px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; }
     .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 18px; cursor: pointer; }
-    .logout-btn { background: rgba(255,255,255,0.12); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
+    .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
+
+    /* عداد منسّق */
+    .online-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 13px; cursor: pointer; font-weight: 700; font-family: "Cairo"; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.7); animation: pulse 1.8s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
 
     /* ===== Rooms ===== */
     .rooms-head { padding: 18px 16px 6px; }
-    .rooms-head h2 { margin: 0 0 4px; font-size: 18px; }
+    .rooms-head h2 { margin: 0 0 4px; font-size: 18px; font-family: "Cairo"; font-weight: 800; }
     .rooms-head p { margin: 0; color: var(--muted); font-size: 13px; }
     #roomsGrid { padding: 10px 14px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .room-card {
-      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer;
-      transition: transform .12s ease, box-shadow .2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-      display: flex; flex-direction: column; gap: 8px;
-    }
+    .room-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
     .room-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.09); }
     .room-top { display: flex; align-items: center; gap: 8px; }
     .room-emoji { font-size: 24px; }
     .room-flag { font-size: 20px; margin-right: auto; }
-    .room-name { font-weight: 700; font-size: 15px; }
-    .room-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent2); background: rgba(13,148,136,0.1); padding: 4px 10px; border-radius: 999px; width: fit-content; }
+    .room-name { font-weight: 800; font-size: 15px; font-family: "Cairo"; }
+    .room-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent2); background: rgba(13,148,136,0.1); padding: 4px 10px; border-radius: 999px; width: fit-content; font-weight: 700; }
     .room-count .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
-    .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; }
+    .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: "Cairo"; }
 
-    /* ===== Chat (عمود واحد، بدون فقاعات) ===== */
-    #screenChat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-    .row { display: flex; gap: 9px; max-width: 100%; animation: slideIn .2s ease; align-self: flex-start; }
+    /* ===== Chat ===== */
+    #screenChat { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+    #watermark { position: absolute; inset: 0; display: grid; place-items: center; font-size: 230px; opacity: 0.05; pointer-events: none; z-index: 0; user-select: none; }
+    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 13px; background: var(--chat-bg); position: relative; z-index: 1; }
+    .row { display: flex; gap: 9px; max-width: 100%; animation: slideIn .2s ease; align-self: flex-start; padding: 4px 6px; border-radius: 10px; }
+    .row.mentioned { background: rgba(217,119,6,0.10); outline: 1px solid rgba(217,119,6,0.25); }
     @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .row.sys { align-self: center; max-width: 92%; }
-    .av { width: 32px; height: 32px; border-radius: 50%; flex: 0 0 32px; display: grid; place-items: center; color: #fff; font-weight: bold; font-size: 13px; }
+    .row.sys { align-self: center; max-width: 92%; padding: 0; background: none; }
+    .av { width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
     .col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-    .meta-line { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-    .nm { font-size: 13.5px; font-weight: 800; }
-    .badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; }
+    .meta-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .nm { font-family: "Cairo"; font-size: 14.5px; font-weight: 800; cursor: pointer; }
+    .nm:hover { text-decoration: underline; }
+    .colon { color: var(--muted); font-weight: 700; }
+    .badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; align-self: center; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
     .badge.join { background: rgba(22,163,74,0.14); color: #15803d; }
     .badge.leave { background: rgba(107,114,128,0.12); color: #6b7280; }
-    .tm { font-size: 10.5px; color: var(--muted); }
-    .msg-text {
-      font-size: 15px; line-height: 1.75; color: #243042; word-break: break-word; white-space: pre-wrap;
-      cursor: pointer; padding: 1px 0;
-    }
+    .tm { font-size: 10.5px; color: var(--muted); align-self: center; }
+    .msg-text { font-size: 15.5px; line-height: 1.8; color: #243042; word-break: break-word; white-space: pre-wrap; cursor: pointer; padding: 1px 0; }
+    .mention { color: var(--chat-accent); font-weight: 800; background: rgba(13,148,136,0.10); border-radius: 6px; padding: 0 4px; cursor: pointer; }
     .sys .bubble { background: rgba(15,23,42,0.06); color: var(--muted); font-size: 12px; border-radius: 999px; padding: 5px 13px; }
-    .typing { padding: 0 16px 6px; color: var(--muted); font-size: 12.5px; min-height: 18px; }
+    .typing { padding: 0 16px 6px; color: var(--muted); font-size: 12.5px; min-height: 18px; position: relative; z-index: 1; }
 
-    footer { display: flex; gap: 9px; padding: 11px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.6); }
-    footer input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 15px; outline: none; }
-    footer input:focus { border-color: var(--accent); }
-    footer button { border: none; border-radius: 12px; padding: 12px 18px; color: #fff; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+    footer { display: flex; gap: 9px; padding: 11px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.7); position: relative; z-index: 2; }
+    footer input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 15px; outline: none; font-family: inherit; }
+    footer input:focus { border-color: var(--chat-accent); }
+    .emoji-btn { border: none; border-radius: 12px; padding: 0 13px; font-size: 20px; cursor: pointer; background: #f1ede2; }
+    footer .send-btn { border: none; border-radius: 12px; padding: 12px 18px; color: #fff; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); font-family: "Cairo"; }
 
-    /* ===== Users drawer ===== */
+    /* لوحة الإيموجي */
+    #emojiPanel { position: absolute; bottom: 64px; right: 11px; left: 11px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 200px; overflow-y: auto; z-index: 5; }
+    #emojiPanel span { font-size: 22px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; }
+    #emojiPanel span:hover { background: #f1ede2; }
+
+    /* ===== Drawer ===== */
     #drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: flex; justify-content: flex-end; }
-    #drawer .panel { width: 78%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
-    #drawer h3 { margin: 0 0 12px; font-size: 16px; }
+    #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
+    #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 28px; height: 28px; flex: 0 0 28px; font-size: 12px; }
+    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; }
+    .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
+    .u-item .nm2:hover { text-decoration: underline; }
 
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(16px); background: #1f2937; color: #fff; padding: 8px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: .25s; z-index: 60; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(16px); background: #1f2937; color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: .25s; z-index: 60; font-family: "Cairo"; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.mention-toast { background: linear-gradient(135deg, #d97706, #b45309); }
 
-    @media (max-width: 480px) { #roomsGrid { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { #roomsGrid { grid-template-columns: 1fr; } #emojiPanel { grid-template-columns: repeat(7, 1fr); } }
   </style>
 </head>
 <body>
   <div class="app">
 
-    <!-- ============ شاشة الدخول / التسجيل ============ -->
+    <!-- ============ شاشة الدخول ============ -->
     <section id="screenAuth">
       <div class="auth-card">
         <div class="auth-logo">Arabic<span>chat</span></div>
         <div class="auth-sub">غرف دردشة عربية — ادخل وابدأ الكلام</div>
 
-        <div class="tabs">
+        <div class="tabs" id="authTabs">
           <div class="tab active" data-tab="login">دخول</div>
           <div class="tab" data-tab="register">حساب جديد</div>
         </div>
 
-        <!-- فورم الدخول -->
         <form id="formLogin" autocomplete="off">
           <div class="field"><label>البريد الإلكتروني</label><input type="email" id="liEmail" required /></div>
           <div class="field"><label>كلمة المرور</label><input type="password" id="liPass" required /></div>
@@ -152,38 +154,42 @@
           <div class="auth-err" id="liErr"></div>
         </form>
 
-        <!-- فورم التسجيل -->
         <form id="formRegister" class="hidden" autocomplete="off">
           <div class="field"><label>اسم المستخدم</label><input type="text" id="rgName" required minlength="3" maxlength="20" /></div>
           <div class="field"><label>البريد الإلكتروني</label><input type="email" id="rgEmail" required /></div>
           <div class="field"><label>كلمة المرور</label><input type="password" id="rgPass" required minlength="6" /></div>
           <div class="row2">
             <div class="field"><label>النوع</label>
-              <select id="rgGender">
-                <option value="">اختر</option>
-                <option value="ذكر">ذكر</option>
-                <option value="أنثى">أنثى</option>
-                <option value="لا أفصح">أفضل عدم الإفصاح</option>
-              </select>
+              <select id="rgGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">أفضل عدم الإفصاح</option></select>
             </div>
-            <div class="field"><label>العمر</label><input type="number" id="rgAge" min="10" max="80" placeholder="مثلاً 24" /></div>
+            <div class="field"><label>العمر</label><input type="number" id="rgAge" min="10" max="80" placeholder="24" /></div>
           </div>
           <div class="field"><label>الدولة</label>
-            <select id="rgCountry">
-              <option value="">اختر الدولة</option>
-              <option>مصر</option><option>السعودية</option><option>الإمارات</option><option>الكويت</option>
-              <option>قطر</option><option>البحرين</option><option>عمان</option><option>اليمن</option>
-              <option>الأردن</option><option>سوريا</option><option>لبنان</option><option>العراق</option>
-              <option>فلسطين</option><option>المغرب</option><option>الجزائر</option><option>تونس</option>
-              <option>ليبيا</option><option>السودان</option><option>موريتانيا</option><option>أخرى</option>
-            </select>
+            <select id="rgCountry"><option value="">اختر الدولة</option><option>مصر</option><option>السعودية</option><option>الإمارات</option><option>الكويت</option><option>قطر</option><option>البحرين</option><option>عمان</option><option>اليمن</option><option>الأردن</option><option>سوريا</option><option>لبنان</option><option>العراق</option><option>فلسطين</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>موريتانيا</option><option>أخرى</option></select>
           </div>
           <button class="btn-primary" type="submit">إنشاء الحساب</button>
           <div class="auth-err" id="rgErr"></div>
         </form>
 
-        <div class="divider">— أو —</div>
-        <button class="btn-ghost" id="guestBtn">دخول كزائر 🚶</button>
+        <!-- فورم الزائر -->
+        <form id="formGuest" class="hidden" autocomplete="off">
+          <div class="form-title">دخول كزائر 🚶</div>
+          <div class="field"><label>اسمك (هيظهر في الشات)</label><input type="text" id="gName" required minlength="2" maxlength="20" placeholder="مثلاً: أحمد" /></div>
+          <div class="row2">
+            <div class="field"><label>النوع</label>
+              <select id="gGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">لا أفصح</option></select>
+            </div>
+            <div class="field"><label>العمر</label><input type="number" id="gAge" min="10" max="80" placeholder="24" /></div>
+          </div>
+          <button class="btn-primary" type="submit">ادخل كزائر</button>
+          <button type="button" class="btn-link" id="guestBack">← رجوع</button>
+          <div class="auth-err" id="gErr"></div>
+        </form>
+
+        <div id="authFooter">
+          <div class="divider">— أو —</div>
+          <button class="btn-ghost" id="guestBtn">دخول كزائر 🚶</button>
+        </div>
       </div>
     </section>
 
@@ -192,13 +198,13 @@
       <header>
         <div class="logo">Arabic<span>chat</span></div>
         <div class="head-right">
-          <button class="logout-btn hidden" id="logoutBtn">خروج</button>
+          <button class="logout-btn" id="logoutBtn">خروج</button>
           <div class="me-pill"><span class="av" id="myAv">؟</span><span id="myName">...</span></div>
         </div>
       </header>
       <div class="rooms-head">
         <h2>اختار غرفة وادخل 💬</h2>
-        <p>غرف عربية مفتوحة — ادخل وابدأ الكلام على طول</p>
+        <p>غرف عربية مفتوحة — كل غرفة ليها جوّها الخاص</p>
       </div>
       <div id="roomsGrid"></div>
     </section>
@@ -210,13 +216,16 @@
           <button class="back-btn" id="backBtn">→</button>
           <div class="logo" id="roomTitle" style="font-size:17px">الغرفة</div>
         </div>
-        <button class="icon-btn" id="usersBtn">👥 <span id="roomCount">0</span></button>
+        <button class="online-pill" id="usersBtn"><span class="live-dot"></span><span id="roomCount">0</span> في الغرفة</button>
       </header>
+      <div id="watermark"></div>
       <main id="messages"></main>
       <div class="typing" id="typing"></div>
+      <div id="emojiPanel" class="hidden"></div>
       <footer>
-        <input id="msgInput" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
-        <button id="sendBtn">إرسال</button>
+        <button class="emoji-btn" id="emojiBtn" type="button">😀</button>
+        <input id="msgInput" type="text" placeholder="اكتب رسالة... (@ للمنشن)" autocomplete="off" />
+        <button class="send-btn" id="sendBtn">إرسال</button>
       </footer>
     </section>
   </div>
@@ -228,43 +237,57 @@
     </div>
   </div>
 
-  <div id="toast">تم نسخ الرسالة</div>
+  <div id="toast"></div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io();
     const $ = (id) => document.getElementById(id);
 
-    const screenAuth = $('screenAuth');
-    const screenRooms = $('screenRooms');
-    const screenChat = $('screenChat');
-    const roomsGrid = $('roomsGrid');
-    const messagesEl = $('messages');
-    const msgInput = $('msgInput');
-    const sendBtn = $('sendBtn');
-    const backBtn = $('backBtn');
-    const usersBtn = $('usersBtn');
-    const drawer = $('drawer');
-    const usersList = $('usersList');
-    const typingEl = $('typing');
-    const roomTitle = $('roomTitle');
-    const roomCount = $('roomCount');
-    const toast = $('toast');
-    const logoutBtn = $('logoutBtn');
+    const screenAuth = $('screenAuth'), screenRooms = $('screenRooms'), screenChat = $('screenChat');
+    const roomsGrid = $('roomsGrid'), messagesEl = $('messages'), msgInput = $('msgInput');
+    const sendBtn = $('sendBtn'), backBtn = $('backBtn'), usersBtn = $('usersBtn');
+    const drawer = $('drawer'), usersList = $('usersList'), typingEl = $('typing');
+    const roomTitle = $('roomTitle'), roomCount = $('roomCount'), toast = $('toast');
+    const logoutBtn = $('logoutBtn'), watermark = $('watermark');
+    const emojiBtn = $('emojiBtn'), emojiPanel = $('emojiPanel');
 
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest';
-    let typingTimer = null, lastTyping = 0, toastTimer = null;
+    let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null;
 
     const fmt = (t) => new Date(t || Date.now()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
-    function showToast(m) {
-      toast.textContent = m; toast.classList.add('show');
-      clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1300);
+    function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function renderText(text) {
+      let safe = escapeHtml(text);
+      safe = safe.replace(/@([\u0600-\u06FF\w]+)/g, '<span class="mention">@$1</span>');
+      return safe;
+    }
+
+    function showToast(m, isMention) {
+      toast.textContent = m;
+      toast.className = 'show' + (isMention ? ' mention-toast' : '');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, isMention ? 3000 : 1300);
+    }
+
+    function mentionUser(name) {
+      const cur = msgInput.value;
+      const add = (cur && !cur.endsWith(' ') ? ' ' : '') + '@' + name + ' ';
+      msgInput.value = cur + add;
+      msgInput.focus();
     }
 
     // ---------- Auth UI ----------
+    function showAuthMain() {
+      $('authTabs').classList.remove('hidden');
+      $('formLogin').classList.remove('hidden');
+      $('formRegister').classList.add('hidden');
+      $('formGuest').classList.add('hidden');
+      $('authFooter').classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach((x, i) => x.classList.toggle('active', i === 0));
+    }
     document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
       t.classList.add('active');
@@ -273,37 +296,37 @@
       $('formRegister').classList.toggle('hidden', isLogin);
       $('liErr').textContent = ''; $('rgErr').textContent = '';
     }));
+    $('guestBtn').addEventListener('click', () => {
+      $('authTabs').classList.add('hidden');
+      $('formLogin').classList.add('hidden');
+      $('formRegister').classList.add('hidden');
+      $('authFooter').classList.add('hidden');
+      $('formGuest').classList.remove('hidden');
+    });
+    $('guestBack').addEventListener('click', showAuthMain);
 
-    $('formLogin').addEventListener('submit', (e) => {
+    $('formLogin').addEventListener('submit', (e) => { e.preventDefault(); $('liErr').textContent = ''; socket.emit('login', { email: $('liEmail').value, password: $('liPass').value }); });
+    $('formRegister').addEventListener('submit', (e) => { e.preventDefault(); $('rgErr').textContent = ''; socket.emit('register', { username: $('rgName').value, email: $('rgEmail').value, password: $('rgPass').value, gender: $('rgGender').value, age: $('rgAge').value, country: $('rgCountry').value }); });
+    $('formGuest').addEventListener('submit', (e) => {
       e.preventDefault();
-      $('liErr').textContent = '';
-      socket.emit('login', { email: $('liEmail').value, password: $('liPass').value });
+      const name = $('gName').value.trim();
+      if (name.length < 2) { $('gErr').textContent = 'اكتب اسمك (حرفين على الأقل)'; return; }
+      pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value };
+      $('gErr').textContent = '';
+      socket.emit('guest_login', pendingGuest);
     });
-    $('formRegister').addEventListener('submit', (e) => {
-      e.preventDefault();
-      $('rgErr').textContent = '';
-      socket.emit('register', {
-        username: $('rgName').value, email: $('rgEmail').value, password: $('rgPass').value,
-        gender: $('rgGender').value, age: $('rgAge').value, country: $('rgCountry').value
-      });
-    });
-    $('guestBtn').addEventListener('click', () => socket.emit('guest_login'));
 
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      location.reload();
-    });
+    logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); location.reload(); });
 
     function enterApp(user, isMember) {
       myName = user.name; myColor = user.color; myRole = user.role;
-      $('myName').textContent = myName + (myRole === 'member' ? '' : ' (زائر)');
+      $('myName').textContent = myName;
       $('myAv').textContent = ini(myName); $('myAv').style.background = myColor;
-      logoutBtn.classList.toggle('hidden', !isMember);
       screenAuth.classList.add('hidden');
       screenRooms.classList.remove('hidden');
     }
 
-    // ---------- Messages (عمود واحد بدون فقاعات) ----------
+    // ---------- Messages ----------
     function addRow(text, who, opts = {}) {
       const row = document.createElement('div');
       row.className = 'row ' + who;
@@ -313,33 +336,26 @@
       } else {
         const av = document.createElement('div'); av.className = 'av';
         av.style.background = opts.color || '#94a3b8'; av.textContent = ini(opts.name);
-
         const col = document.createElement('div'); col.className = 'col';
         const meta = document.createElement('div'); meta.className = 'meta-line';
 
         const nm = document.createElement('span'); nm.className = 'nm';
         nm.textContent = opts.name || ''; nm.style.color = opts.color || '#374151';
+        nm.addEventListener('click', () => mentionUser(opts.name));
         meta.appendChild(nm);
 
-        if (opts.role) {
-          const rb = document.createElement('span');
-          rb.className = 'badge ' + (opts.role === 'member' ? 'member' : 'guest');
-          rb.textContent = roleLabel(opts.role);
-          meta.appendChild(rb);
-        }
-        if (opts.event === 'join') {
-          const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول';
-          meta.appendChild(eb);
-        } else if (opts.event === 'leave') {
-          const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج';
-          meta.appendChild(eb);
-        }
+        if (opts.role) { const rb = document.createElement('span'); rb.className = 'badge ' + (opts.role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(opts.role); meta.appendChild(rb); }
+        if (opts.event === 'join') { const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول'; meta.appendChild(eb); }
+        else if (opts.event === 'leave') { const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج'; meta.appendChild(eb); }
+
+        const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ':';
+        meta.appendChild(colon);
         const tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = fmt(opts.time);
         meta.appendChild(tm);
 
         col.appendChild(meta);
         if (text) {
-          const tx = document.createElement('div'); tx.className = 'msg-text'; tx.textContent = text;
+          const tx = document.createElement('div'); tx.className = 'msg-text'; tx.innerHTML = renderText(text);
           tx.title = 'اضغط للنسخ';
           tx.addEventListener('click', () => navigator.clipboard?.writeText(text).then(() => showToast('تم نسخ الرسالة')));
           col.appendChild(tx);
@@ -348,6 +364,15 @@
       }
       messagesEl.appendChild(row);
       messagesEl.scrollTop = messagesEl.scrollHeight;
+      return row;
+    }
+
+    function applyTheme(theme) {
+      if (!theme) return;
+      screenChat.style.setProperty('--chat-bg', theme.bg || '');
+      screenChat.style.setProperty('--chat-accent', theme.accent || '#0d9488');
+      screenChat.style.setProperty('--chat-accent2', theme.accent2 || '#14b8a6');
+      watermark.textContent = theme.wm || '';
     }
 
     function renderRooms(list) {
@@ -355,11 +380,7 @@
       list.forEach((r) => {
         const card = document.createElement('div'); card.className = 'room-card';
         card.innerHTML = `
-          <div class="room-top">
-            <span class="room-emoji">${r.emoji || ''}</span>
-            <span class="room-name">${r.name}</span>
-            <span class="room-flag">${r.flag || ''}</span>
-          </div>
+          <div class="room-top"><span class="room-emoji">${r.emoji || ''}</span><span class="room-name">${r.name}</span><span class="room-flag">${r.flag || ''}</span></div>
           <span class="room-count"><span class="d"></span>${r.count} متصل</span>
           <button class="room-enter">دخول الغرفة</button>`;
         card.addEventListener('click', () => socket.emit('join_room', r.id));
@@ -370,41 +391,40 @@
     function send() {
       const t = msgInput.value.trim();
       if (!t) return;
-      addRow(t, 'mine-as-row', { name: myName, color: myColor, role: myRole, time: Date.now() });
-      // نوحّد المحاذاة: كل الرسائل row عادية (عمود واحد)
-      messagesEl.lastChild.className = 'row';
-      socket.emit('message', t);
+      socket.emit('message', t);   // بدون إضافة محلية -> مفيش تكرار
       msgInput.value = '';
+      emojiPanel.classList.add('hidden');
       socket.emit('stop_typing');
     }
 
     sendBtn.addEventListener('click', send);
     msgInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
-    msgInput.addEventListener('input', () => {
-      const now = Date.now();
-      if (now - lastTyping > 800) { socket.emit('typing'); lastTyping = now; }
-    });
+    msgInput.addEventListener('input', () => { const now = Date.now(); if (now - lastTyping > 800) { socket.emit('typing'); lastTyping = now; } });
     backBtn.addEventListener('click', () => socket.emit('leave_room'));
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
+    // لوحة الإيموجي
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','','❤️','🔥','💔','🌹','😭','🙏','👏','🎉','','✨','😅','😊','😉','😘','🥺','😴','🤝','💪','','⭐','','☕','','🎵','⚽','','','🕋','','🇪🇬'];
+    EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
+    emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
+    document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
+
     // ---------- Socket ----------
     socket.on('connect', () => {
       const token = localStorage.getItem('token');
+      const guest = localStorage.getItem('guest');
       if (token) socket.emit('auth_check', token);
-      // لو مفيش token، شاشة الـ auth ظاهرة بالفعل
+      else if (guest) { try { pendingGuest = JSON.parse(guest); socket.emit('guest_login', pendingGuest); } catch (e) { /* show auth */ } }
     });
 
     socket.on('auth_ok', (user) => enterApp(user, true));
     socket.on('auth_fail', () => { localStorage.removeItem('token'); });
-
     socket.on('register_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('register_err', (d) => { $('rgErr').textContent = d.msg; });
-
     socket.on('login_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('login_err', (d) => { $('liErr').textContent = d.msg; });
-
-    socket.on('guest_ok', (d) => enterApp(d.user, false));
+    socket.on('guest_ok', (d) => { if (pendingGuest) localStorage.setItem('guest', JSON.stringify(pendingGuest)); enterApp(d.user, false); });
 
     socket.on('rooms_list', renderRooms);
 
@@ -412,22 +432,21 @@
       screenRooms.classList.add('hidden');
       screenChat.classList.remove('hidden');
       roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name;
+      applyTheme(d.room.theme);
       messagesEl.innerHTML = '';
-      if (d.history && d.history.length) {
-        d.history.forEach((m) => addRow(m.text, 'row', m));
-      }
+      if (d.history && d.history.length) d.history.forEach((m) => addRow(m.text, 'row', m));
       addRow('دخلت غرفة ' + d.room.name, 'sys');
       socket.emit('request_users');
       msgInput.focus();
     });
 
-    socket.on('left_room', () => {
-      screenChat.classList.add('hidden');
-      screenRooms.classList.remove('hidden');
-      drawer.classList.add('hidden');
-    });
+    socket.on('left_room', () => { screenChat.classList.add('hidden'); screenRooms.classList.remove('hidden'); drawer.classList.add('hidden'); emojiPanel.classList.add('hidden'); });
 
-    socket.on('message', (d) => addRow(d.text, 'row', d));
+    socket.on('message', (d) => {
+      const row = addRow(d.text, 'row', d);
+      if (d.text && d.text.includes('@' + myName)) row.classList.add('mentioned');
+    });
+    socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
     socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, event: 'join', time: Date.now() }));
     socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, event: 'leave', time: Date.now() }));
 
@@ -436,17 +455,14 @@
       usersList.innerHTML = '';
       list.forEach((u) => {
         const it = document.createElement('div'); it.className = 'u-item';
-        it.innerHTML = `<span class="av" style="background:${u.color}">${ini(u.name)}</span>
-          <span style="color:${u.color};font-weight:700">${u.name}</span>
-          <span class="badge ${u.role === 'member' ? 'member' : 'guest'}">${roleLabel(u.role)}</span>`;
-        usersList.appendChild(it);
+        const av = document.createElement('span'); av.className = 'av'; av.style.background = u.color; av.textContent = ini(u.name); av.addEventListener('click', () => mentionUser(u.name));
+        const nm = document.createElement('span'); nm.className = 'nm2'; nm.textContent = u.name; nm.style.color = u.color; nm.addEventListener('click', () => mentionUser(u.name));
+        const bd = document.createElement('span'); bd.className = 'badge ' + (u.role === 'member' ? 'member' : 'guest'); bd.textContent = roleLabel(u.role);
+        it.append(av, nm, bd); usersList.appendChild(it);
       });
     });
 
-    socket.on('typing', (d) => {
-      typingEl.textContent = d.name + ' بيكتب...';
-      clearTimeout(typingTimer); typingTimer = setTimeout(() => typingEl.textContent = '', 2200);
-    });
+    socket.on('typing', (d) => { typingEl.textContent = d.name + ' بيكتب...'; clearTimeout(typingTimer); typingTimer = setTimeout(() => typingEl.textContent = '', 2200); });
     socket.on('stop_typing', () => { typingEl.textContent = ''; });
   </script>
 </body>
