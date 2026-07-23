@@ -99,29 +99,31 @@
     #watermark { display: none; }
     .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
     .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
-    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
+    /* ✅ مسافة بين الرسائل أقرب */
+    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
 
-    /* ✅ السطر block + clearfix (عشان الـ float يشتغل ويلف النص تحته) */
-    .row { position: relative; line-height: 1.85; font-size: 14px; padding-top: 2px; }
+    /* ✅ سطر مضغوط (line-height 1.5) */
+    .row { position: relative; line-height: 1.5; font-size: 14px; padding-top: 1px; }
     .row::after { content: ""; display: block; clear: both; }
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
     .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
     .av svg { width: 18px; height: 18px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-    /* ✅ أفاتار الرسالة فقط: أقصى يمين + مسافة قريبة شماله */
-    .row > .av { float: right; margin: 1px 0 2px 6px; }
+    /* ✅ أفاتار أقصى يمين + مسافة جانبية قريبة (4px) */
+    .row > .av { float: right; margin: 1px 0 2px 4px; }
 
-    /* ✅ body block: النص يلف حوالين الأفاتار (سطر أول جنبه، الباقي تحته بعرض كامل) */
     .body { display: block; min-width: 0; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    .colon { font-weight: 700; color: #475569; margin: 0 1px; }
+    /* ✅ مسافة النقطتين قريبة */
+    .colon { font-weight: 700; color: #475569; margin: 0 2px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* ✅ الرسالة inline: تكمل جنب الاسم وتلف تحت بعرض كامل */
     .msg { display: inline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
+    /* ✅ الراية رمادية باهتة في آخر الرسالة */
+    .msg-flag { display: inline; font-size: 11px; line-height: 1; filter: grayscale(1); opacity: 0.55; margin: 0 4px; }
     .sys-action { display: inline; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
@@ -310,9 +312,8 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    // ✅ إيموجيات بسيطة (كود واحد) -> مفيش مربع مكسور
-    const MALE = ['🧑', '', '', '🧓', '🧔'];
-    const FEMALE = ['👩', '👧', '', '👸', '👵'];
+    const MALE = ['🧑', '👨', '', '🧓', '🧔'];
+    const FEMALE = ['👩', '👧', '🧕', '', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -407,7 +408,6 @@
 
     function setInputEnabled(on) { msgInput.disabled = !on; sendBtn.disabled = !on; }
 
-    // ✅ سطر الانضمام: أفاتار float + الاسم : الجملة الحمراء جنبه
     function drawJoin(o) {
       const name = nameOf(o), color = o.color || o.senderColor || '#94a3b8';
       const role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '';
@@ -425,7 +425,6 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    // ✅ سطر الرسالة: أفاتار float + الاسم : النص (inline يلف تحته) — بدون نسخ
     function drawMsg(o, markPending) {
       const name = nameOf(o), color = o.color || o.senderColor || '#94a3b8';
       const role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '';
@@ -441,6 +440,9 @@
         const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, o.mentions);
         if (markPending) tx.setAttribute('data-pending', '1');
         body.appendChild(tx);
+        // ✅ الراية في آخر الرسالة
+        const flag = document.createElement('span'); flag.className = 'msg-flag'; flag.textContent = '🚩';
+        body.appendChild(flag);
       }
       row.appendChild(body);
       messagesEl.appendChild(row);
@@ -646,7 +648,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','🥺','😴','🤝','','⭐','','☕','','⚽','','🌺','🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
