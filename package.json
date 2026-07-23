@@ -1,7 +1,7 @@
 {
   "name": "araby-chat-clone",
-  "version": "2.0.0",
-  "description": "Arabic rooms chat platform",
+  "version": "2.1.0",
+  "description": "Arabic rooms chat platform with auth",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -10,6 +10,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "mongoose": "^8.5.1",
