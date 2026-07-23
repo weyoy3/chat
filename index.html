@@ -106,7 +106,6 @@
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
     .colon { font-weight: 700; color: #475569; margin: 0 1px; }
-    /* badge باقي بس في قائمة الموجودين (مش في الرسائل) */
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
@@ -268,6 +267,13 @@
     let lastRoomUsers = [];
     const joinSeen = {};
 
+    // معرّف ثابت للزائر -> يمنع تعديل الاسم عند refresh
+    function getGuestId() {
+      let g = localStorage.getItem('guestId');
+      if (!g) { g = 'g_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('guestId', g); }
+      return g;
+    }
+
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
@@ -314,11 +320,6 @@
       }, 8000);
     }
     function clearAuthTimeout() { clearTimeout(authTimer); }
-
-    function bumpCount(delta) {
-      const cur = parseInt(roomCount.textContent, 10) || 0;
-      roomCount.textContent = Math.max(0, cur + delta);
-    }
 
     function mentionUser(name) {
       if (!name) return;
@@ -399,7 +400,7 @@
       if (name.length < 2) { $('gErr').textContent = 'اكتب اسمك (حرفين على الأقل)'; return; }
       $('gErr').textContent = '';
       if (!socket.connected) { $('gErr').textContent = 'جاري الاتصال بالخادم، استنى ثانية...'; socket.connect(); }
-      pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value };
+      pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value, guestId: getGuestId() };
       socket.emit('guest_login', pendingGuest);
       startAuthTimeout($('gErr'));
     });
@@ -417,7 +418,6 @@
       }
     }
 
-    // ---------- enterApp: reload صامت + بدون ومضة + fallback آمن ----------
     function enterApp(user, isMember) {
       clearAuthTimeout();
       myName = user.name; myColor = user.color; myRole = user.role; myGender = user.gender || '';
@@ -427,12 +427,9 @@
 
       const saved = localStorage.getItem('curRoom');
       if (saved) {
-        // reload: ما نظهرش الغرف (بدون ومضة)، نستنى joined_room
         clearTimeout(reloadFallback);
         reloadFallback = setTimeout(() => {
-          if (screenChat.classList.contains('hidden') && screenAuth.classList.contains('hidden')) {
-            screenRooms.classList.remove('hidden');
-          }
+          if (screenChat.classList.contains('hidden') && screenAuth.classList.contains('hidden')) screenRooms.classList.remove('hidden');
         }, 5000);
         try {
           const r = JSON.parse(saved);
@@ -443,7 +440,6 @@
       }
     }
 
-    // ---------- سطر الانضمام: fromHistory تكتب joinSeen عشان ما يتكررش ----------
     function renderJoinRow(opts, fromHistory) {
       const name = opts.name || opts.senderName || '';
       const color = opts.color || opts.senderColor || '#94a3b8';
@@ -475,7 +471,6 @@
       return row;
     }
 
-    // ---------- رسالة عادية: بدون badge جنب الاسم ----------
     function addMessageRow(d) {
       const name = d.name || d.senderName || '';
       const color = d.color || d.senderColor || '#94a3b8';
@@ -538,7 +533,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','🥺','😴','🤝','','⭐','🌸','☕','🎵','⚽','🕋','','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -557,7 +552,14 @@
       const token = localStorage.getItem('token');
       const guest = localStorage.getItem('guest');
       if (token) socket.emit('auth_check', token);
-      else if (guest) { try { pendingGuest = JSON.parse(guest); socket.emit('guest_login', pendingGuest); } catch (e) {} }
+      else if (guest) {
+        try {
+          const g = JSON.parse(guest);
+          g.guestId = getGuestId();
+          pendingGuest = g;
+          socket.emit('guest_login', g);
+        } catch (e) {}
+      }
     });
     socket.on('connect_error', () => setConn('bad', 'تعذر الاتصال بالخادم — حدّث الصفحة'));
     socket.on('disconnect', () => { if (!screenAuth.classList.contains('hidden')) setConn('wait', 'انقطع الاتصال، جاري إعادة المحاولة...'); });
@@ -566,7 +568,7 @@
     socket.on('auth_fail', () => {
       localStorage.removeItem('token');
       const g = localStorage.getItem('guest');
-      if (g) { try { pendingGuest = JSON.parse(g); socket.emit('guest_login', pendingGuest); } catch (e) {} }
+      if (g) { try { const gg = JSON.parse(g); gg.guestId = getGuestId(); pendingGuest = gg; socket.emit('guest_login', gg); } catch (e) {} }
     });
     socket.on('register_ok', (d) => { clearAuthTimeout(); localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('register_err', (d) => { clearAuthTimeout(); $('rgErr').textContent = d.msg; });
@@ -574,8 +576,9 @@
     socket.on('login_err', (d) => { clearAuthTimeout(); $('liErr').textContent = d.msg; });
     socket.on('guest_ok', (d) => {
       clearAuthTimeout();
-      if (pendingGuest) localStorage.setItem('guest', JSON.stringify(pendingGuest));
-      if (d.renamed) setTimeout(() => showToast('تم تعديل اسمك لأن الاسم ده مستخدم حاليًا'), 600);
+      if (d.guestId) localStorage.setItem('guestId', d.guestId);
+      if (pendingGuest) localStorage.setItem('guest', JSON.stringify({ name: pendingGuest.name, age: pendingGuest.age, gender: pendingGuest.gender }));
+      if (d.renamed) setTimeout(() => showToast('الاسم ده مستخدم حاليًا من جهاز تاني، تم تعديله'), 600);
       enterApp(d.user, false);
     });
 
@@ -616,8 +619,8 @@
 
     socket.on('message', (d) => { if (d.senderId === socket.id) return; addMessageRow(d); });
 
-    socket.on('user_joined', (d) => { renderJoinRow(d, false); bumpCount(1); });
-    socket.on('user_left', (d) => { bumpCount(-1); });
+    socket.on('user_joined', (d) => { renderJoinRow(d, false); });
+    socket.on('user_left', () => {});
 
     socket.on('room_users', (list) => {
       lastRoomUsers = list;
