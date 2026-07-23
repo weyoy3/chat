@@ -7,255 +7,200 @@ const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(__dirname));
 
 // =========================================================
-// 1) Models
+// 1) قائمة الغرف الثابتة (عدّل/زود براحتك من هنا بس)
 // =========================================================
-const conversationSchema = new mongoose.Schema({
-  room: { type: String, unique: true, index: true },
-  userA: { type: String, index: true },
-  userB: { type: String, index: true },
-  nameA: { type: String, default: '' },
-  nameB: { type: String, default: '' },
-  startedAt: { type: Date, default: Date.now },
-  endedAt: { type: Date, default: null }
-});
+const ROOMS = [
+  { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة' },
+  { id: 'egypt',   name: 'مصر',           emoji: '😍', flag: '🇪🇬', category: 'دول' },
+  { id: 'saudi',   name: 'السعودية',      emoji: '🌴', flag: '🇸🇦', category: 'دول' },
+  { id: 'algeria', name: 'الجزائر',       emoji: '⭐', flag: '🇩🇿', category: 'دول' },
+  { id: 'morocco', name: 'المغرب',        emoji: '🌙', flag: '🇲🇦', category: 'دول' },
+  { id: 'love',    name: 'الحب والغرام',  emoji: '❤️', flag: '💕', category: 'مواضيع' },
+  { id: 'poetry',  name: 'الشعر والأدب',  emoji: '📖', flag: '✍️', category: 'مواضيع' },
+  { id: 'english', name: 'English Room',  emoji: '🔤', flag: '🇬🇧', category: 'مواضيع' }
+];
+const ROOM_IDS = new Set(ROOMS.map((r) => r.id));
 
+// =========================================================
+// 2) قاعدة البيانات
+// =========================================================
 const messageSchema = new mongoose.Schema({
   room: { type: String, index: true },
   senderId: { type: String, index: true },
   senderName: { type: String, default: '' },
+  senderColor: { type: String, default: '#6366f1' },
   text: { type: String, maxlength: 2000 },
   createdAt: { type: Date, default: Date.now }
 });
-
-// حذف تلقائي بعد 30 يوم
 messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
-
-const Conversation = mongoose.model('Conversation', conversationSchema);
 const Message = mongoose.model('Message', messageSchema);
 
-// =========================================================
-// 2) Database
-// =========================================================
-function isDbConnected() {
-  return mongoose.connection.readyState === 1;
-}
+function isDbConnected() { return mongoose.connection.readyState === 1; }
 
 async function connectDB() {
   if (!process.env.MONGO_URL) {
-    console.warn('MONGO_URL غير موجود. الشات هيشتغل من غير حفظ الرسائل.');
+    console.warn('MONGO_URL غير موجود. الشات هيشتغل من غير حفظ.');
     return;
   }
   try {
     await mongoose.connect(process.env.MONGO_URL);
     console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-  }
+  } catch (e) { console.error('MongoDB connection error:', e.message); }
 }
 connectDB();
 
-async function saveConversation(room, a, b) {
+async function saveMessage(m) {
   if (!isDbConnected()) return;
-  try {
-    await Conversation.create({
-      room,
-      userA: a.id, userB: b.id,
-      nameA: a.name, nameB: b.name,
-      startedAt: new Date()
-    });
-  } catch (e) { console.error('saveConversation error:', e.message); }
+  try { await Message.create(m); } catch (e) { console.error('saveMessage error:', e.message); }
 }
-
-async function endConversation(room) {
-  if (!room || !isDbConnected()) return;
+async function loadHistory(roomId) {
+  if (!isDbConnected()) return [];
   try {
-    await Conversation.findOneAndUpdate({ room }, { endedAt: new Date() });
-  } catch (e) { console.error('endConversation error:', e.message); }
-}
-
-async function saveMessage({ room, senderId, senderName, text }) {
-  if (!room || !text || !isDbConnected()) return;
-  try {
-    await Message.create({ room, senderId, senderName, text });
-  } catch (e) { console.error('saveMessage error:', e.message); }
+    const docs = await Message.find({ room: roomId }).sort({ createdAt: -1 }).limit(30);
+    return docs.reverse().map((d) => ({
+      text: d.text, senderName: d.senderName, senderColor: d.senderColor, time: d.createdAt.getTime()
+    }));
+  } catch (e) { return []; }
 }
 
 // =========================================================
 // 3) أدوات مساعدة
 // =========================================================
-function generateName() {
-  return 'ضيف_' + Math.floor(1000 + Math.random() * 9000);
+function generateName() { return 'ضيف_' + Math.floor(1000 + Math.random() * 9000); }
+
+function colorFromId(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+  return `hsl(${h}, 65%, 45%)`;
 }
 
-function broadcastOnlineCount() {
-  const count = io.sockets.sockets.size;
-  io.emit('online_count', { count });
+function roomCount(roomId) {
+  const s = io.sockets.adapter.rooms.get(roomId);
+  return s ? s.size : 0;
 }
 
-const waitingQueue = [];
-
-function removeFromQueue(socket) {
-  const i = waitingQueue.findIndex((s) => s.id === socket.id);
-  if (i !== -1) waitingQueue.splice(i, 1);
+function buildRoomsList() {
+  return ROOMS.map((r) => ({ ...r, count: roomCount(r.id) }));
 }
 
-function notifyPartnerAndClearRoom(roomName, leaverSocket, reason) {
-  const clients = io.sockets.adapter.rooms.get(roomName);
-  if (!clients) return;
-  for (const clientId of clients) {
-    if (clientId === leaverSocket.id) continue;
-    const remaining = io.sockets.sockets.get(clientId);
-    if (remaining) {
-      remaining.emit('partner_disconnected', { reason });
-      remaining.emit('chat_ended', { reason });
-      remaining.data.roomName = null;
-      remaining.data.partnerId = null;
-    }
+// نبعت قائمة الغرف + العدادات لكل المتصلين
+function broadcastRooms() { io.emit('rooms_list', buildRoomsList()); }
+
+function roomUsersList(roomId) {
+  const s = io.sockets.adapter.rooms.get(roomId);
+  if (!s) return [];
+  const list = [];
+  for (const cid of s) {
+    const sock = io.sockets.sockets.get(cid);
+    if (sock) list.push({ name: sock.data.displayName, color: sock.data.color });
   }
+  return list;
 }
 
 // =========================================================
-// 4) منطق الشات
+// 4) منطق الاتصال
 // =========================================================
 io.on('connection', (socket) => {
-  socket.data.roomName = null;
-  socket.data.partnerId = null;
   socket.data.displayName = generateName();
+  socket.data.color = colorFromId(socket.id);
+  socket.data.currentRoom = null;
   socket.data.lastMsg = 0;
 
-  console.log('مستخدم متصل:', socket.data.displayName, socket.id);
+  console.log('متصل:', socket.data.displayName);
 
-  // نبعتله هويته + عدد الأونلاين
-  socket.emit('your_identity', { name: socket.data.displayName });
-  broadcastOnlineCount();
+  socket.emit('your_identity', { name: socket.data.displayName, color: socket.data.color });
+  socket.emit('rooms_list', buildRoomsList());
 
-  // دالة البحث عن شريك (تتنادى من find_partner و next_partner)
-  function tryMatch() {
-    if (socket.data.roomName) {
-      socket.emit('system_message', { text: 'أنت متصل بالفعل في دردشة.', time: Date.now() });
-      return;
-    }
-    removeFromQueue(socket);
+  // دخول غرفة
+  socket.on('join_room', async (roomId) => {
+    if (!ROOM_IDS.has(roomId)) return;
 
-    while (waitingQueue.length > 0) {
-      const partner = waitingQueue.shift();
-      if (!partner.connected) continue;
-      if (partner.id === socket.id) continue;
-
-      const room = `room_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-      socket.join(room);
-      partner.join(room);
-
-      socket.data.roomName = room;
-      socket.data.partnerId = partner.id;
-      partner.data.roomName = room;
-      partner.data.partnerId = socket.id;
-
-      saveConversation(room,
-        { id: partner.id, name: partner.data.displayName },
-        { id: socket.id, name: socket.data.displayName }
-      );
-
-      socket.emit('matched', { room, partnerName: partner.data.displayName, time: Date.now() });
-      partner.emit('matched', { room, partnerName: socket.data.displayName, time: Date.now() });
-
-      io.to(room).emit('system_message', { text: 'تم الاتصال، قل مرحبا 👋', time: Date.now() });
-      return;
+    // لو في غرفة تانية، يسيبها الأول
+    if (socket.data.currentRoom && socket.data.currentRoom !== roomId) {
+      socket.leave(socket.data.currentRoom);
     }
 
-    waitingQueue.push(socket);
-    socket.emit('searching', { time: Date.now() });
-  }
+    socket.join(roomId);
+    socket.data.currentRoom = roomId;
+    broadcastRooms();
 
-  socket.on('find_partner', tryMatch);
+    const meta = ROOMS.find((r) => r.id === roomId);
+    const history = await loadHistory(roomId);
 
-  // زر التالي: يسيب الشريك الحالي ويبحث عن واحد جديد
-  socket.on('next_partner', () => {
-    removeFromQueue(socket);
-    const roomName = socket.data.roomName;
-    if (roomName) {
-      socket.to(roomName).emit('partner_disconnected', { reason: 'next' });
-      notifyPartnerAndClearRoom(roomName, socket, 'next');
-      endConversation(roomName);
-      socket.leave(roomName);
-      socket.data.roomName = null;
-      socket.data.partnerId = null;
-    }
-    socket.emit('system_message', { text: 'جاري البحث عن شريك جديد...', time: Date.now() });
-    tryMatch();
+    socket.emit('joined_room', { room: meta, history });
+    socket.to(roomId).emit('user_joined', { name: socket.data.displayName, color: socket.data.color });
   });
 
-  // رسالة + rate limit
+  // خروج من الغرفة (رجوع للقائمة)
+  socket.on('leave_room', () => {
+    const roomId = socket.data.currentRoom;
+    if (roomId) {
+      socket.to(roomId).emit('user_left', { name: socket.data.displayName });
+      socket.leave(roomId);
+      socket.data.currentRoom = null;
+      broadcastRooms();
+    }
+    socket.emit('left_room');
+  });
+
+  // طلب قائمة الموجودين في الغرفة
+  socket.on('request_users', () => {
+    if (!socket.data.currentRoom) return;
+    socket.emit('room_users', roomUsersList(socket.data.currentRoom));
+  });
+
+  // رسالة
   socket.on('message', (msg) => {
     if (typeof msg !== 'string') return;
     const text = msg.trim().slice(0, 1000);
-    if (!text || !socket.data.roomName) return;
+    if (!text || !socket.data.currentRoom) return;
 
     const now = Date.now();
-    if (now - socket.data.lastMsg < 400) return; // حماية من السبام
+    if (now - socket.data.lastMsg < 400) return; // حماية سبام
     socket.data.lastMsg = now;
 
-    saveMessage({
-      room: socket.data.roomName,
-      senderId: socket.id,
-      senderName: socket.data.displayName,
-      text
-    });
-
-    socket.to(socket.data.roomName).emit('message', {
+    const payload = {
       text,
       senderId: socket.id,
       senderName: socket.data.displayName,
+      senderColor: socket.data.color,
       time: now
+    };
+
+    saveMessage({
+      room: socket.data.currentRoom,
+      senderId: socket.id,
+      senderName: socket.data.displayName,
+      senderColor: socket.data.color,
+      text
     });
+
+    io.to(socket.data.currentRoom).emit('message', payload);
   });
 
   socket.on('typing', () => {
-    if (!socket.data.roomName) return;
-    socket.to(socket.data.roomName).emit('typing', { from: socket.id });
+    if (!socket.data.currentRoom) return;
+    socket.to(socket.data.currentRoom).emit('typing', { name: socket.data.displayName });
   });
   socket.on('stop_typing', () => {
-    if (!socket.data.roomName) return;
-    socket.to(socket.data.roomName).emit('stop_typing', { from: socket.id });
-  });
-
-  socket.on('leave_chat', () => {
-    removeFromQueue(socket);
-    const roomName = socket.data.roomName;
-    if (roomName) {
-      socket.to(roomName).emit('partner_disconnected', { reason: 'leave' });
-      notifyPartnerAndClearRoom(roomName, socket, 'leave');
-      endConversation(roomName);
-      socket.leave(roomName);
-      socket.data.roomName = null;
-      socket.data.partnerId = null;
-    }
-    socket.emit('left', { time: Date.now() });
+    if (!socket.data.currentRoom) return;
+    socket.to(socket.data.currentRoom).emit('stop_typing', { name: socket.data.displayName });
   });
 
   socket.on('disconnect', () => {
-    removeFromQueue(socket);
-    const roomName = socket.data.roomName;
-    if (roomName) {
-      socket.to(roomName).emit('partner_disconnected', { reason: 'disconnect' });
-      notifyPartnerAndClearRoom(roomName, socket, 'disconnect');
-      endConversation(roomName);
+    const roomId = socket.data.currentRoom;
+    if (roomId) {
+      socket.to(roomId).emit('user_left', { name: socket.data.displayName });
     }
-    broadcastOnlineCount();
-    console.log('مستخدم قطع الاتصال:', socket.data.displayName);
+    broadcastRooms();
+    console.log('قطع الاتصال:', socket.data.displayName);
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log('Server running on port ' + PORT);
-});
+server.listen(PORT, () => console.log('Server running on port ' + PORT));
