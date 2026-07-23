@@ -13,17 +13,17 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.static(__dirname));
 
 // =========================================================
-// 1) الغرف + ثيم كل غرفة
+// 1) الغرف (أعلام كاملة - مصر 🇪 و UK 🇬 متظبطين)
 // =========================================================
 const ROOMS = [
   { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة', theme: { bg: 'linear-gradient(180deg,#f7f4ec,#efe9da)', accent: '#0d9488', accent2: '#14b8a6', wm: '💬' } },
-  { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
+  { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪🇬', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
   { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
   { id: 'algeria', name: 'الجزائر', emoji: '⭐', flag: '🇩🇿', category: 'دول', theme: { bg: 'linear-gradient(180deg,#f0f4fb,#e6ecf7)', accent: '#1d4ed8', accent2: '#2563eb', wm: '⭐' } },
   { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
   { id: 'love', name: 'الحب والغرام', emoji: '❤️', flag: '💕', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#fdf0f5,#fbe3ec)', accent: '#db2777', accent2: '#ec4899', wm: '❤️' } },
   { id: 'poetry', name: 'الشعر والأدب', emoji: '📖', flag: '✍️', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#f5f0e6,#ece2cf)', accent: '#92400e', accent2: '#b45309', wm: '📜' } },
-  { id: 'english', name: 'English Room', emoji: '🔤', flag: '🇬', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#eef2fb,#e3e9f7)', accent: '#1e40af', accent2: '#3b82f6', wm: '🔤' } }
+  { id: 'english', name: 'English Room', emoji: '🔤', flag: '🇬🇧', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#eef2fb,#e3e9f7)', accent: '#1e40af', accent2: '#3b82f6', wm: '🔤' } }
 ];
 const ROOM_IDS = new Set(ROOMS.map((r) => r.id));
 
@@ -107,8 +107,8 @@ function roomUsersList(roomId) {
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || '');
 function publicUser(u, color) { return { name: u.username, role: u.role, color, gender: u.gender || '' }; }
 
-// ---- حجز الأسماء النشطة (ممنوع التكرار بين المتصلين) ----
-const activeNames = new Map(); // lowercase -> socketId
+// ---- حجز الأسماء النشطة ----
+const activeNames = new Map();
 function reserveName(desired, socketId) {
   let base = (desired || '').trim().replace(/\s+/g, ' ');
   if (base.length < 2) base = generateName();
@@ -121,7 +121,7 @@ function reserveName(desired, socketId) {
   let got = tryOne(base);
   if (got) return { name: got, renamed: got.toLowerCase() !== base.toLowerCase() };
   for (let i = 2; i < 200; i++) { got = tryOne(base + i); if (got) return { name: got, renamed: true }; }
-  const fb = base + socket.id.slice(0, 4);
+  const fb = base + socketId.slice(0, 4);
   activeNames.set(fb.toLowerCase(), socketId);
   return { name: fb, renamed: true };
 }
@@ -129,19 +129,17 @@ function releaseName(socketId) {
   for (const [low, sid] of activeNames) { if (sid === socketId) { activeNames.delete(low); break; } }
 }
 
-// ---- كشف المنشن (كلمة كاملة تطابق اسم نشط في الغرفة) ----
+// ---- كشف المنشن ----
 function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function findMentions(text, roomId, senderSocketId) {
   const s = io.sockets.adapter.rooms.get(roomId);
   if (!s) return [];
-  const found = [];
-  const seen = new Set();
+  const found = []; const seen = new Set();
   for (const cid of s) {
     if (cid === senderSocketId) continue;
     const sock = io.sockets.sockets.get(cid);
     if (!sock || !sock.data.user) continue;
-    const name = sock.data.user.name;
-    const low = name.toLowerCase();
+    const name = sock.data.user.name; const low = name.toLowerCase();
     if (seen.has(low)) continue;
     const re = new RegExp('(^|[^\\u0600-\\u06FF\\w])' + escapeRegExp(name) + '($|[^\\u0600-\\u06FF\\w])');
     if (re.test(text)) { seen.add(low); found.push(name); }
@@ -157,13 +155,12 @@ io.on('connection', (socket) => {
   socket.data.lastMsg = 0;
   socket.emit('rooms_list', buildRoomsList());
 
-  // ---------- AUTH ----------
   socket.on('auth_check', async (token) => {
     if (typeof token !== 'string' || !isDbConnected()) return socket.emit('auth_fail');
     try {
       const u = await User.findOne({ authToken: token });
       if (!u) return socket.emit('auth_fail');
-      const { name } = reserveName(u.username, socket.id); // نادر ما يتعدل للعضو
+      const { name } = reserveName(u.username, socket.id);
       const color = colorFromId(name);
       socket.data.user = { id: String(u._id), name, role: 'member', color, gender: u.gender || '' };
       socket.emit('auth_ok', { name, role: 'member', color, gender: u.gender || '' });
@@ -227,7 +224,6 @@ io.on('connection', (socket) => {
 
   function authed() { return !!socket.data.user; }
 
-  // ---------- ROOMS ----------
   socket.on('join_room', async (roomId) => {
     if (!authed() || !ROOM_IDS.has(roomId)) return;
     if (socket.data.currentRoom && socket.data.currentRoom !== roomId) socket.leave(socket.data.currentRoom);
@@ -255,7 +251,6 @@ io.on('connection', (socket) => {
     socket.emit('room_users', roomUsersList(socket.data.currentRoom));
   });
 
-  // ---------- MESSAGE ----------
   socket.on('message', (msg) => {
     if (!authed() || typeof msg !== 'string') return;
     const text = msg.trim().slice(0, 1000);
@@ -266,7 +261,6 @@ io.on('connection', (socket) => {
     const u = socket.data.user;
 
     const mentions = findMentions(text, socket.data.currentRoom, socket.id);
-    // إشعار المذكورين
     const s = io.sockets.adapter.rooms.get(socket.data.currentRoom);
     if (s) {
       for (const cid of s) {
