@@ -15,7 +15,7 @@ app.use(express.static(__dirname));
 const ROOMS = [
   { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة', theme: { bg: 'linear-gradient(180deg,#f7f4ec,#efe9da)', accent: '#0d9488', accent2: '#14b8a6', wm: '💬' } },
   { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪🇬', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
-  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
+  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
   { id: 'algeria', name: 'الجزائر', emoji: '⭐', flag: '🇩🇿', category: 'دول', theme: { bg: 'linear-gradient(180deg,#f0f4fb,#e6ecf7)', accent: '#1d4ed8', accent2: '#2563eb', wm: '⭐' } },
   { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
   { id: 'love', name: 'الحب والغرام', emoji: '❤️', flag: '💕', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#fdf0f5,#fbe3ec)', accent: '#db2777', accent2: '#ec4899', wm: '❤️' } },
@@ -73,14 +73,13 @@ async function loadHistory(roomId) {
       senderName: d.senderName, senderColor: d.senderColor,
       senderRole: d.senderRole, senderGender: d.senderGender, time: d.createdAt.getTime()
     }));
-    // تنظيف العرض: دمج سطور "انضم" المتكررة لنفس الشخص خلال 60 ثانية
     const out = [];
     const lastJoin = new Map();
     for (const m of all) {
       if (m.kind === 'join') {
         const k = (m.senderName || '').toLowerCase();
         const lt = lastJoin.get(k);
-        if (lt && (m.time - lt) < 60000) continue;
+        if (lt && (m.time - lt) < 3000) continue;
         lastJoin.set(k, m.time);
       }
       out.push(m);
@@ -115,9 +114,8 @@ function emitRoomUsers(roomId) { io.to(roomId).emit('room_users', roomUsersList(
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || '');
 function publicUser(u, color) { return { name: u.username, role: u.role, color, gender: u.gender || '' }; }
 
-// ---- حجز الأسماء بمعرّف ثابت (pid) -> يحل مشكلة التعديل عند refresh ----
-const activeNames = new Map(); // nameLower -> { pid, name }
-const pidSockets = new Map();  // pid -> Set<socketId>
+const activeNames = new Map();
+const pidSockets = new Map();
 
 function registerSocketForPid(pid, socketId) {
   if (!pidSockets.has(pid)) pidSockets.set(pid, new Set());
@@ -131,7 +129,7 @@ function reserveName(desired, pid, socketId) {
     const low = n.toLowerCase();
     const cur = activeNames.get(low);
     if (!cur) { activeNames.set(low, { pid, name: n }); return n; }
-    if (cur.pid === pid) return n; // نفس الشخص -> بدون تعديل
+    if (cur.pid === pid) return n;
     return null;
   };
   let got = tryOne(base);
@@ -142,35 +140,22 @@ function reserveName(desired, pid, socketId) {
   return { name: fb, renamed: true };
 }
 function releaseSocket(socketId) {
-  for (const [pid, set] of pidSockets) {
-    if (set.has(socketId)) {
-      set.delete(socketId);
-      if (set.size === 0) {
-        pidSockets.delete(pid);
-        for (const [low, info] of activeNames) { if (info.pid === pid) { activeNames.delete(low); break; } }
-      }
-    }
-  }
+  for (const [pid, set] of pidSockets) { if (set.has(socketId)) set.delete(socketId); }
+  for (const [pid, set] of pidSockets) if (set.size === 0) pidSockets.delete(pid);
 }
-// منظّف دوري: يشيل sockets الميتة والاحتجازات اليتيمة
 setInterval(() => {
   for (const [pid, set] of pidSockets) {
     for (const sid of [...set]) {
       const s = io.sockets.sockets.get(sid);
       if (!s || !s.connected) set.delete(sid);
     }
-    if (set.size === 0) {
-      pidSockets.delete(pid);
-      for (const [low, info] of activeNames) { if (info.pid === pid) { activeNames.delete(low); break; } }
-    }
+    if (set.size === 0) pidSockets.delete(pid);
+  }
+  for (const [low, info] of activeNames) {
+    const set = pidSockets.get(info.pid);
+    if (!set || set.size === 0) activeNames.delete(low);
   }
 }, 20000);
-
-const lastJoinMap = new Map();
-setInterval(() => {
-  const cutoff = Date.now() - 600000;
-  for (const [k, t] of lastJoinMap) if (t < cutoff) lastJoinMap.delete(k);
-}, 600000);
 
 function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function findMentions(text, senderPid) {
@@ -280,20 +265,12 @@ io.on('connection', (socket) => {
     const history = await loadHistory(roomId);
     socket.emit('joined_room', { room: { id: meta.id, name: meta.name, emoji: meta.emoji, theme: meta.theme }, history });
 
-    if (!isRejoin) {
+    if (!isRejoin && !isReload) {
       const u = socket.data.user;
-      const jkey = u.name.toLowerCase() + '|' + roomId;
-      const now = Date.now();
-      const last = lastJoinMap.get(jkey);
-      if (isReload) {
-        lastJoinMap.set(jkey, now); // صامت: مفيش حفظ ولا إشعار
-      } else if (!last || now - last >= 120000) {
-        lastJoinMap.set(jkey, now);
-        socket.to(roomId).emit('user_joined', { name: u.name, color: u.color, role: u.role, gender: u.gender || '' });
-        saveMessage({ room: roomId, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'join', text: '', mentions: [] });
-      }
+      socket.to(roomId).emit('user_joined', { name: u.name, color: u.color, role: u.role, gender: u.gender || '' });
+      saveMessage({ room: roomId, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'join', text: '', mentions: [] });
     }
-    emitRoomUsers(roomId); // العداد + القائمة يتحدّثوا فورًا عند الكل
+    emitRoomUsers(roomId);
   });
 
   socket.on('leave_room', () => {
@@ -324,15 +301,6 @@ io.on('connection', (socket) => {
     saveMessage({ room: socket.data.currentRoom, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'msg', text, mentions });
     const p = { text, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', mentions, time: now };
     io.to(socket.data.currentRoom).emit('message', p);
-  });
-
-  socket.on('typing', () => {
-    if (!authed() || !socket.data.currentRoom) return;
-    socket.to(socket.data.currentRoom).emit('typing', { name: socket.data.user.name });
-  });
-  socket.on('stop_typing', () => {
-    if (!authed() || !socket.data.currentRoom) return;
-    socket.to(socket.data.currentRoom).emit('stop_typing', { name: socket.data.user.name });
   });
 
   socket.on('disconnect', () => {
