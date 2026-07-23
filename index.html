@@ -100,30 +100,29 @@
     .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
     .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
     /* ✅ مسافة بين الرسائل أقرب */
-    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; position: relative; z-index: 1; }
 
-    /* ✅ سطر مضغوط (line-height 1.5) */
-    .row { position: relative; line-height: 1.5; font-size: 14px; padding-top: 1px; }
+    /* ✅ سطر مضغوط */
+    .row { position: relative; line-height: 1.45; font-size: 14px; padding-top: 2px; }
     .row::after { content: ""; display: block; clear: both; }
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
     .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
     .av svg { width: 18px; height: 18px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-    /* ✅ أفاتار أقصى يمين + مسافة جانبية قريبة (4px) */
-    .row > .av { float: right; margin: 1px 0 2px 4px; }
+    /* ✅ أفاتار أول اليمين بالظبط + مسافة قريبة من الاسم */
+    .row > .av { float: right; margin: 0 0 2px 4px; }
 
     .body { display: block; min-width: 0; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    /* ✅ مسافة النقطتين قريبة */
     .colon { font-weight: 700; color: #475569; margin: 0 2px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
     .msg { display: inline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
-    /* ✅ الراية رمادية باهتة في آخر الرسالة */
-    .msg-flag { display: inline; font-size: 11px; line-height: 1; filter: grayscale(1); opacity: 0.55; margin: 0 4px; }
+    /* ✅ الراية جوّه النص (inline) -> تلف معاه وتقع في الآخر، مش تكسر سطر */
+    .msg-flag { font-size: 11px; line-height: 1; filter: grayscale(1); opacity: 0.5; margin: 0 3px; vertical-align: middle; }
     .sys-action { display: inline; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
@@ -312,8 +311,8 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '', '🧓', '🧔'];
-    const FEMALE = ['👩', '👧', '🧕', '', '👵'];
+    const MALE = ['🧑', '👨', '👦', '🧓', ''];
+    const FEMALE = ['👩', '👧', '🧕', '👸', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -342,6 +341,11 @@
         html = html.replace(re, (m, pre, post) => pre + '<span class="mention mention-me">' + esc + '</span>' + post);
       }
       return html;
+    }
+
+    // ✅ الراية جوّه النص -> تلف معاه وتقع في الآخر
+    function buildMsgHTML(text, mentions) {
+      return renderText(text, mentions) + '<span class="msg-flag">🚩</span>';
     }
 
     function showToast(m) {
@@ -437,12 +441,10 @@
       const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
       body.appendChild(nm); body.appendChild(colon);
       if (text) {
-        const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, o.mentions);
+        const tx = document.createElement('span'); tx.className = 'msg';
+        tx.innerHTML = buildMsgHTML(text, o.mentions); // ✅ الراية جوّه النص
         if (markPending) tx.setAttribute('data-pending', '1');
         body.appendChild(tx);
-        // ✅ الراية في آخر الرسالة
-        const flag = document.createElement('span'); flag.className = 'msg-flag'; flag.textContent = '🚩';
-        body.appendChild(flag);
       }
       row.appendChild(body);
       messagesEl.appendChild(row);
@@ -648,7 +650,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','🥺','😴','🤝','','⭐','','☕','','⚽','','🌺','🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','','😴','','','⭐','','☕','🎵','⚽','🕋','🌺','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -797,7 +799,7 @@
     socket.on('message', (d) => {
       if (d.senderId === socket.id) {
         const m = messagesEl.querySelector('.msg[data-pending]');
-        if (m) { m.innerHTML = renderText(d.text, d.mentions); m.removeAttribute('data-pending'); }
+        if (m) { m.innerHTML = buildMsgHTML(d.text, d.mentions); m.removeAttribute('data-pending'); } // ✅ الراية في التحديث كمان
         ingest(d, { skipRender: true });
         return;
       }
