@@ -12,24 +12,18 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.static(__dirname));
 
-// =========================================================
-// 1) الغرف (أعلام كاملة - مصر 🇪 و UK 🇬 متظبطين)
-// =========================================================
 const ROOMS = [
   { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة', theme: { bg: 'linear-gradient(180deg,#f7f4ec,#efe9da)', accent: '#0d9488', accent2: '#14b8a6', wm: '💬' } },
   { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪🇬', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
   { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
   { id: 'algeria', name: 'الجزائر', emoji: '⭐', flag: '🇩🇿', category: 'دول', theme: { bg: 'linear-gradient(180deg,#f0f4fb,#e6ecf7)', accent: '#1d4ed8', accent2: '#2563eb', wm: '⭐' } },
-  { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
+  { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
   { id: 'love', name: 'الحب والغرام', emoji: '❤️', flag: '💕', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#fdf0f5,#fbe3ec)', accent: '#db2777', accent2: '#ec4899', wm: '❤️' } },
   { id: 'poetry', name: 'الشعر والأدب', emoji: '📖', flag: '✍️', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#f5f0e6,#ece2cf)', accent: '#92400e', accent2: '#b45309', wm: '📜' } },
   { id: 'english', name: 'English Room', emoji: '🔤', flag: '🇬🇧', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#eef2fb,#e3e9f7)', accent: '#1e40af', accent2: '#3b82f6', wm: '🔤' } }
 ];
 const ROOM_IDS = new Set(ROOMS.map((r) => r.id));
 
-// =========================================================
-// 2) قاعدة البيانات
-// =========================================================
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, index: true, trim: true },
   email: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
@@ -79,9 +73,6 @@ async function loadHistory(roomId) {
   } catch (e) { return []; }
 }
 
-// =========================================================
-// 3) أدوات مساعدة
-// =========================================================
 function generateName() { return 'زائر_' + Math.floor(1000 + Math.random() * 9000); }
 function newToken() { return crypto.randomBytes(24).toString('hex'); }
 function colorFromId(id) {
@@ -107,7 +98,6 @@ function roomUsersList(roomId) {
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || '');
 function publicUser(u, color) { return { name: u.username, role: u.role, color, gender: u.gender || '' }; }
 
-// ---- حجز الأسماء النشطة ----
 const activeNames = new Map();
 function reserveName(desired, socketId) {
   let base = (desired || '').trim().replace(/\s+/g, ' ');
@@ -129,7 +119,6 @@ function releaseName(socketId) {
   for (const [low, sid] of activeNames) { if (sid === socketId) { activeNames.delete(low); break; } }
 }
 
-// ---- كشف المنشن ----
 function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function findMentions(text, roomId, senderSocketId) {
   const s = io.sockets.adapter.rooms.get(roomId);
@@ -147,9 +136,6 @@ function findMentions(text, roomId, senderSocketId) {
   return found;
 }
 
-// =========================================================
-// 4) منطق الاتصال
-// =========================================================
 io.on('connection', (socket) => {
   socket.data.user = null;
   socket.data.lastMsg = 0;
@@ -259,7 +245,6 @@ io.on('connection', (socket) => {
     if (now - socket.data.lastMsg < 400) return;
     socket.data.lastMsg = now;
     const u = socket.data.user;
-
     const mentions = findMentions(text, socket.data.currentRoom, socket.id);
     const s = io.sockets.adapter.rooms.get(socket.data.currentRoom);
     if (s) {
@@ -271,7 +256,6 @@ io.on('connection', (socket) => {
         }
       }
     }
-
     const payload = { text, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', mentions, time: now };
     saveMessage({ room: socket.data.currentRoom, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', text });
     io.to(socket.data.currentRoom).emit('message', payload);
