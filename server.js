@@ -9,23 +9,18 @@ const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
-// اكتشاف قطع الاتصال أسرع -> الأسماء تتحرر أسرع
-const io = new Server(server, {
-  cors: { origin: '*' },
-  pingTimeout: 15000,
-  pingInterval: 5000
-});
+const io = new Server(server, { cors: { origin: '*' }, pingTimeout: 15000, pingInterval: 5000 });
 app.use(express.static(__dirname));
 
 const ROOMS = [
   { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة', theme: { bg: 'linear-gradient(180deg,#f7f4ec,#efe9da)', accent: '#0d9488', accent2: '#14b8a6', wm: '💬' } },
   { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪🇬', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
-  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
+  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
   { id: 'algeria', name: 'الجزائر', emoji: '⭐', flag: '🇩🇿', category: 'دول', theme: { bg: 'linear-gradient(180deg,#f0f4fb,#e6ecf7)', accent: '#1d4ed8', accent2: '#2563eb', wm: '⭐' } },
-  { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
+  { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
   { id: 'love', name: 'الحب والغرام', emoji: '❤️', flag: '💕', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#fdf0f5,#fbe3ec)', accent: '#db2777', accent2: '#ec4899', wm: '❤️' } },
   { id: 'poetry', name: 'الشعر والأدب', emoji: '📖', flag: '✍️', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#f5f0e6,#ece2cf)', accent: '#92400e', accent2: '#b45309', wm: '📜' } },
-  { id: 'english', name: 'English Room', emoji: '🔤', flag: '🇬', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#eef2fb,#e3e9f7)', accent: '#1e40af', accent2: '#3b82f6', wm: '🔤' } }
+  { id: 'english', name: 'English Room', emoji: '🔤', flag: '🇬🇧', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#eef2fb,#e3e9f7)', accent: '#1e40af', accent2: '#3b82f6', wm: '🔤' } }
 ];
 const ROOM_IDS = new Set(ROOMS.map((r) => r.id));
 
@@ -49,6 +44,7 @@ const messageSchema = new mongoose.Schema({
   senderColor: { type: String, default: '#0d9488' },
   senderRole: { type: String, default: 'guest' },
   senderGender: { type: String, default: '' },
+  kind: { type: String, default: 'msg' }, // 'msg' | 'join'
   text: { type: String, maxlength: 2000 },
   createdAt: { type: Date, default: Date.now }
 });
@@ -70,9 +66,9 @@ async function saveMessage(m) {
 async function loadHistory(roomId) {
   if (!isDbConnected()) return [];
   try {
-    const docs = await Message.find({ room: roomId }).sort({ createdAt: -1 }).limit(30);
+    const docs = await Message.find({ room: roomId }).sort({ createdAt: -1 }).limit(40);
     return docs.reverse().map((d) => ({
-      text: d.text, senderName: d.senderName, senderColor: d.senderColor,
+      kind: d.kind || 'msg', text: d.text, senderName: d.senderName, senderColor: d.senderColor,
       senderRole: d.senderRole, senderGender: d.senderGender, time: d.createdAt.getTime()
     }));
   } catch (e) { return []; }
@@ -103,7 +99,6 @@ function roomUsersList(roomId) {
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || '');
 function publicUser(u, color) { return { name: u.username, role: u.role, color, gender: u.gender || '' }; }
 
-// ---- حجز الأسماء النشطة ----
 const activeNames = new Map();
 function reserveName(desired, socketId) {
   let base = (desired || '').trim().replace(/\s+/g, ' ');
@@ -124,8 +119,6 @@ function reserveName(desired, socketId) {
 function releaseName(socketId) {
   for (const [low, sid] of activeNames) { if (sid === socketId) { activeNames.delete(low); break; } }
 }
-
-// ---- منظّف دوري: يحرر أي اسم صاحبه مش متصل فعليًا (يحل مشكلة الاسم المحجوز لشبح) ----
 setInterval(() => {
   for (const [low, sid] of activeNames) {
     const s = io.sockets.sockets.get(sid);
@@ -226,14 +219,21 @@ io.on('connection', (socket) => {
 
   socket.on('join_room', async (roomId) => {
     if (!authed() || !ROOM_IDS.has(roomId)) return;
-    if (socket.data.currentRoom && socket.data.currentRoom !== roomId) socket.leave(socket.data.currentRoom);
+    const isRejoin = socket.data.currentRoom === roomId;
+    if (socket.data.currentRoom && !isRejoin) socket.leave(socket.data.currentRoom);
     socket.join(roomId);
     socket.data.currentRoom = roomId;
     broadcastRooms();
     const meta = ROOMS.find((r) => r.id === roomId);
     const history = await loadHistory(roomId);
     socket.emit('joined_room', { room: { id: meta.id, name: meta.name, emoji: meta.emoji, theme: meta.theme }, history });
-    socket.to(roomId).emit('user_joined', { name: socket.data.user.name, color: socket.data.user.color, role: socket.data.user.role, gender: socket.data.user.gender || '' });
+
+    if (!isRejoin) {
+      // دخول جديد حقيقي: إشعار + حفظ في السجل
+      const u = socket.data.user;
+      socket.to(roomId).emit('user_joined', { name: u.name, color: u.color, role: u.role, gender: u.gender || '' });
+      saveMessage({ room: roomId, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'join', text: '' });
+    }
   });
 
   socket.on('leave_room', () => {
@@ -270,10 +270,8 @@ io.on('connection', (socket) => {
         }
       }
     }
-    // رسائل الزائر لا تُحفظ في قاعدة البيانات (لا أثر دائم للزائر)
-    if (u.role === 'member') {
-      saveMessage({ room: socket.data.currentRoom, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', text });
-    }
+    // الكل يتحفظ (زائر + عضو)
+    saveMessage({ room: socket.data.currentRoom, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'msg', text });
     const payload = { text, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', mentions, time: now };
     io.to(socket.data.currentRoom).emit('message', payload);
   });
