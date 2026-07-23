@@ -2,268 +2,296 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>شات عربي | دردشة عشوائية</title>
-
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #111827;
-      --border: rgba(255, 255, 255, 0.08);
+      --bg1: #0b1020;
+      --bg2: #141a35;
+      --card: #111729;
+      --card2: #0d1322;
+      --border: rgba(255,255,255,0.08);
       --text: #f3f4f6;
-      --muted: #9ca3af;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --danger: #dc2626;
-      --danger-hover: #b91c1c;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --primary2: #8b5cf6;
+      --danger: #ef4444;
+      --ok: #22c55e;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       margin: 0;
-      font-family: Tahoma, Arial, sans-serif;
-      background: var(--bg);
+      font-family: Tahoma, "Segoe UI", Arial, sans-serif;
       color: var(--text);
+      background: radial-gradient(1200px 600px at 80% -10%, #1e2a55 0%, transparent 60%),
+                  radial-gradient(900px 500px at -10% 110%, #2a1850 0%, transparent 55%),
+                  linear-gradient(160deg, var(--bg1), var(--bg2));
     }
-
     .app {
-      max-width: 800px;
+      max-width: 760px;
       margin: 0 auto;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      background: var(--card);
+      background: linear-gradient(180deg, var(--card), var(--card2));
       border-left: 1px solid var(--border);
       border-right: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
 
+    /* Header */
     header {
-      padding: 16px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    .brand { display: flex; flex-direction: column; gap: 4px; }
+    .brand h1 {
+      margin: 0; font-size: 19px;
+      background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .me-line { font-size: 12px; color: var(--muted); }
+    .me-line b { color: #c7d2fe; }
+    .online {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; color: var(--muted);
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.25);
+      padding: 6px 11px; border-radius: 999px; white-space: nowrap;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ok); box-shadow: 0 0 0 0 rgba(34,197,94,0.6);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
     }
 
-    header h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
+    /* Status bar */
+    .statusbar {
+      padding: 9px 16px; font-size: 13px; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; min-height: 40px;
+    }
+    .spinner { display: none; }
+    .spinner.show { display: inline-flex; gap: 4px; align-items: center; }
+    .spinner i {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--primary2);
+      animation: bounce 1s infinite ease-in-out;
+    }
+    .spinner i:nth-child(2) { animation-delay: .15s; }
+    .spinner i:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: scale(.5); opacity: .4; }
+      40% { transform: scale(1); opacity: 1; }
     }
 
-    .status {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
+    /* Messages */
     #messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
     }
+    .row { display: flex; gap: 8px; max-width: 80%; animation: slideIn .25s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .row.me { align-self: flex-start; flex-direction: row; }
+    .row.partner { align-self: flex-end; flex-direction: row-reverse; }
+    .row.system { align-self: center; max-width: 92%; }
 
-    .message {
-      display: flex;
-      flex-direction: column;
-      max-width: 75%;
+    .avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex: 0 0 30px;
+      display: grid; place-items: center; font-size: 13px; font-weight: bold;
+      color: #fff; margin-top: 16px;
     }
+    .me .avatar { background: linear-gradient(135deg, var(--primary), var(--primary2)); }
+    .partner .avatar { background: linear-gradient(135deg, #475569, #334155); }
 
-    .message.me {
-      align-self: flex-start;
-    }
-
-    .message.partner {
-      align-self: flex-end;
-    }
-
-    .message.system {
-      align-self: center;
-      max-width: 90%;
-    }
+    .col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .partner .col { align-items: flex-end; }
+    .name { font-size: 11px; color: var(--muted); padding: 0 4px; }
 
     .bubble {
-      padding: 10px 14px;
-      border-radius: 16px;
-      line-height: 1.7;
-      word-break: break-word;
-      white-space: pre-wrap;
+      padding: 10px 13px; border-radius: 16px; line-height: 1.7;
+      word-break: break-word; white-space: pre-wrap; font-size: 14.5px;
+      cursor: pointer; position: relative;
     }
-
     .me .bubble {
-      background: var(--primary);
-      color: white;
-      border-bottom-right-radius: 4px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff; border-top-right-radius: 4px;
     }
-
     .partner .bubble {
-      background: #1f2937;
-      color: var(--text);
-      border-bottom-left-radius: 4px;
+      background: #1c2438; color: var(--text); border: 1px solid var(--border);
+      border-top-left-radius: 4px;
     }
-
     .system .bubble {
-      background: rgba(255, 255, 255, 0.08);
-      color: #d1d5db;
-      font-size: 13px;
-      text-align: center;
+      background: rgba(255,255,255,0.06); color: #cbd5e1;
+      font-size: 12.5px; text-align: center; border-radius: 999px; padding: 6px 14px;
     }
+    .time { font-size: 10.5px; color: var(--muted); padding: 0 4px; }
 
-    .time {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
+    .typing { padding: 0 16px 6px; color: var(--muted); font-size: 12.5px; }
+    .hidden { display: none !important; }
 
-    .typing {
-      padding: 0 16px 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
+    /* Footer */
     footer {
-      display: flex;
-      gap: 10px;
-      padding: 12px;
-      border-top: 1px solid var(--border);
+      display: flex; gap: 10px; padding: 12px;
+      border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);
     }
-
     input {
-      flex: 1;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #0b1220;
-      color: var(--text);
-      outline: none;
-      font-size: 15px;
+      flex: 1; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: #0a0f1d; color: var(--text);
+      outline: none; font-size: 15px;
     }
-
-    input:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    input:focus { border-color: var(--primary); }
+    input:disabled { opacity: .55; cursor: not-allowed; }
 
     button {
-      border: none;
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-size: 15px;
-      cursor: pointer;
-      color: white;
-      background: var(--primary);
-      transition: 0.2s ease;
+      border: none; border-radius: 12px; padding: 12px 16px;
+      font-size: 14.5px; cursor: pointer; color: #fff; font-weight: 600;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      transition: transform .1s ease, filter .2s ease;
     }
+    button:hover:not(:disabled) { filter: brightness(1.1); }
+    button:active:not(:disabled) { transform: scale(.97); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
 
-    button:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
+    .controls { display: flex; gap: 10px; padding: 0 12px 12px; }
+    .controls button { flex: 1; }
+    .ghost { background: #1c2438; border: 1px solid var(--border); }
+    .danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1e293b; color: #e2e8f0; padding: 9px 16px; border-radius: 999px;
+      font-size: 13px; border: 1px solid var(--border); opacity: 0; pointer-events: none;
+      transition: .25s ease; z-index: 50;
     }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      padding: 0 12px 12px;
-    }
-
-    .controls button {
-      flex: 1;
-    }
-
-    .danger {
-      background: var(--danger);
-    }
-
-    .danger:hover:not(:disabled) {
-      background: var(--danger-hover);
-    }
-
-    .hidden {
-      display: none;
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     @media (max-width: 600px) {
-      .message {
-        max-width: 88%;
-      }
-
-      header h1 {
-        font-size: 20px;
-      }
+      .row { max-width: 88%; }
+      .brand h1 { font-size: 17px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <h1>شات عربي</h1>
-      <div id="connectionStatus" class="status">جاري الاتصال بالخادم...</div>
+      <div class="brand">
+        <h1>شات عربي</h1>
+        <div class="me-line">أنت: <b id="myName">...</b></div>
+      </div>
+      <div class="online"><span class="dot"></span><span id="onlineCount">0</span> متصل الآن</div>
     </header>
+
+    <div class="statusbar">
+      <span class="spinner" id="spinner"><i></i><i></i><i></i></span>
+      <span id="statusText">جاري الاتصال بالخادم...</span>
+    </div>
 
     <main id="messages" aria-live="polite"></main>
 
     <div id="typing" class="typing hidden">الطرف الآخر يكتب...</div>
 
     <footer>
-      <input
-        id="messageInput"
-        type="text"
-        placeholder="اكتب رسالتك هنا..."
-        autocomplete="off"
-        disabled
-      />
+      <input id="messageInput" type="text" placeholder="اكتب رسالتك هنا..." autocomplete="off" disabled />
       <button id="sendBtn" disabled>إرسال</button>
     </footer>
 
     <div class="controls">
       <button id="searchBtn">بحث عن متصل</button>
+      <button id="nextBtn" class="ghost hidden">التالي ↻</button>
       <button id="stopBtn" class="danger hidden">إيقاف</button>
     </div>
   </div>
+
+  <div id="toast">تم نسخ الرسالة</div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io();
 
-    const messagesEl = document.getElementById('messages');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const searchBtn = document.getElementById('searchBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const typingEl = document.getElementById('typing');
-    const connectionStatus = document.getElementById('connectionStatus');
+    const $ = (id) => document.getElementById(id);
+    const messagesEl = $('messages');
+    const messageInput = $('messageInput');
+    const sendBtn = $('sendBtn');
+    const searchBtn = $('searchBtn');
+    const nextBtn = $('nextBtn');
+    const stopBtn = $('stopBtn');
+    const typingEl = $('typing');
+    const statusText = $('statusText');
+    const spinner = $('spinner');
+    const onlineCount = $('onlineCount');
+    const myNameEl = $('myName');
+    const toast = $('toast');
 
+    let myName = 'أنت';
+    let partnerName = 'الطرف الآخر';
     let partnerTypingTimeout = null;
     let lastTypingSent = 0;
+    let toastTimer = null;
 
-    function formatTime(timestamp) {
-      return new Date(timestamp || Date.now()).toLocaleTimeString('ar-EG', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    const fmt = (t) => new Date(t || Date.now()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const initial = (name) => (name || '?').replace('ضيف_', '').charAt(0) || '?';
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
     }
 
-    function addMessage(text, type = 'system', time = Date.now()) {
-      const wrapper = document.createElement('div');
-      wrapper.className = `message ${type}`;
+    function addMessage(text, type = 'system', time = Date.now(), name = '') {
+      const row = document.createElement('div');
+      row.className = 'row ' + type;
 
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.textContent = text;
+      if (type === 'system') {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        b.textContent = text;
+        row.appendChild(b);
+      } else {
+        const av = document.createElement('div');
+        av.className = 'avatar';
+        av.textContent = initial(type === 'me' ? myName : name || partnerName);
 
-      const timeEl = document.createElement('div');
-      timeEl.className = 'time';
-      timeEl.textContent = formatTime(time);
+        const col = document.createElement('div');
+        col.className = 'col';
 
-      wrapper.appendChild(bubble);
-      wrapper.appendChild(timeEl);
+        const nm = document.createElement('div');
+        nm.className = 'name';
+        nm.textContent = type === 'me' ? myName : (name || partnerName);
 
-      messagesEl.appendChild(wrapper);
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        b.textContent = text;
+        b.title = 'اضغط للنسخ';
+        b.addEventListener('click', () => {
+          navigator.clipboard?.writeText(text).then(() => showToast('تم نسخ الرسالة'));
+        });
+
+        const tm = document.createElement('div');
+        tm.className = 'time';
+        tm.textContent = fmt(time);
+
+        col.appendChild(nm);
+        col.appendChild(b);
+        col.appendChild(tm);
+        row.appendChild(av);
+        row.appendChild(col);
+      }
+
+      messagesEl.appendChild(row);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -272,122 +300,90 @@
       clearTimeout(partnerTypingTimeout);
       partnerTypingTimeout = setTimeout(hideTyping, 2500);
     }
+    function hideTyping() { typingEl.classList.add('hidden'); clearTimeout(partnerTypingTimeout); }
 
-    function hideTyping() {
-      typingEl.classList.add('hidden');
-      clearTimeout(partnerTypingTimeout);
+    function setStatus(text, searching = false) {
+      statusText.textContent = text;
+      spinner.classList.toggle('show', searching);
     }
 
     function updateControls(state) {
-      const isChatActive = state === 'active';
-
-      messageInput.disabled = !isChatActive;
-      sendBtn.disabled = !isChatActive;
+      const active = state === 'active';
+      messageInput.disabled = !active;
+      sendBtn.disabled = !active;
 
       searchBtn.classList.toggle('hidden', state !== 'idle');
+      nextBtn.classList.toggle('hidden', !active);
       stopBtn.classList.toggle('hidden', state === 'idle');
 
       if (state === 'searching') {
         stopBtn.textContent = 'إيقاف البحث';
+        setStatus('جاري البحث عن متصل...', true);
       } else if (state === 'active') {
         stopBtn.textContent = 'إنهاء الدردشة';
+        setStatus('متصل مع ' + partnerName, false);
         messageInput.focus();
+      } else {
+        setStatus('اضغط "بحث عن متصل" لبدء دردشة جديدة', false);
       }
-
-      if (!isChatActive) {
-        hideTyping();
-      }
+      if (!active) hideTyping();
     }
 
     function sendMessage() {
       const text = messageInput.value.trim();
       if (!text || messageInput.disabled) return;
-
       addMessage(text, 'me');
       socket.emit('message', text);
-
       messageInput.value = '';
       socket.emit('stop_typing');
-      hideTyping();
     }
 
     searchBtn.addEventListener('click', () => {
       socket.emit('find_partner');
       updateControls('searching');
-      addMessage('جاري البحث عن متصل...', 'system');
     });
-
-    stopBtn.addEventListener('click', () => {
-      socket.emit('leave_chat');
-    });
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    messageInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
-
-    messageInput.addEventListener('input', () => {
-      if (messageInput.disabled) return;
-
-      const now = Date.now();
-      if (now - lastTypingSent > 800) {
-        socket.emit('typing');
-        lastTypingSent = now;
-      }
-    });
-
-    socket.on('connect', () => {
-      connectionStatus.textContent = 'متصل بالخادم';
-      updateControls('idle');
-      addMessage('أهلاً بك! اضغط على "بحث عن متصل" لبدء الدردشة.', 'system');
-    });
-
-    socket.on('disconnect', () => {
-      connectionStatus.textContent = 'انقطع الاتصال بالخادم';
-      updateControls('idle');
-      addMessage('انقطع الاتصال بالخادم. حاول تحديث الصفحة.', 'system');
-    });
-
-    socket.on('searching', () => {
+    nextBtn.addEventListener('click', () => {
+      socket.emit('next_partner');
       updateControls('searching');
     });
+    stopBtn.addEventListener('click', () => socket.emit('leave_chat'));
+    sendBtn.addEventListener('click', sendMessage);
 
-    socket.on('matched', () => {
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+    });
+    messageInput.addEventListener('input', () => {
+      if (messageInput.disabled) return;
+      const now = Date.now();
+      if (now - lastTypingSent > 800) { socket.emit('typing'); lastTypingSent = now; }
+    });
+
+    // ---------- Socket events ----------
+    socket.on('connect', () => {
+      setStatus('متصل بالخادم', false);
+      updateControls('idle');
+      addMessage('أهلاً بك! اضغط "بحث عن متصل" لبدء دردشة عشوائية.', 'system');
+    });
+    socket.on('disconnect', () => {
+      setStatus('انقطع الاتصال بالخادم', false);
+      updateControls('idle');
+      addMessage('انقطع الاتصال بالخادم. حدّث الصفحة للمحاولة مرة أخرى.', 'system');
+    });
+    socket.on('your_identity', (d) => { myName = d.name; myNameEl.textContent = myName; });
+    socket.on('online_count', (d) => { onlineCount.textContent = d.count; });
+    socket.on('searching', () => updateControls('searching'));
+    socket.on('matched', (d) => {
+      partnerName = d.partnerName || 'الطرف الآخر';
+      messagesEl.innerHTML = '';
       updateControls('active');
     });
-
-    socket.on('system_message', (data) => {
-      addMessage(data.text, 'system', data.time);
-    });
-
-    socket.on('message', (data) => {
-      addMessage(data.text, 'partner', data.time);
-    });
-
-    socket.on('typing', () => {
-      showTyping();
-    });
-
-    socket.on('stop_typing', () => {
-      hideTyping();
-    });
-
-    socket.on('partner_disconnected', () => {
-      addMessage('المستخدم غادر الدردشة', 'system');
-    });
-
-    socket.on('chat_ended', () => {
-      updateControls('idle');
-    });
-
-    socket.on('left', () => {
-      updateControls('idle');
-      addMessage('تم إيقاف الدردشة.', 'system');
-    });
+    socket.on('system_message', (d) => addMessage(d.text, 'system', d.time));
+    socket.on('message', (d) => addMessage(d.text, 'partner', d.time, d.senderName));
+    socket.on('typing', showTyping);
+    socket.on('stop_typing', hideTyping);
+    socket.on('partner_disconnected', () => addMessage('المستخدم غادر الدردشة', 'system'));
+    socket.on('chat_ended', () => updateControls('idle'));
+    socket.on('left', () => { updateControls('idle'); addMessage('تم إيقاف الدردشة.', 'system'); });
   </script>
 </body>
 </html>
