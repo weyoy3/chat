@@ -106,10 +106,10 @@
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
     .colon { font-weight: 700; color: #475569; margin: 0 1px; }
+    /* badge باقي بس في قائمة الموجودين (مش في الرسائل) */
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* نص الرسالة: أسود غامق + أعرض (600) */
     .msg { word-break: break-word; white-space: pre-wrap; color: #111827; font-weight: 600; }
     .sys-action { color: var(--join-red); font-weight: 700; }
 
@@ -119,7 +119,7 @@
     .sys .bubble { background: rgba(15,23,42,0.06); color: var(--muted); font-size: 12px; border-radius: 999px; padding: 5px 13px; }
     .typing { padding: 0 14px 5px; color: var(--muted); font-size: 12px; min-height: 16px; position: relative; z-index: 1; }
 
-    /* ===== Footer بتنسيق المرجعي ===== */
+    /* ===== Footer ===== */
     footer { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.9); position: relative; z-index: 2; flex: 0 0 auto; }
     .send-circle { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); display: grid; place-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); transition: transform .1s ease; }
     .send-circle:active { transform: scale(.93); }
@@ -263,10 +263,10 @@
     const connStatus = $('connStatus');
 
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
-    let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null, authTimer = null;
+    let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null, authTimer = null, reloadFallback = null;
     let currentRoomId = null;
     let lastRoomUsers = [];
-    const joinSeen = {}; // debounce 120 ثانية للانضمام اللحظي
+    const joinSeen = {};
 
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
@@ -331,7 +331,6 @@
       msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash');
     }
 
-    // منشن محلي (للإضافة اللحظية للمرسل) من الموجودين في الغرفة
     function localMentions(text) {
       const found = [];
       for (const u of lastRoomUsers) {
@@ -418,30 +417,45 @@
       }
     }
 
+    // ---------- enterApp: reload صامت + بدون ومضة + fallback آمن ----------
     function enterApp(user, isMember) {
       clearAuthTimeout();
       myName = user.name; myColor = user.color; myRole = user.role; myGender = user.gender || '';
       $('myName').textContent = myName;
       setMyAvatar();
       screenAuth.classList.add('hidden');
-      screenRooms.classList.remove('hidden');
+
       const saved = localStorage.getItem('curRoom');
-      if (saved) { try { const r = JSON.parse(saved); socket.emit('join_room', r.id); } catch (e) {} }
+      if (saved) {
+        // reload: ما نظهرش الغرف (بدون ومضة)، نستنى joined_room
+        clearTimeout(reloadFallback);
+        reloadFallback = setTimeout(() => {
+          if (screenChat.classList.contains('hidden') && screenAuth.classList.contains('hidden')) {
+            screenRooms.classList.remove('hidden');
+          }
+        }, 5000);
+        try {
+          const r = JSON.parse(saved);
+          socket.emit('join_room', { id: r.id, isReload: true });
+        } catch (e) { screenRooms.classList.remove('hidden'); }
+      } else {
+        screenRooms.classList.remove('hidden');
+      }
     }
 
-    // ---------- رسم سطر الانضمام ----------
+    // ---------- سطر الانضمام: fromHistory تكتب joinSeen عشان ما يتكررش ----------
     function renderJoinRow(opts, fromHistory) {
       const name = opts.name || opts.senderName || '';
       const color = opts.color || opts.senderColor || '#94a3b8';
       const role = opts.role || opts.senderRole || '';
       const gender = opts.gender || opts.senderGender || '';
 
+      const key = (currentRoomId || '?') + '|' + (name || '?').toLowerCase();
+      const now = Date.now();
       if (!fromHistory) {
-        const key = (currentRoomId || '?') + '|' + (name || '?').toLowerCase();
-        const now = Date.now();
         if (joinSeen[key] && now - joinSeen[key] < 120000) return null;
-        joinSeen[key] = now;
       }
+      joinSeen[key] = now;
 
       const row = document.createElement('div'); row.className = 'row';
       row.appendChild(buildAvatar({ role, gender, name, color }));
@@ -461,7 +475,7 @@
       return row;
     }
 
-    // ---------- رسم رسالة عادية ----------
+    // ---------- رسالة عادية: بدون badge جنب الاسم ----------
     function addMessageRow(d) {
       const name = d.name || d.senderName || '';
       const color = d.color || d.senderColor || '#94a3b8';
@@ -476,7 +490,6 @@
       nm.textContent = name; nm.style.color = color;
       nm.addEventListener('click', () => mentionUser(name));
       body.appendChild(nm);
-      if (role) { const rb = document.createElement('span'); rb.className = 'badge ' + (role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(role); body.appendChild(rb); }
       if (text) {
         const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
         body.appendChild(colon);
@@ -503,7 +516,7 @@
       list.forEach((r) => {
         const card = document.createElement('div'); card.className = 'room-card';
         card.innerHTML = `<div class="room-top"><span class="room-emoji">${r.emoji || ''}</span><span class="room-name">${r.name}</span><span class="room-flag">${r.flag || ''}</span></div><span class="room-count"><span class="d"></span>${r.count} متصل</span><button class="room-enter">دخول الغرفة</button>`;
-        card.addEventListener('click', () => socket.emit('join_room', r.id));
+        card.addEventListener('click', () => socket.emit('join_room', { id: r.id, isReload: false }));
         roomsGrid.appendChild(card);
       });
     }
@@ -525,7 +538,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -569,6 +582,7 @@
     socket.on('rooms_list', renderRooms);
 
     socket.on('joined_room', (d) => {
+      clearTimeout(reloadFallback);
       const sameRoomReconnect = (!screenChat.classList.contains('hidden')) && (currentRoomId === d.room.id);
       screenRooms.classList.add('hidden');
       screenChat.classList.remove('hidden');
