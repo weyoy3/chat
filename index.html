@@ -108,18 +108,18 @@
     .av svg { width: 18px; height: 18px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* ✅ overflow:hidden = شبكة أمان: أي نص طويل ما يفيضش بره العمود */
-    .body { flex: 1 1 auto; min-width: 0; overflow: hidden; line-height: 1.85; font-size: 14px; padding-top: 2px; }
-    /* ✅ overflow-wrap:anywhere = يكسر الأسماء الطويلة بدل ما تكسر الـ layout */
-    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; overflow-wrap: anywhere; }
+    /* ✅ grid: عمود ثابت للاسم + عمود مرن للرسالة (يتكسر جوه نفسه فقط) */
+    .body { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 4px; align-items: baseline; min-width: 0; line-height: 1.85; font-size: 14px; padding-top: 2px; }
+    .nm-line { white-space: nowrap; }
+    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    .colon { font-weight: 700; color: #475569; margin: 0 1px; }
+    .colon { font-weight: 700; color: #475569; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* ✅ overflow-wrap:anywhere = يكسر الأعلام/الإيموجي المتتالية جوه العمود */
-    .msg { word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
-    .sys-action { color: var(--join-red); font-weight: 700; }
+    /* ✅ الرسالة في العمود التاني وتتكسر جوه نفسها */
+    .msg { grid-column: 2; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; min-width: 0; }
+    .sys-action { grid-column: 2; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
 
@@ -307,8 +307,8 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '👦', '🧓', ''];
-    const FEMALE = ['👩', '👧', '🧕', '👩‍', ''];
+    const MALE = ['🧑', '👨', '', '🧓', ''];
+    const FEMALE = ['👩', '👧', '', '👩🦰', ''];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -403,17 +403,19 @@
 
     function setInputEnabled(on) { msgInput.disabled = !on; sendBtn.disabled = !on; }
 
+    // ✅ الاسم+النقطتين في div.nm-line (عمود ثابت) -> الاسم ما يتحركش مهما طول النص
     function drawJoin(o) {
       const name = nameOf(o), color = o.color || o.senderColor || '#94a3b8';
       const role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '';
       const row = document.createElement('div'); row.className = 'row';
       row.appendChild(buildAvatar({ role, gender, name, color }));
       const body = document.createElement('div'); body.className = 'body';
+      const nmLine = document.createElement('div'); nmLine.className = 'nm-line';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name; nm.style.color = color;
       nm.addEventListener('click', () => mentionUser(name));
-      body.appendChild(nm);
       const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
-      body.appendChild(colon);
+      nmLine.appendChild(nm); nmLine.appendChild(colon);
+      body.appendChild(nmLine);
       const act = document.createElement('span'); act.className = 'sys-action';
       act.textContent = 'انضم للغرفة (' + roleLabel(role) + ')';
       body.appendChild(act);
@@ -429,12 +431,13 @@
       const row = document.createElement('div'); row.className = 'row';
       row.appendChild(buildAvatar({ role, gender, name, color }));
       const body = document.createElement('div'); body.className = 'body';
+      const nmLine = document.createElement('div'); nmLine.className = 'nm-line';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name; nm.style.color = color;
       nm.addEventListener('click', () => mentionUser(name));
-      body.appendChild(nm);
+      const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
+      nmLine.appendChild(nm); nmLine.appendChild(colon);
+      body.appendChild(nmLine);
       if (text) {
-        const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
-        body.appendChild(colon);
         const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, o.mentions);
         if (markPending) tx.setAttribute('data-pending', '1');
         tx.title = 'اضغط للنسخ';
@@ -645,7 +648,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','','🌙','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','🥺','😴','🤝','','⭐','🌸','☕','🎵','⚽','🕋','','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
