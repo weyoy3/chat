@@ -33,7 +33,11 @@
     .auth-card { width: 100%; max-width: 400px; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); }
     .auth-logo { text-align: center; font-family: "Reem Kufi", "Cairo"; font-size: 28px; font-weight: 700; color: var(--header); margin-bottom: 4px; }
     .auth-logo span { color: var(--gold); }
-    .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .conn-status { text-align: center; font-size: 12px; margin-bottom: 14px; min-height: 16px; font-weight: 700; }
+    .conn-status.ok { color: #15803d; }
+    .conn-status.bad { color: var(--danger); }
+    .conn-status.wait { color: var(--muted); }
     .tabs { display: flex; background: #f1ede2; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
     .tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted); transition: .2s; font-family: "Cairo"; }
     .tab.active { background: var(--card); color: var(--header); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -81,7 +85,7 @@
     .room-count .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
     .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: "Cairo"; }
 
-    /* ===== Chat (ثابت بملء الشاشة - الصندوق مش بيختفي) ===== */
+    /* ===== Chat ===== */
     #screenChat {
       position: fixed; top: 0; left: 50%; transform: translateX(-50%);
       width: 100%; max-width: 760px; height: 100vh; height: 100dvh;
@@ -151,6 +155,7 @@
       <div class="auth-card">
         <div class="auth-logo">Arabic<span>chat</span></div>
         <div class="auth-sub">غرف دردشة عربية — ادخل وابدأ الكلام</div>
+        <div class="conn-status wait" id="connStatus">جاري الاتصال بالخادم...</div>
         <div class="tabs" id="authTabs">
           <div class="tab active" data-tab="login">دخول</div>
           <div class="tab" data-tab="register">حساب جديد</div>
@@ -247,17 +252,18 @@
     const roomTitle = $('roomTitle'), roomCount = $('roomCount'), toast = $('toast');
     const logoutBtn = $('logoutBtn'), watermark = $('watermark');
     const emojiBtn = $('emojiBtn'), emojiPanel = $('emojiPanel');
+    const connStatus = $('connStatus');
 
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
-    let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null;
+    let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null, authTimer = null;
 
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '👦', '🧓', ''];
-    const FEMALE = ['👩', '', '🧕', '👸', '👵'];
+    const MALE = ['🧑', '👨', '', '🧓', '🧔'];
+    const FEMALE = ['👩', '👧', '🧕', '', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
       if (!pool) return null;
@@ -286,6 +292,19 @@
       toast.className = 'show' + (isMention ? ' mention-toast' : '');
       clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, isMention ? 3000 : 1300);
     }
+
+    function setConn(cls, txt) { connStatus.className = 'conn-status ' + cls; connStatus.textContent = txt; }
+
+    // لو مفيش رد من السيرفر خلال 8 ثواني -> رسالة واضحة بدل "أزرار ميتة"
+    function startAuthTimeout(errEl) {
+      clearTimeout(authTimer);
+      authTimer = setTimeout(() => {
+        const msg = 'تعذر الاتصال بالخادم. حدّث الصفحة وحاول تاني.';
+        if (errEl) errEl.textContent = msg;
+        setConn('bad', 'الخادم لا يرد — حدّث الصفحة');
+      }, 8000);
+    }
+    function clearAuthTimeout() { clearTimeout(authTimer); }
 
     function mentionUser(name) {
       if (!name) return;
@@ -337,15 +356,27 @@
     });
     $('guestBack').addEventListener('click', showAuthMain);
 
-    $('formLogin').addEventListener('submit', (e) => { e.preventDefault(); $('liErr').textContent = ''; socket.emit('login', { email: $('liEmail').value, password: $('liPass').value }); });
-    $('formRegister').addEventListener('submit', (e) => { e.preventDefault(); $('rgErr').textContent = ''; socket.emit('register', { username: $('rgName').value, email: $('rgEmail').value, password: $('rgPass').value, gender: $('rgGender').value, age: $('rgAge').value, country: $('rgCountry').value }); });
+    $('formLogin').addEventListener('submit', (e) => {
+      e.preventDefault(); $('liErr').textContent = '';
+      if (!socket.connected) { $('liErr').textContent = 'جاري الاتصال بالخادم، استنى ثانية...'; socket.connect(); startAuthTimeout($('liErr')); return; }
+      socket.emit('login', { email: $('liEmail').value, password: $('liPass').value });
+      startAuthTimeout($('liErr'));
+    });
+    $('formRegister').addEventListener('submit', (e) => {
+      e.preventDefault(); $('rgErr').textContent = '';
+      if (!socket.connected) { $('rgErr').textContent = 'جاري الاتصال بالخادم، استنى ثانية...'; socket.connect(); startAuthTimeout($('rgErr')); return; }
+      socket.emit('register', { username: $('rgName').value, email: $('rgEmail').value, password: $('rgPass').value, gender: $('rgGender').value, age: $('rgAge').value, country: $('rgCountry').value });
+      startAuthTimeout($('rgErr'));
+    });
     $('formGuest').addEventListener('submit', (e) => {
       e.preventDefault();
       const name = $('gName').value.trim();
       if (name.length < 2) { $('gErr').textContent = 'اكتب اسمك (حرفين على الأقل)'; return; }
-      pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value };
       $('gErr').textContent = '';
+      if (!socket.connected) { $('gErr').textContent = 'جاري الاتصال بالخادم، استنى ثانية...'; socket.connect(); }
+      pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value };
       socket.emit('guest_login', pendingGuest);
+      startAuthTimeout($('gErr'));
     });
 
     logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); localStorage.removeItem('curRoom'); location.reload(); });
@@ -362,11 +393,12 @@
     }
 
     function enterApp(user, isMember) {
+      clearAuthTimeout();
       myName = user.name; myColor = user.color; myRole = user.role; myGender = user.gender || '';
       $('myName').textContent = myName;
       setMyAvatar();
       screenAuth.classList.add('hidden');
-      screenRooms.classList.remove('hidden'); // fallback آمن
+      screenRooms.classList.remove('hidden');
       const saved = localStorage.getItem('curRoom');
       if (saved) { try { const r = JSON.parse(saved); socket.emit('join_room', r.id); } catch (e) {} }
     }
@@ -445,28 +477,29 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','','😢','😡','👍','👋','❤️','🔥','💔','🌹','','🎉','✨','😅','😊','😉','😘','🥺','😴','🤝','','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','','😡','👍','👋','❤️','🔥','💔','🌹','','🎉','✨','😅','😊','😉','😘','🥺','😴','🤝','','🌙','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
 
-    // ---------- ثبات الصندوق مع الكيبورد ----------
     if (window.visualViewport) {
       const vv = window.visualViewport;
       const adjust = () => { screenChat.style.height = vv.height + 'px'; screenChat.style.top = vv.offsetTop + 'px'; };
       vv.addEventListener('resize', adjust);
       vv.addEventListener('scroll', adjust);
     }
-    // رجوع التاب الخفي
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 
     // ---------- Socket ----------
     socket.on('connect', () => {
+      setConn('ok', 'متصل بالخادم ✓');
       const token = localStorage.getItem('token');
       const guest = localStorage.getItem('guest');
       if (token) socket.emit('auth_check', token);
       else if (guest) { try { pendingGuest = JSON.parse(guest); socket.emit('guest_login', pendingGuest); } catch (e) {} }
     });
+    socket.on('connect_error', () => setConn('bad', 'تعذر الاتصال بالخادم — حدّث الصفحة'));
+    socket.on('disconnect', () => { if (!screenAuth.classList.contains('hidden')) setConn('wait', 'انقطع الاتصال، جاري إعادة المحاولة...'); });
 
     socket.on('auth_ok', (user) => enterApp(user, true));
     socket.on('auth_fail', () => {
@@ -474,11 +507,12 @@
       const g = localStorage.getItem('guest');
       if (g) { try { pendingGuest = JSON.parse(g); socket.emit('guest_login', pendingGuest); } catch (e) {} }
     });
-    socket.on('register_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
-    socket.on('register_err', (d) => { $('rgErr').textContent = d.msg; });
-    socket.on('login_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
-    socket.on('login_err', (d) => { $('liErr').textContent = d.msg; });
+    socket.on('register_ok', (d) => { clearAuthTimeout(); localStorage.setItem('token', d.token); enterApp(d.user, true); });
+    socket.on('register_err', (d) => { clearAuthTimeout(); $('rgErr').textContent = d.msg; });
+    socket.on('login_ok', (d) => { clearAuthTimeout(); localStorage.setItem('token', d.token); enterApp(d.user, true); });
+    socket.on('login_err', (d) => { clearAuthTimeout(); $('liErr').textContent = d.msg; });
     socket.on('guest_ok', (d) => {
+      clearAuthTimeout();
       if (pendingGuest) localStorage.setItem('guest', JSON.stringify(pendingGuest));
       if (d.renamed) setTimeout(() => showToast('تم تعديل اسمك لأن الاسم ده مستخدم حاليًا'), 600);
       enterApp(d.user, false);
@@ -491,4 +525,41 @@
       screenChat.classList.remove('hidden');
       roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name;
       applyTheme(d.room.theme);
-      localStorage.setItem('curRoom', JSON.stringify({ id: d.room
+      localStorage.setItem('curRoom', JSON.stringify({ id: d.room.id }));
+      messagesEl.innerHTML = '';
+      if (d.history && d.history.length) d.history.forEach((m) => addRow(m.text, 'row', m));
+      addRow('دخلت غرفة ' + d.room.name, 'sys');
+      socket.emit('request_users');
+      msgInput.focus();
+    });
+
+    socket.on('left_room', () => {
+      screenChat.classList.add('hidden');
+      screenRooms.classList.remove('hidden');
+      drawer.classList.add('hidden');
+      emojiPanel.classList.add('hidden');
+      localStorage.removeItem('curRoom');
+    });
+
+    socket.on('message', (d) => addRow(d.text, 'row', d));
+    socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
+    socket.on('user_joined', (d) => addRow('انضم للغرفة', 'row', Object.assign({}, d, { mutedText: true })));
+    socket.on('user_left', (d) => addRow('غادر الغرفة', 'row', Object.assign({}, d, { mutedText: true })));
+
+    socket.on('room_users', (list) => {
+      roomCount.textContent = list.length;
+      usersList.innerHTML = '';
+      list.forEach((u) => {
+        const it = document.createElement('div'); it.className = 'u-item';
+        const av = buildAvatar(u); av.addEventListener('click', () => mentionUser(u.name));
+        const nm = document.createElement('span'); nm.className = 'nm2'; nm.textContent = u.name; nm.style.color = u.color; nm.addEventListener('click', () => mentionUser(u.name));
+        const bd = document.createElement('span'); bd.className = 'badge ' + (u.role === 'member' ? 'member' : 'guest'); bd.textContent = roleLabel(u.role);
+        it.append(av, nm, bd); usersList.appendChild(it);
+      });
+    });
+
+    socket.on('typing', (d) => { typingEl.textContent = d.name + ' بيكتب...'; clearTimeout(typingTimer); typingTimer = setTimeout(() => typingEl.textContent = '', 2200); });
+    socket.on('stop_typing', () => { typingEl.textContent = ''; });
+  </script>
+</body>
+</html>
