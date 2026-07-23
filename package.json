@@ -1,7 +1,7 @@
 {
   "name": "araby-chat-clone",
-  "version": "1.0.0",
-  "description": "Anonymous chat application clone",
+  "version": "2.0.0",
+  "description": "Arabic rooms chat platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
