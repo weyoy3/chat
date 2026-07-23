@@ -6,7 +6,7 @@
   <title>شات عربي | غرف دردشة</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700&family=Reem+Kufi:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f6f2e9; --bg2: #efe9da; --card: #ffffff;
@@ -31,7 +31,7 @@
     /* ===== Auth ===== */
     #screenAuth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .auth-card { width: 100%; max-width: 400px; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); }
-    .auth-logo { text-align: center; font-family: "Cairo"; font-size: 27px; font-weight: 800; color: var(--header); margin-bottom: 4px; }
+    .auth-logo { text-align: center; font-family: "Reem Kufi", "Cairo"; font-size: 28px; font-weight: 700; color: var(--header); margin-bottom: 4px; }
     .auth-logo span { color: var(--gold); }
     .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
     .tabs { display: flex; background: #f1ede2; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
@@ -53,15 +53,14 @@
     /* ===== Header ===== */
     header { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 4px 18px rgba(13,148,136,0.25); position: sticky; top: 0; z-index: 20; }
     #screenChat header { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
-    .logo { font-family: "Cairo"; font-size: 20px; font-weight: 800; }
+    .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
     .logo span { color: #fde68a; }
     .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 5px 11px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: #fff; font-weight: bold; font-family: "Cairo"; }
+    .me-pill .av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; }
+    .me-pill .av.emoji-av { background: rgba(255,255,255,0.85); }
     .head-right { display: flex; align-items: center; gap: 8px; }
     .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 18px; cursor: pointer; }
     .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
-
-    /* عداد منسّق */
     .online-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 13px; cursor: pointer; font-weight: 700; font-family: "Cairo"; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.7); animation: pulse 1.8s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
@@ -84,45 +83,54 @@
     /* ===== Chat ===== */
     #screenChat { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
     #watermark { position: absolute; inset: 0; display: grid; place-items: center; font-size: 230px; opacity: 0.05; pointer-events: none; z-index: 0; user-select: none; }
-    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 13px; background: var(--chat-bg); position: relative; z-index: 1; }
-    .row { display: flex; gap: 9px; max-width: 100%; animation: slideIn .2s ease; align-self: flex-start; padding: 4px 6px; border-radius: 10px; }
-    .row.mentioned { background: rgba(217,119,6,0.10); outline: 1px solid rgba(217,119,6,0.25); }
+    #messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 11px; background: var(--chat-bg); position: relative; z-index: 1; }
+
+    .row { display: flex; gap: 9px; align-items: flex-start; animation: slideIn .2s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .row.sys { align-self: center; max-width: 92%; padding: 0; background: none; }
+    .row.sys { align-self: center; max-width: 92%; }
+
     .av { width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
-    .col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-    .meta-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-    .nm { font-family: "Cairo"; font-size: 14.5px; font-weight: 800; cursor: pointer; }
+    .av.emoji-av { background: #f1ede2; font-size: 19px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+    /* النص inline: اسم + رسالة + راية/توقيت في سطر واحد يلف */
+    .body { flex: 1; min-width: 0; line-height: 2.05; font-size: 15px; }
+    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 15px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    .colon { color: var(--muted); font-weight: 700; }
-    .badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; align-self: center; }
+    .badge { display: inline-block; vertical-align: middle; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
     .badge.join { background: rgba(22,163,74,0.14); color: #15803d; }
     .badge.leave { background: rgba(107,114,128,0.12); color: #6b7280; }
-    .tm { font-size: 10.5px; color: var(--muted); align-self: center; }
-    .msg-text { font-size: 15.5px; line-height: 1.8; color: #243042; word-break: break-word; white-space: pre-wrap; cursor: pointer; padding: 1px 0; }
-    .mention { color: var(--chat-accent); font-weight: 800; background: rgba(13,148,136,0.10); border-radius: 6px; padding: 0 4px; cursor: pointer; }
+    .msg { word-break: break-word; white-space: pre-wrap; color: #243042; }
+    .tail { display: inline-block; white-space: nowrap; margin-inline-start: 6px; vertical-align: middle; }
+    .flag { filter: grayscale(1) opacity(0.45); font-size: 11px; margin-inline-end: 3px; }
+    .tm { color: #8a93a3; font-size: 11.5px; font-weight: 600; }
+
+    /* المنشن */
+    .mention { color: var(--chat-accent); font-weight: 800; }
+    .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 0 3px; }
+
     .sys .bubble { background: rgba(15,23,42,0.06); color: var(--muted); font-size: 12px; border-radius: 999px; padding: 5px 13px; }
     .typing { padding: 0 16px 6px; color: var(--muted); font-size: 12.5px; min-height: 18px; position: relative; z-index: 1; }
 
     footer { display: flex; gap: 9px; padding: 11px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.7); position: relative; z-index: 2; }
     footer input { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 15px; outline: none; font-family: inherit; }
     footer input:focus { border-color: var(--chat-accent); }
+    footer input.flash { animation: flashIn .6s ease; }
+    @keyframes flashIn { 0% { background: #fef9c3; } 100% { background: #fff; } }
     .emoji-btn { border: none; border-radius: 12px; padding: 0 13px; font-size: 20px; cursor: pointer; background: #f1ede2; }
     footer .send-btn { border: none; border-radius: 12px; padding: 12px 18px; color: #fff; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); font-family: "Cairo"; }
 
-    /* لوحة الإيموجي */
     #emojiPanel { position: absolute; bottom: 64px; right: 11px; left: 11px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 200px; overflow-y: auto; z-index: 5; }
     #emojiPanel span { font-size: 22px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; }
     #emojiPanel span:hover { background: #f1ede2; }
 
-    /* ===== Drawer ===== */
     #drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: flex; justify-content: flex-end; }
     #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
     #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
     .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; }
+    .u-item .av.emoji-av { font-size: 16px; }
     .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
     .u-item .nm2:hover { text-decoration: underline; }
 
@@ -136,12 +144,11 @@
 <body>
   <div class="app">
 
-    <!-- ============ شاشة الدخول ============ -->
+    <!-- ============ الدخول ============ -->
     <section id="screenAuth">
       <div class="auth-card">
         <div class="auth-logo">Arabic<span>chat</span></div>
         <div class="auth-sub">غرف دردشة عربية — ادخل وابدأ الكلام</div>
-
         <div class="tabs" id="authTabs">
           <div class="tab active" data-tab="login">دخول</div>
           <div class="tab" data-tab="register">حساب جديد</div>
@@ -159,26 +166,19 @@
           <div class="field"><label>البريد الإلكتروني</label><input type="email" id="rgEmail" required /></div>
           <div class="field"><label>كلمة المرور</label><input type="password" id="rgPass" required minlength="6" /></div>
           <div class="row2">
-            <div class="field"><label>النوع</label>
-              <select id="rgGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">أفضل عدم الإفصاح</option></select>
-            </div>
+            <div class="field"><label>النوع</label><select id="rgGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">أفضل عدم الإفصاح</option></select></div>
             <div class="field"><label>العمر</label><input type="number" id="rgAge" min="10" max="80" placeholder="24" /></div>
           </div>
-          <div class="field"><label>الدولة</label>
-            <select id="rgCountry"><option value="">اختر الدولة</option><option>مصر</option><option>السعودية</option><option>الإمارات</option><option>الكويت</option><option>قطر</option><option>البحرين</option><option>عمان</option><option>اليمن</option><option>الأردن</option><option>سوريا</option><option>لبنان</option><option>العراق</option><option>فلسطين</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>موريتانيا</option><option>أخرى</option></select>
-          </div>
+          <div class="field"><label>الدولة</label><select id="rgCountry"><option value="">اختر الدولة</option><option>مصر</option><option>السعودية</option><option>الإمارات</option><option>الكويت</option><option>قطر</option><option>البحرين</option><option>عمان</option><option>اليمن</option><option>الأردن</option><option>سوريا</option><option>لبنان</option><option>العراق</option><option>فلسطين</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>موريتانيا</option><option>أخرى</option></select></div>
           <button class="btn-primary" type="submit">إنشاء الحساب</button>
           <div class="auth-err" id="rgErr"></div>
         </form>
 
-        <!-- فورم الزائر -->
         <form id="formGuest" class="hidden" autocomplete="off">
           <div class="form-title">دخول كزائر 🚶</div>
           <div class="field"><label>اسمك (هيظهر في الشات)</label><input type="text" id="gName" required minlength="2" maxlength="20" placeholder="مثلاً: أحمد" /></div>
           <div class="row2">
-            <div class="field"><label>النوع</label>
-              <select id="gGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">لا أفصح</option></select>
-            </div>
+            <div class="field"><label>النوع</label><select id="gGender"><option value="">اختر</option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option><option value="لا أفصح">لا أفصح</option></select></div>
             <div class="field"><label>العمر</label><input type="number" id="gAge" min="10" max="80" placeholder="24" /></div>
           </div>
           <button class="btn-primary" type="submit">ادخل كزائر</button>
@@ -193,7 +193,7 @@
       </div>
     </section>
 
-    <!-- ============ شاشة الغرف ============ -->
+    <!-- ============ الغرف ============ -->
     <section id="screenRooms" class="hidden">
       <header>
         <div class="logo">Arabic<span>chat</span></div>
@@ -209,7 +209,7 @@
       <div id="roomsGrid"></div>
     </section>
 
-    <!-- ============ شاشة الشات ============ -->
+    <!-- ============ الشات ============ -->
     <section id="screenChat" class="hidden">
       <header>
         <div class="head-right">
@@ -224,19 +224,13 @@
       <div id="emojiPanel" class="hidden"></div>
       <footer>
         <button class="emoji-btn" id="emojiBtn" type="button">😀</button>
-        <input id="msgInput" type="text" placeholder="اكتب رسالة... (@ للمنشن)" autocomplete="off" />
+        <input id="msgInput" type="text" placeholder="اكتب رسالة... (اضغط على اسم لمنشن)" autocomplete="off" />
         <button class="send-btn" id="sendBtn">إرسال</button>
       </footer>
     </section>
   </div>
 
-  <div id="drawer" class="hidden">
-    <div class="panel">
-      <h3>الموجودين في الغرفة</h3>
-      <div id="usersList"></div>
-    </div>
-  </div>
-
+  <div id="drawer" class="hidden"><div class="panel"><h3>الموجودين في الغرفة</h3><div id="usersList"></div></div></div>
   <div id="toast"></div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -252,18 +246,38 @@
     const logoutBtn = $('logoutBtn'), watermark = $('watermark');
     const emojiBtn = $('emojiBtn'), emojiPanel = $('emojiPanel');
 
-    let myName = 'أنت', myColor = '#0d9488', myRole = 'guest';
+    let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
     let typingTimer = null, lastTyping = 0, toastTimer = null, pendingGuest = null;
 
     const fmt = (t) => new Date(t || Date.now()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
 
+    // ---- أفاتار حسب النوع (5 لكل نوع) ----
+    const MALE = ['🧑', '👨', '🧔', '', '🧑🦰'];
+    const FEMALE = ['👩', '👧', '🧕', '‍🦰', '👩‍🦳'];
+    function pickAvatar(gender, seed) {
+      const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
+      if (!pool) return null;
+      let h = 0; for (let i = 0; i < (seed || '').length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+      return pool[h % pool.length];
+    }
+
     function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-    function renderText(text) {
-      let safe = escapeHtml(text);
-      safe = safe.replace(/@([\u0600-\u06FF\w]+)/g, '<span class="mention">@$1</span>');
-      return safe;
+    function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    // رسم النص مع تظليل المنشن (الأصفر للمذكور بس)
+    function renderText(text, mentions) {
+      let html = escapeHtml(text);
+      const list = [...(mentions || [])].sort((a, b) => b.length - a.length);
+      const myLow = myName.toLowerCase();
+      for (const name of list) {
+        const esc = escapeHtml(name);
+        const me = name.toLowerCase() === myLow ? ' mention-me' : '';
+        const re = new RegExp('(^|[^\\u0600-\\u06FF\\w])' + escapeRegExp(esc) + '($|[^\\u0600-\\u06FF\\w])', 'gi');
+        html = html.replace(re, (m, pre, post) => pre + '<span class="mention' + me + '">' + esc + '</span>' + post);
+      }
+      return html;
     }
 
     function showToast(m, isMention) {
@@ -272,11 +286,15 @@
       clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, isMention ? 3000 : 1300);
     }
 
+    // منشن بالضغط على اسم: الاسم + مسافة + المسطرة في الآخر (بدون @)
     function mentionUser(name) {
       const cur = msgInput.value;
-      const add = (cur && !cur.endsWith(' ') ? ' ' : '') + '@' + name + ' ';
-      msgInput.value = cur + add;
+      if (cur.trim() === '') msgInput.value = name + ' ';
+      else msgInput.value = cur + (cur.endsWith(' ') ? '' : ' ') + name + ' ';
       msgInput.focus();
+      const len = msgInput.value.length;
+      msgInput.setSelectionRange(len, len);
+      msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash');
     }
 
     // ---------- Auth UI ----------
@@ -297,10 +315,8 @@
       $('liErr').textContent = ''; $('rgErr').textContent = '';
     }));
     $('guestBtn').addEventListener('click', () => {
-      $('authTabs').classList.add('hidden');
-      $('formLogin').classList.add('hidden');
-      $('formRegister').classList.add('hidden');
-      $('authFooter').classList.add('hidden');
+      $('authTabs').classList.add('hidden'); $('formLogin').classList.add('hidden');
+      $('formRegister').classList.add('hidden'); $('authFooter').classList.add('hidden');
       $('formGuest').classList.remove('hidden');
     });
     $('guestBack').addEventListener('click', showAuthMain);
@@ -318,15 +334,30 @@
 
     logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); location.reload(); });
 
+    function setMyAvatar() {
+      const av = $('myAv');
+      const emoji = pickAvatar(myGender, myName);
+      if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; av.style.background = ''; }
+      else { av.classList.remove('emoji-av'); av.textContent = ini(myName); av.style.background = myColor; }
+    }
+
     function enterApp(user, isMember) {
-      myName = user.name; myColor = user.color; myRole = user.role;
+      myName = user.name; myColor = user.color; myRole = user.role; myGender = user.gender || '';
       $('myName').textContent = myName;
-      $('myAv').textContent = ini(myName); $('myAv').style.background = myColor;
+      setMyAvatar();
       screenAuth.classList.add('hidden');
       screenRooms.classList.remove('hidden');
     }
 
     // ---------- Messages ----------
+    function buildAvatar(opts) {
+      const av = document.createElement('div'); av.className = 'av';
+      const emoji = pickAvatar(opts.gender, opts.name);
+      if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; }
+      else { av.style.background = opts.color || '#94a3b8'; av.textContent = ini(opts.name); }
+      return av;
+    }
+
     function addRow(text, who, opts = {}) {
       const row = document.createElement('div');
       row.className = 'row ' + who;
@@ -334,33 +365,31 @@
         const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
         row.appendChild(b);
       } else {
-        const av = document.createElement('div'); av.className = 'av';
-        av.style.background = opts.color || '#94a3b8'; av.textContent = ini(opts.name);
-        const col = document.createElement('div'); col.className = 'col';
-        const meta = document.createElement('div'); meta.className = 'meta-line';
+        row.appendChild(buildAvatar(opts));
+        const body = document.createElement('div'); body.className = 'body';
 
         const nm = document.createElement('span'); nm.className = 'nm';
         nm.textContent = opts.name || ''; nm.style.color = opts.color || '#374151';
         nm.addEventListener('click', () => mentionUser(opts.name));
-        meta.appendChild(nm);
+        body.appendChild(nm);
 
-        if (opts.role) { const rb = document.createElement('span'); rb.className = 'badge ' + (opts.role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(opts.role); meta.appendChild(rb); }
-        if (opts.event === 'join') { const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول'; meta.appendChild(eb); }
-        else if (opts.event === 'leave') { const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج'; meta.appendChild(eb); }
+        if (opts.role) { const rb = document.createElement('span'); rb.className = 'badge ' + (opts.role === 'member' ? 'member' : 'guest'); rb.textContent = roleLabel(opts.role); body.appendChild(rb); }
+        if (opts.event === 'join') { const eb = document.createElement('span'); eb.className = 'badge join'; eb.textContent = '📥 دخول'; body.appendChild(eb); }
+        else if (opts.event === 'leave') { const eb = document.createElement('span'); eb.className = 'badge leave'; eb.textContent = '📤 خروج'; body.appendChild(eb); }
 
-        const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ':';
-        meta.appendChild(colon);
-        const tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = fmt(opts.time);
-        meta.appendChild(tm);
-
-        col.appendChild(meta);
         if (text) {
-          const tx = document.createElement('div'); tx.className = 'msg-text'; tx.innerHTML = renderText(text);
+          const sp = document.createElement('span'); sp.textContent = ' '; body.appendChild(sp);
+          const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, opts.mentions);
           tx.title = 'اضغط للنسخ';
           tx.addEventListener('click', () => navigator.clipboard?.writeText(text).then(() => showToast('تم نسخ الرسالة')));
-          col.appendChild(tx);
+          body.appendChild(tx);
         }
-        row.appendChild(av); row.appendChild(col);
+
+        const tail = document.createElement('span'); tail.className = 'tail';
+        tail.innerHTML = '<span class="flag">🚩</span><span class="tm">' + fmt(opts.time) + '</span>';
+        body.appendChild(tail);
+
+        row.appendChild(body);
       }
       messagesEl.appendChild(row);
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -379,10 +408,7 @@
       roomsGrid.innerHTML = '';
       list.forEach((r) => {
         const card = document.createElement('div'); card.className = 'room-card';
-        card.innerHTML = `
-          <div class="room-top"><span class="room-emoji">${r.emoji || ''}</span><span class="room-name">${r.name}</span><span class="room-flag">${r.flag || ''}</span></div>
-          <span class="room-count"><span class="d"></span>${r.count} متصل</span>
-          <button class="room-enter">دخول الغرفة</button>`;
+        card.innerHTML = `<div class="room-top"><span class="room-emoji">${r.emoji || ''}</span><span class="room-name">${r.name}</span><span class="room-flag">${r.flag || ''}</span></div><span class="room-count"><span class="d"></span>${r.count} متصل</span><button class="room-enter">دخول الغرفة</button>`;
         card.addEventListener('click', () => socket.emit('join_room', r.id));
         roomsGrid.appendChild(card);
       });
@@ -391,7 +417,7 @@
     function send() {
       const t = msgInput.value.trim();
       if (!t) return;
-      socket.emit('message', t);   // بدون إضافة محلية -> مفيش تكرار
+      socket.emit('message', t);
       msgInput.value = '';
       emojiPanel.classList.add('hidden');
       socket.emit('stop_typing');
@@ -404,8 +430,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    // لوحة الإيموجي
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','','❤️','🔥','💔','🌹','😭','🙏','👏','🎉','','✨','😅','😊','😉','😘','🥺','😴','🤝','💪','','⭐','','☕','','🎵','⚽','','','🕋','','🇪🇬'];
+    const EMOJIS = ['😀','😂','😍','','😎','','😢','😡','👍','👋','❤️','🔥','💔','🌹','','🙏','','🎉','','✨','😅','😊','😉','😘','🥺','😴','🤝','','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -415,22 +440,29 @@
       const token = localStorage.getItem('token');
       const guest = localStorage.getItem('guest');
       if (token) socket.emit('auth_check', token);
-      else if (guest) { try { pendingGuest = JSON.parse(guest); socket.emit('guest_login', pendingGuest); } catch (e) { /* show auth */ } }
+      else if (guest) { try { pendingGuest = JSON.parse(guest); socket.emit('guest_login', pendingGuest); } catch (e) {} }
     });
 
     socket.on('auth_ok', (user) => enterApp(user, true));
-    socket.on('auth_fail', () => { localStorage.removeItem('token'); });
+    socket.on('auth_fail', () => {
+      localStorage.removeItem('token');
+      const g = localStorage.getItem('guest');
+      if (g) { try { pendingGuest = JSON.parse(g); socket.emit('guest_login', pendingGuest); } catch (e) {} }
+    });
     socket.on('register_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('register_err', (d) => { $('rgErr').textContent = d.msg; });
     socket.on('login_ok', (d) => { localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('login_err', (d) => { $('liErr').textContent = d.msg; });
-    socket.on('guest_ok', (d) => { if (pendingGuest) localStorage.setItem('guest', JSON.stringify(pendingGuest)); enterApp(d.user, false); });
+    socket.on('guest_ok', (d) => {
+      if (pendingGuest) localStorage.setItem('guest', JSON.stringify(pendingGuest));
+      if (d.renamed) setTimeout(() => showToast('تم تعديل اسمك لأن الاسم ده مستخدم حاليًا'), 600);
+      enterApp(d.user, false);
+    });
 
     socket.on('rooms_list', renderRooms);
 
     socket.on('joined_room', (d) => {
-      screenRooms.classList.add('hidden');
-      screenChat.classList.remove('hidden');
+      screenRooms.classList.add('hidden'); screenChat.classList.remove('hidden');
       roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name;
       applyTheme(d.room.theme);
       messagesEl.innerHTML = '';
@@ -442,20 +474,17 @@
 
     socket.on('left_room', () => { screenChat.classList.add('hidden'); screenRooms.classList.remove('hidden'); drawer.classList.add('hidden'); emojiPanel.classList.add('hidden'); });
 
-    socket.on('message', (d) => {
-      const row = addRow(d.text, 'row', d);
-      if (d.text && d.text.includes('@' + myName)) row.classList.add('mentioned');
-    });
+    socket.on('message', (d) => addRow(d.text, 'row', d));
     socket.on('mentioned', (d) => showToast('🔔 ' + d.by + ' عملك منشن', true));
-    socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, event: 'join', time: Date.now() }));
-    socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, event: 'leave', time: Date.now() }));
+    socket.on('user_joined', (d) => addRow('', 'row', { name: d.name, color: '#16a34a', role: d.role, gender: d.gender, event: 'join', time: Date.now() }));
+    socket.on('user_left', (d) => addRow('', 'row', { name: d.name, color: '#94a3b8', role: d.role, gender: d.gender, event: 'leave', time: Date.now() }));
 
     socket.on('room_users', (list) => {
       roomCount.textContent = list.length;
       usersList.innerHTML = '';
       list.forEach((u) => {
         const it = document.createElement('div'); it.className = 'u-item';
-        const av = document.createElement('span'); av.className = 'av'; av.style.background = u.color; av.textContent = ini(u.name); av.addEventListener('click', () => mentionUser(u.name));
+        const av = buildAvatar(u); av.addEventListener('click', () => mentionUser(u.name));
         const nm = document.createElement('span'); nm.className = 'nm2'; nm.textContent = u.name; nm.style.color = u.color; nm.addEventListener('click', () => mentionUser(u.name));
         const bd = document.createElement('span'); bd.className = 'badge ' + (u.role === 'member' ? 'member' : 'guest'); bd.textContent = roleLabel(u.role);
         it.append(av, nm, bd); usersList.appendChild(it);
