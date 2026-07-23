@@ -15,7 +15,7 @@ app.use(express.static(__dirname));
 const ROOMS = [
   { id: 'general', name: 'الغرفة العامة', emoji: '💬', flag: '🌍', category: 'عامة', theme: { bg: 'linear-gradient(180deg,#f7f4ec,#efe9da)', accent: '#0d9488', accent2: '#14b8a6', wm: '💬' } },
   { id: 'egypt', name: 'مصر', emoji: '😍', flag: '🇪🇬', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf3e9,#f3e6d6)', accent: '#b91c1c', accent2: '#dc2626', wm: '🏛️' } },
-  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
+  { id: 'saudi', name: 'السعودية', emoji: '🌴', flag: '🇸🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#eef7f0,#e3f0e6)', accent: '#15803d', accent2: '#16a34a', wm: '🌴' } },
   { id: 'algeria', name: 'الجزائر', emoji: '⭐', flag: '🇩🇿', category: 'دول', theme: { bg: 'linear-gradient(180deg,#f0f4fb,#e6ecf7)', accent: '#1d4ed8', accent2: '#2563eb', wm: '⭐' } },
   { id: 'morocco', name: 'المغرب', emoji: '🌙', flag: '🇲🇦', category: 'دول', theme: { bg: 'linear-gradient(180deg,#fbf0f0,#f5e3e3)', accent: '#be123c', accent2: '#e11d48', wm: '🌙' } },
   { id: 'love', name: 'الحب والغرام', emoji: '❤️', flag: '💕', category: 'مواضيع', theme: { bg: 'linear-gradient(180deg,#fdf0f5,#fbe3ec)', accent: '#db2777', accent2: '#ec4899', wm: '❤️' } },
@@ -67,12 +67,25 @@ async function saveMessage(m) {
 async function loadHistory(roomId) {
   if (!isDbConnected()) return [];
   try {
-    const docs = await Message.find({ room: roomId }).sort({ createdAt: -1 }).limit(40);
-    return docs.reverse().map((d) => ({
+    const docs = await Message.find({ room: roomId }).sort({ createdAt: -1 }).limit(80);
+    const all = docs.reverse().map((d) => ({
       kind: d.kind || 'msg', text: d.text, mentions: d.mentions || [],
       senderName: d.senderName, senderColor: d.senderColor,
       senderRole: d.senderRole, senderGender: d.senderGender, time: d.createdAt.getTime()
     }));
+    // تنظيف العرض: دمج سطور "انضم" المتكررة لنفس الشخص خلال 60 ثانية
+    const out = [];
+    const lastJoin = new Map();
+    for (const m of all) {
+      if (m.kind === 'join') {
+        const k = (m.senderName || '').toLowerCase();
+        const lt = lastJoin.get(k);
+        if (lt && (m.time - lt) < 60000) continue;
+        lastJoin.set(k, m.time);
+      }
+      out.push(m);
+    }
+    return out;
   } catch (e) { return []; }
 }
 
@@ -97,35 +110,59 @@ function roomUsersList(roomId) {
   }
   return list;
 }
+function emitRoomUsers(roomId) { io.to(roomId).emit('room_users', roomUsersList(roomId)); }
 
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || '');
 function publicUser(u, color) { return { name: u.username, role: u.role, color, gender: u.gender || '' }; }
 
-const activeNames = new Map();
-function reserveName(desired, socketId) {
+// ---- حجز الأسماء بمعرّف ثابت (pid) -> يحل مشكلة التعديل عند refresh ----
+const activeNames = new Map(); // nameLower -> { pid, name }
+const pidSockets = new Map();  // pid -> Set<socketId>
+
+function registerSocketForPid(pid, socketId) {
+  if (!pidSockets.has(pid)) pidSockets.set(pid, new Set());
+  pidSockets.get(pid).add(socketId);
+}
+function reserveName(desired, pid, socketId) {
+  registerSocketForPid(pid, socketId);
   let base = (desired || '').trim().replace(/\s+/g, ' ');
   if (base.length < 2) base = generateName();
   const tryOne = (n) => {
     const low = n.toLowerCase();
     const cur = activeNames.get(low);
-    if (!cur) { activeNames.set(low, { sid: socketId, name: n }); return n; }
-    if (cur.sid === socketId) return n;
+    if (!cur) { activeNames.set(low, { pid, name: n }); return n; }
+    if (cur.pid === pid) return n; // نفس الشخص -> بدون تعديل
     return null;
   };
   let got = tryOne(base);
   if (got) return { name: got, renamed: got.toLowerCase() !== base.toLowerCase() };
   for (let i = 2; i < 200; i++) { got = tryOne(base + i); if (got) return { name: got, renamed: true }; }
-  const fb = base + socketId.slice(0, 4);
-  activeNames.set(fb.toLowerCase(), { sid: socketId, name: fb });
+  const fb = base + String(socketId).slice(0, 4);
+  activeNames.set(fb.toLowerCase(), { pid, name: fb });
   return { name: fb, renamed: true };
 }
-function releaseName(socketId) {
-  for (const [low, info] of activeNames) { if (info.sid === socketId) { activeNames.delete(low); break; } }
+function releaseSocket(socketId) {
+  for (const [pid, set] of pidSockets) {
+    if (set.has(socketId)) {
+      set.delete(socketId);
+      if (set.size === 0) {
+        pidSockets.delete(pid);
+        for (const [low, info] of activeNames) { if (info.pid === pid) { activeNames.delete(low); break; } }
+      }
+    }
+  }
 }
+// منظّف دوري: يشيل sockets الميتة والاحتجازات اليتيمة
 setInterval(() => {
-  for (const [low, info] of activeNames) {
-    const s = io.sockets.sockets.get(info.sid);
-    if (!s || !s.connected) activeNames.delete(low);
+  for (const [pid, set] of pidSockets) {
+    for (const sid of [...set]) {
+      const s = io.sockets.sockets.get(sid);
+      if (!s || !s.connected) set.delete(sid);
+    }
+    if (set.size === 0) {
+      pidSockets.delete(pid);
+      for (const [low, info] of activeNames) { if (info.pid === pid) { activeNames.delete(low); break; } }
+    }
   }
 }, 20000);
 
@@ -136,10 +173,10 @@ setInterval(() => {
 }, 600000);
 
 function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function findMentions(text, senderSocketId) {
+function findMentions(text, senderPid) {
   const found = [];
   for (const [low, info] of activeNames) {
-    if (info.sid === senderSocketId) continue;
+    if (info.pid === senderPid) continue;
     if (found.some((f) => f.toLowerCase() === low)) continue;
     const re = new RegExp('^' + escapeRegExp(info.name) + '($|[^\\u0600-\\u06FF\\w])');
     if (re.test(text)) found.push(info.name);
@@ -149,6 +186,7 @@ function findMentions(text, senderSocketId) {
 
 io.on('connection', (socket) => {
   socket.data.user = null;
+  socket.data.pid = null;
   socket.data.lastMsg = 0;
   socket.emit('rooms_list', buildRoomsList());
 
@@ -157,9 +195,11 @@ io.on('connection', (socket) => {
     try {
       const u = await User.findOne({ authToken: token });
       if (!u) return socket.emit('auth_fail');
-      const { name } = reserveName(u.username, socket.id);
+      const pid = String(u._id);
+      const { name } = reserveName(u.username, pid, socket.id);
+      socket.data.pid = pid;
       const color = colorFromId(name);
-      socket.data.user = { id: String(u._id), name, role: 'member', color, gender: u.gender || '' };
+      socket.data.user = { id: pid, name, role: 'member', color, gender: u.gender || '' };
       socket.emit('auth_ok', { name, role: 'member', color, gender: u.gender || '' });
     } catch (e) { socket.emit('auth_fail'); }
   });
@@ -176,16 +216,17 @@ io.on('connection', (socket) => {
     if (!isEmail(email)) return socket.emit('register_err', { msg: 'البريد الإلكتروني غير صحيح.' });
     if (password.length < 6) return socket.emit('register_err', { msg: 'كلمة المرور 6 أحرف على الأقل.' });
     if (!isDbConnected()) return socket.emit('register_err', { msg: 'قاعدة البيانات غير متصلة.' });
-    if (activeNames.has(username.toLowerCase())) return socket.emit('register_err', { msg: 'الاسم ده مستخدم حاليًا على الموقع، جرّب اسم تاني.' });
     try {
       const exists = await User.findOne({ $or: [{ email }, { username }] });
       if (exists) return socket.emit('register_err', { msg: 'البريد أو اسم المستخدم مستخدم بالفعل.' });
       const passwordHash = await bcrypt.hash(password, 10);
       const authToken = newToken();
       const u = await User.create({ username, email, passwordHash, gender, age: isNaN(age) ? null : age, country, role: 'member', authToken });
-      reserveName(username, socket.id);
+      const pid = String(u._id);
+      reserveName(username, pid, socket.id);
+      socket.data.pid = pid;
       const color = colorFromId(username);
-      socket.data.user = { id: String(u._id), name: username, role: 'member', color, gender };
+      socket.data.user = { id: pid, name: username, role: 'member', color, gender };
       socket.emit('register_ok', { token: authToken, user: publicUser(u, color) });
     } catch (e) { socket.emit('register_err', { msg: 'حدث خطأ أثناء التسجيل.' }); }
   });
@@ -202,9 +243,11 @@ io.on('connection', (socket) => {
       const ok = await bcrypt.compare(password, u.passwordHash);
       if (!ok) return socket.emit('login_err', { msg: 'البريد أو كلمة المرور غير صحيحة.' });
       u.authToken = newToken(); await u.save();
-      const { name } = reserveName(u.username, socket.id);
+      const pid = String(u._id);
+      const { name } = reserveName(u.username, pid, socket.id);
+      socket.data.pid = pid;
       const color = colorFromId(name);
-      socket.data.user = { id: String(u._id), name, role: 'member', color, gender: u.gender || '' };
+      socket.data.user = { id: pid, name, role: 'member', color, gender: u.gender || '' };
       socket.emit('login_ok', { token: u.authToken, user: { name, role: 'member', color, gender: u.gender || '' } });
     } catch (e) { socket.emit('login_err', { msg: 'حدث خطأ أثناء الدخول.' }); }
   });
@@ -213,15 +256,17 @@ io.on('connection', (socket) => {
     const raw = (d && d.name || '').trim();
     const age = d ? parseInt(d.age, 10) : NaN;
     const gender = d ? (d.gender || '').trim() : '';
-    const { name, renamed } = reserveName(raw, socket.id);
+    let pid = (d && d.guestId || '').trim();
+    if (!pid) pid = 'g_' + crypto.randomBytes(8).toString('hex');
+    const { name, renamed } = reserveName(raw, pid, socket.id);
+    socket.data.pid = pid;
     const color = colorFromId(name);
     socket.data.user = { id: socket.id, name, role: 'guest', color, gender, age: isNaN(age) ? null : age };
-    socket.emit('guest_ok', { user: { name, role: 'guest', color, gender }, renamed });
+    socket.emit('guest_ok', { user: { name, role: 'guest', color, gender }, renamed, guestId: pid });
   });
 
   function authed() { return !!socket.data.user; }
 
-  // join_room بيقبل string أو { id, isReload }
   socket.on('join_room', async (payload) => {
     const roomId = typeof payload === 'string' ? payload : (payload && payload.id);
     const isReload = !!(payload && payload.isReload);
@@ -241,14 +286,14 @@ io.on('connection', (socket) => {
       const now = Date.now();
       const last = lastJoinMap.get(jkey);
       if (isReload) {
-        // reload: حدّث عداد الدقيقتين بس — مفيش حفظ ولا إشعار (صامت)
-        lastJoinMap.set(jkey, now);
+        lastJoinMap.set(jkey, now); // صامت: مفيش حفظ ولا إشعار
       } else if (!last || now - last >= 120000) {
         lastJoinMap.set(jkey, now);
         socket.to(roomId).emit('user_joined', { name: u.name, color: u.color, role: u.role, gender: u.gender || '' });
         saveMessage({ room: roomId, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'join', text: '', mentions: [] });
       }
     }
+    emitRoomUsers(roomId); // العداد + القائمة يتحدّثوا فورًا عند الكل
   });
 
   socket.on('leave_room', () => {
@@ -257,6 +302,7 @@ io.on('connection', (socket) => {
     if (roomId) {
       socket.to(roomId).emit('user_left', { name: socket.data.user.name, color: socket.data.user.color, role: socket.data.user.role, gender: socket.data.user.gender || '' });
       socket.leave(roomId); socket.data.currentRoom = null; broadcastRooms();
+      emitRoomUsers(roomId);
     }
     socket.emit('left_room');
   });
@@ -274,10 +320,10 @@ io.on('connection', (socket) => {
     if (now - socket.data.lastMsg < 400) return;
     socket.data.lastMsg = now;
     const u = socket.data.user;
-    const mentions = findMentions(text, socket.id);
+    const mentions = findMentions(text, socket.data.pid);
     saveMessage({ room: socket.data.currentRoom, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', kind: 'msg', text, mentions });
-    const payload = { text, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', mentions, time: now };
-    io.to(socket.data.currentRoom).emit('message', payload);
+    const p = { text, senderId: socket.id, senderName: u.name, senderColor: u.color, senderRole: u.role, senderGender: u.gender || '', mentions, time: now };
+    io.to(socket.data.currentRoom).emit('message', p);
   });
 
   socket.on('typing', () => {
@@ -292,7 +338,8 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const roomId = socket.data.currentRoom;
     if (roomId && socket.data.user) socket.to(roomId).emit('user_left', { name: socket.data.user.name, color: socket.data.user.color, role: socket.data.user.role, gender: socket.data.user.gender || '' });
-    releaseName(socket.id);
+    if (roomId) emitRoomUsers(roomId);
+    releaseSocket(socket.id);
     broadcastRooms();
   });
 });
