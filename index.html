@@ -18,7 +18,8 @@
       --chat-accent: #0d9488; --chat-accent2: #14b8a6;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
+    /* ✅ منع سحب الصفحة كلها -> مفيش حاجة بتختفي بالسحب */
+    html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
     body {
       font-family: "Tajawal", Tahoma, Arial, sans-serif; color: var(--text);
       background:
@@ -26,11 +27,11 @@
         radial-gradient(600px 400px at -10% 110%, #fbf3da 0%, transparent 55%),
         linear-gradient(160deg, var(--bg), var(--bg2));
     }
-    .app { max-width: 760px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+    .app { max-width: 760px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
     .hidden { display: none !important; }
 
     /* ===== Auth ===== */
-    #screenAuth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+    #screenAuth { height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
     .auth-card { width: 100%; max-width: 400px; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); }
     .auth-logo { text-align: center; font-family: "Reem Kufi", "Cairo"; font-size: 28px; font-weight: 700; color: var(--header); margin-bottom: 4px; }
     .auth-logo span { color: var(--gold); }
@@ -76,7 +77,7 @@
     .rooms-head h2 { margin: 0 0 4px; font-size: 18px; font-family: "Cairo"; font-weight: 800; }
     .rooms-head p { margin: 0; color: var(--muted); font-size: 13px; }
     .rooms-head .conn-bar { margin: 8px 0 0; }
-    #roomsGrid { padding: 10px 14px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    #roomsGrid { padding: 10px 14px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; overflow-y: auto; }
     .room-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
     .room-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.09); }
     .room-top { display: flex; align-items: center; gap: 8px; }
@@ -87,17 +88,18 @@
     .room-count .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
     .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: "Cairo"; }
 
-    /* ===== Chat: تمركز بدون transform (يصلح اختفاء الـ footer عند السحب) ===== */
+    /* ===== Chat: ثابت تمامًا، الموضع+الارتفاع يتزامنا مع منطقة الرؤية ===== */
     #screenChat {
-      position: fixed; top: 0; left: 0; right: 0; margin: 0 auto;
-      width: 100%; max-width: 760px; height: 100vh; height: 100dvh;
+      position: fixed; left: 0; right: 0; margin: 0 auto;
+      top: 0; bottom: 0; /* fallback قبل الـ JS */
+      width: 100%; max-width: 760px;
       display: flex; flex-direction: column; background: var(--chat-bg); z-index: 10;
       overflow: hidden;
     }
     #watermark { display: none; }
     .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
     .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
-    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
+    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
 
     .row { display: flex; gap: 8px; align-items: flex-start; }
     .row.sys { align-self: center; max-width: 92%; }
@@ -286,7 +288,7 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '', '🧓', ''];
+    const MALE = ['🧑', '👨', '👦', '🧓', ''];
     const FEMALE = ['👩', '', '🧕', '👩‍🦰', ''];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
@@ -566,17 +568,40 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','','😎','🤔','','😡','👍','','❤️','','💔','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','','🎵','','🕋','','🇪🇬','🇦'];
+    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','👋','❤️','🔥','','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','','🎵','','🕋','','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
 
-    // ✅ ثبات الارتفاع مع الكيبورد فقط (بدون تعديل top -> لا يختفي عند السحب)
-    if (window.visualViewport) {
-      const vv = window.visualViewport;
-      const adjust = () => { screenChat.style.height = vv.height + 'px'; };
-      vv.addEventListener('resize', adjust);
+    // ✅ مزامنة الموضع + الارتفاع مع منطقة الرؤية الحقيقية (يصلح تلخبط الكيبورد)
+    function fitViewport() {
+      if (window.visualViewport) {
+        const vv = window.visualViewport;
+        screenChat.style.top = vv.offsetTop + 'px';
+        screenChat.style.height = vv.height + 'px';
+        screenChat.style.bottom = 'auto';
+      } else {
+        screenChat.style.top = '0px';
+        screenChat.style.height = window.innerHeight + 'px';
+        screenChat.style.bottom = 'auto';
+      }
     }
+    fitViewport();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitViewport);
+      window.visualViewport.addEventListener('scroll', fitViewport);
+    }
+    window.addEventListener('resize', fitViewport);
+    window.addEventListener('orientationchange', () => setTimeout(fitViewport, 200));
+
+    // ✅ عند الكتابة: نزّل الرسائل لآخرها + أعد المحاذاة
+    msgInput.addEventListener('focus', () => {
+      setTimeout(() => {
+        fitViewport();
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }, 300);
+    });
+
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 
     (function earlyRoute() {
@@ -600,6 +625,7 @@
           currentRoomId = r.id;
           loadCache(r.id);
           renderAllFromCache();
+          fitViewport();
         } catch (e) { screenRooms.classList.remove('hidden'); }
       } else {
         screenRooms.classList.remove('hidden');
@@ -667,7 +693,7 @@
         cacheItems = hist;
         cacheKeys = new Set(hist.map((x) => x._key));
         saveCache();
-        renderAllFromCache(); // السجل فيه انضمام الداخل نفسه الآن -> يظهر عنده
+        renderAllFromCache();
       } else {
         const sameSet = cacheItems.length === hist.length && cacheItems.every((x, i) => x._key === hist[i]._key);
         if (!sameSet) {
@@ -678,6 +704,7 @@
         }
       }
 
+      fitViewport();
       setInputEnabled(true);
       msgInput.focus();
     });
