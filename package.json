@@ -1,6 +1,6 @@
 {
   "name": "araby-chat-clone",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Arabic rooms chat platform with auth",
   "main": "server.js",
   "scripts": {
