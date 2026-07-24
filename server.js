@@ -1,8 +1,7 @@
 /**
  * ==========================================================
- * Chat Masr Server
- * Version : 1.0
- * Backend : Node.js + Express + Socket.IO
+ * Chat Masr Server v2.0
+ * Backend : Node.js + Express + Socket.IO + MongoDB
  * ==========================================================
  */
 
@@ -31,11 +30,12 @@ const io = socketio(server, {
 const PORT = process.env.PORT || 3000;
 
 /* ==========================================================
-   Database
+   MongoDB
 ========================================================== */
 
 mongoose.connect(
-    process.env.MONGO_URI || "mongodb://127.0.0.1:27017/chat_masr"
+    process.env.MONGO_URI ||
+    "mongodb://127.0.0.1:27017/chat_masr"
 )
 .then(() => {
 
@@ -44,7 +44,7 @@ mongoose.connect(
 })
 .catch((err) => {
 
-    console.log(err);
+    console.error(err);
 
 });
 
@@ -82,16 +82,24 @@ app.use(session({
    Static Files
 ========================================================== */
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
 
 /* ==========================================================
-   Home Page
+   Home
 ========================================================== */
 
 app.get("/", (req, res) => {
 
     res.sendFile(
-        path.join(__dirname, "public", "index.html")
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
     );
 
 });
@@ -105,19 +113,67 @@ let onlineUsers = [];
 let publicMessages = [];
 
 let privateMessages = [];
+
 /* ==========================================================
    Socket.IO
 ========================================================== */
 
 io.on("connection", (socket) => {
 
-    console.log("New User Connected :", socket.id);
+    console.log(
+        "User Connected:",
+        socket.id
+    );
+        /* ==========================================================
+       Register Member
+    ========================================================== */
 
-    /* ===============================
-       Join Room
-    =============================== */
+    socket.on("registerUser", (data) => {
+
+        const exists = onlineUsers.find(
+            u => u.username === data.username
+        );
+
+        if (exists) {
+
+            socket.emit("registerError",
+                "اسم المستخدم مستخدم بالفعل");
+
+            return;
+
+        }
+
+        socket.emit("registerSuccess");
+
+    });
+
+    /* ==========================================================
+       Login Member
+    ========================================================== */
+
+    socket.on("loginUser", (data) => {
+
+        socket.emit("loginSuccess", {
+
+            username: data.username,
+
+            avatar: "avatars/default.png"
+
+        });
+
+    });
+
+    /* ==========================================================
+       Join Chat
+    ========================================================== */
 
     socket.on("joinRoom", (data) => {
+
+        const oldUser = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (oldUser) return;
 
         const user = {
 
@@ -131,7 +187,11 @@ io.on("connection", (socket) => {
 
             memberType: data.memberType,
 
-            avatar: data.avatar,
+            avatar:
+                data.avatar ||
+                "avatars/default.png",
+
+            status: "online",
 
             joinedAt: new Date()
 
@@ -139,9 +199,20 @@ io.on("connection", (socket) => {
 
         onlineUsers.push(user);
 
-        socket.emit("joinedSuccessfully", user);
+        socket.emit(
+            "joinedSuccessfully",
+            user
+        );
 
-        io.emit("onlineUsers", onlineUsers);
+        socket.emit(
+            "publicMessages",
+            publicMessages
+        );
+
+        io.emit(
+            "onlineUsers",
+            onlineUsers
+        );
 
         io.emit("systemMessage", {
 
@@ -149,29 +220,32 @@ io.on("connection", (socket) => {
 
             type: "join",
 
-            message:
-                `انضم للغرفة (# ${user.memberType} #)`,
-
             username: user.username,
+
+            memberType: user.memberType,
+
+            message:
+                `${user.username} انضم إلى الغرفة`,
 
             time: new Date()
 
         });
 
-        console.log(user.username + " Joined");
+        console.log(
+            user.username,
+            "Joined"
+        );
 
     });
 
-    /* ===============================
+    /* ==========================================================
        Public Message
-    =============================== */
+    ========================================================== */
 
     socket.on("publicMessage", (text) => {
 
         const sender = onlineUsers.find(
-
             u => u.socketId === socket.id
-
         );
 
         if (!sender) return;
@@ -184,68 +258,336 @@ io.on("connection", (socket) => {
 
             avatar: sender.avatar,
 
-            text: text,
+            memberType: sender.memberType,
 
-            time: new Date()
+            text,
+
+            createdAt: new Date()
 
         };
 
         publicMessages.push(message);
 
-        io.emit("publicMessage", message);
+        io.emit(
+            "publicMessage",
+            message
+        );
 
     });
+        /* ==========================================================
+       Private Text Message
+    ========================================================== */
 
-    /* ===============================
-       Typing
-    =============================== */
-
-    socket.on("typing", () => {
+    socket.on("privateMessage", (data) => {
 
         const sender = onlineUsers.find(
-
             u => u.socketId === socket.id
-
         );
 
         if (!sender) return;
 
-        socket.broadcast.emit("typing", {
+        const receiver = onlineUsers.find(
+            u => u.socketId === data.to
+        );
 
-            username: sender.username
+        if (!receiver) return;
+
+        const message = {
+
+            id: Date.now(),
+
+            from: sender.socketId,
+
+            to: receiver.socketId,
+
+            senderName: sender.username,
+
+            receiverName: receiver.username,
+
+            avatar: sender.avatar,
+
+            type: "text",
+
+            text: data.text,
+
+            createdAt: new Date(),
+
+            seen: false
+
+        };
+
+        privateMessages.push(message);
+
+        io.to(receiver.socketId)
+        .emit("privateMessage", message);
+
+        socket.emit(
+            "privateMessage",
+            message
+        );
+
+    });
+
+    /* ==========================================================
+       Private Image
+    ========================================================== */
+
+    socket.on("privateImage", (data) => {
+
+        const sender = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (!sender) return;
+
+        const message = {
+
+            id: Date.now(),
+
+            from: sender.socketId,
+
+            to: data.to,
+
+            senderName: sender.username,
+
+            avatar: sender.avatar,
+
+            type: "image",
+
+            image: data.image,
+
+            createdAt: new Date()
+
+        };
+
+        privateMessages.push(message);
+
+        io.to(data.to)
+        .emit("privateImage", message);
+
+        socket.emit(
+            "privateImage",
+            message
+        );
+
+    });
+
+    /* ==========================================================
+       Private Video
+    ========================================================== */
+
+    socket.on("privateVideo", (data) => {
+
+        const sender = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (!sender) return;
+
+        const message = {
+
+            id: Date.now(),
+
+            from: sender.socketId,
+
+            to: data.to,
+
+            senderName: sender.username,
+
+            avatar: sender.avatar,
+
+            type: "video",
+
+            video: data.video,
+
+            createdAt: new Date()
+
+        };
+
+        privateMessages.push(message);
+
+        io.to(data.to)
+        .emit("privateVideo", message);
+
+        socket.emit(
+            "privateVideo",
+            message
+        );
+
+    });
+
+    /* ==========================================================
+       Private Voice
+    ========================================================== */
+
+    socket.on("privateVoice", (data) => {
+
+        const sender = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (!sender) return;
+
+        const message = {
+
+            id: Date.now(),
+
+            from: sender.socketId,
+
+            to: data.to,
+
+            senderName: sender.username,
+
+            avatar: sender.avatar,
+
+            type: "voice",
+
+            voice: data.voice,
+
+            duration: data.duration,
+
+            createdAt: new Date()
+
+        };
+
+        privateMessages.push(message);
+
+        io.to(data.to)
+        .emit("privateVoice", message);
+
+        socket.emit(
+            "privateVoice",
+            message
+        );
+
+    });
+
+    /* ==========================================================
+       Message Seen
+    ========================================================== */
+
+    socket.on("messageSeen", (messageId) => {
+
+        const message = privateMessages.find(
+            m => m.id === messageId
+        );
+
+        if (!message) return;
+
+        message.seen = true;
+
+        io.to(message.from)
+        .emit("messageSeen", messageId);
+
+    });
+
+    /* ==========================================================
+       Update Status
+    ========================================================== */
+
+    socket.on("updateStatus", (status) => {
+
+        const user = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (!user) return;
+
+        user.status = status;
+
+        io.emit(
+            "onlineUsers",
+            onlineUsers
+        );
+
+    });
+        /* ==========================================================
+       Server Statistics
+    ========================================================== */
+
+    socket.on("getStatistics", () => {
+
+        socket.emit("statistics", {
+
+            online: onlineUsers.length,
+
+            publicMessages: publicMessages.length,
+
+            privateMessages: privateMessages.length,
+
+            uptime: process.uptime()
 
         });
 
     });
 
-    socket.on("stopTyping", () => {
+    /* ==========================================================
+       Delete Public Message (Admin)
+    ========================================================== */
 
-        const sender = onlineUsers.find(
+    socket.on("deletePublicMessage", (messageId) => {
 
-            u => u.socketId === socket.id
-
+        publicMessages = publicMessages.filter(
+            m => m.id !== messageId
         );
 
-        if (!sender) return;
+        io.emit(
+            "publicMessages",
+            publicMessages
+        );
 
-        socket.broadcast.emit("stopTyping", {
+    });
 
-            username: sender.username
+    /* ==========================================================
+       Kick User
+    ========================================================== */
+
+    socket.on("kickUser", (socketId) => {
+
+        io.to(socketId).emit("kicked");
+
+        io.sockets.sockets
+            .get(socketId)
+            ?.disconnect(true);
+
+    });
+
+    /* ==========================================================
+       Mute User
+    ========================================================== */
+
+    socket.on("muteUser", (data) => {
+
+        io.to(data.socketId).emit("muted", {
+
+            minutes: data.minutes
 
         });
 
     });
 
-    /* ===============================
+    /* ==========================================================
+       Ban User
+    ========================================================== */
+
+    socket.on("banUser", (socketId) => {
+
+        io.to(socketId).emit("banned");
+
+        io.sockets.sockets
+            .get(socketId)
+            ?.disconnect(true);
+
+    });
+
+    /* ==========================================================
        Disconnect
-    =============================== */
+    ========================================================== */
 
     socket.on("disconnect", () => {
 
         const user = onlineUsers.find(
-
             u => u.socketId === socket.id
-
         );
 
         if (user) {
@@ -258,6 +600,8 @@ io.on("connection", (socket) => {
 
                 username: user.username,
 
+                memberType: user.memberType,
+
                 message:
                     `${user.username} غادر الغرفة`,
 
@@ -268,386 +612,20 @@ io.on("connection", (socket) => {
         }
 
         onlineUsers = onlineUsers.filter(
-
             u => u.socketId !== socket.id
-
         );
 
-        io.emit("onlineUsers", onlineUsers);
+        io.emit(
+            "onlineUsers",
+            onlineUsers
+        );
 
-        console.log(socket.id + " Disconnected");
+        console.log(
+            socket.id,
+            "Disconnected"
+        );
 
     });
-    /* ==========================================================
-   Private Chat
-========================================================== */
-
-socket.on("privateMessage", (data) => {
-
-    const sender = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!sender) return;
-
-    const receiver = onlineUsers.find(
-        u => u.socketId === data.to
-    );
-
-    if (!receiver) return;
-
-    const message = {
-
-        id: Date.now(),
-
-        from: sender.socketId,
-
-        to: receiver.socketId,
-
-        senderName: sender.username,
-
-        receiverName: receiver.username,
-
-        avatar: sender.avatar,
-
-        type: "text",
-
-        text: data.text,
-
-        createdAt: new Date(),
-
-        delivered: true,
-
-        seen: false
-
-    };
-
-    privateMessages.push(message);
-
-    io.to(receiver.socketId).emit(
-        "privateMessage",
-        message
-    );
-
-    socket.emit(
-        "privateMessage",
-        message
-    );
-
-});
-
-
-/* ==========================================================
-   Private Images
-========================================================== */
-
-socket.on("privateImage", (data) => {
-
-    const sender = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!sender) return;
-
-    const message = {
-
-        id: Date.now(),
-
-        from: sender.socketId,
-
-        to: data.to,
-
-        senderName: sender.username,
-
-        avatar: sender.avatar,
-
-        type: "image",
-
-        image: data.image,
-
-        createdAt: new Date()
-
-    };
-
-    privateMessages.push(message);
-
-    io.to(data.to).emit(
-        "privateImage",
-        message
-    );
-
-    socket.emit(
-        "privateImage",
-        message
-    );
-
-});
-
-
-/* ==========================================================
-   Private Video
-========================================================== */
-
-socket.on("privateVideo", (data) => {
-
-    const sender = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!sender) return;
-
-    const message = {
-
-        id: Date.now(),
-
-        from: sender.socketId,
-
-        to: data.to,
-
-        senderName: sender.username,
-
-        avatar: sender.avatar,
-
-        type: "video",
-
-        video: data.video,
-
-        createdAt: new Date()
-
-    };
-
-    privateMessages.push(message);
-
-    io.to(data.to).emit(
-        "privateVideo",
-        message
-    );
-
-    socket.emit(
-        "privateVideo",
-        message
-    );
-
-});
-
-
-/* ==========================================================
-   Private Voice
-========================================================== */
-
-socket.on("privateVoice", (data) => {
-
-    const sender = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!sender) return;
-
-    const message = {
-
-        id: Date.now(),
-
-        from: sender.socketId,
-
-        to: data.to,
-
-        senderName: sender.username,
-
-        avatar: sender.avatar,
-
-        type: "voice",
-
-        voice: data.voice,
-
-        duration: data.duration,
-
-        createdAt: new Date()
-
-    };
-
-    privateMessages.push(message);
-
-    io.to(data.to).emit(
-        "privateVoice",
-        message
-    );
-
-    socket.emit(
-        "privateVoice",
-        message
-    );
-
-});
-
-
-/* ==========================================================
-   Read Messages
-========================================================== */
-
-socket.on("messageSeen", (messageId) => {
-
-    const message = privateMessages.find(
-        m => m.id === messageId
-    );
-
-    if (!message) return;
-
-    message.seen = true;
-
-    io.to(message.from).emit(
-        "messageSeen",
-        messageId
-    );
-
-});
-
-
-/* ==========================================================
-   User Status
-========================================================== */
-
-socket.on("updateStatus", (status) => {
-
-    const user = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!user) return;
-
-    user.status = status;
-
-    io.emit(
-        "onlineUsers",
-        onlineUsers
-    );
-
-});
-
-
-/* ==========================================================
-   Last Seen
-========================================================== */
-
-socket.on("disconnect", () => {
-
-    const user = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (user) {
-
-        user.lastSeen = new Date();
-
-    }
-
-});
-
-});
-/* ==========================================================
-   File Upload (Placeholder)
-========================================================== */
-
-socket.on("uploadFile", (data) => {
-
-    const sender = onlineUsers.find(
-        u => u.socketId === socket.id
-    );
-
-    if (!sender) return;
-
-    io.to(data.to).emit("fileUploaded", {
-
-        from: sender.username,
-
-        type: data.type,
-
-        file: data.file,
-
-        createdAt: new Date()
-
-    });
-
-});
-
-
-/* ==========================================================
-   Delete Public Message (Admin)
-========================================================== */
-
-socket.on("deletePublicMessage", (messageId) => {
-
-    publicMessages = publicMessages.filter(
-        m => m.id !== messageId
-    );
-
-    io.emit(
-        "publicMessages",
-        publicMessages
-    );
-
-});
-
-
-/* ==========================================================
-   Kick User
-========================================================== */
-
-socket.on("kickUser", (socketId) => {
-
-    io.to(socketId).emit("kicked");
-
-    io.sockets.sockets.get(socketId)?.disconnect(true);
-
-});
-
-
-/* ==========================================================
-   Mute User
-========================================================== */
-
-socket.on("muteUser", (data) => {
-
-    io.to(data.socketId).emit("muted", {
-
-        minutes: data.minutes
-
-    });
-
-});
-
-
-/* ==========================================================
-   Ban User
-========================================================== */
-
-socket.on("banUser", (socketId) => {
-
-    io.to(socketId).emit("banned");
-
-    io.sockets.sockets.get(socketId)?.disconnect(true);
-
-});
-
-
-/* ==========================================================
-   Server Statistics
-========================================================== */
-
-socket.on("getStatistics", () => {
-
-    socket.emit("statistics", {
-
-        online: onlineUsers.length,
-
-        publicMessages: publicMessages.length,
-
-        privateMessages: privateMessages.length,
-
-        uptime: process.uptime()
-
-    });
-
-});
 
 });
 
@@ -669,7 +647,6 @@ app.use((err, req, res, next) => {
 
 });
 
-
 /* ==========================================================
    404
 ========================================================== */
@@ -680,21 +657,20 @@ app.use((req, res) => {
 
 });
 
-
 /* ==========================================================
-   Server Start
+   Start Server
 ========================================================== */
 
 server.listen(PORT, () => {
 
     console.log("");
-    console.log("=========================================");
-    console.log("        CHAT MASR SERVER STARTED");
-    console.log("=========================================");
+    console.log("======================================");
+    console.log("        CHAT MASR SERVER");
+    console.log("======================================");
     console.log(`Server : http://localhost:${PORT}`);
     console.log("MongoDB : Connected");
     console.log("Socket.IO : Running");
-    console.log("=========================================");
+    console.log("======================================");
     console.log("");
 
 });
