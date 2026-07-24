@@ -61,9 +61,8 @@
     .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
     .logo span { color: #fde68a; }
     .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 4px 10px 4px 12px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; }
+    .me-pill .av { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; border: none; box-shadow: none; }
     .me-pill .av svg { width: 14px; height: 14px; }
-    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); font-size: 14px; }
     .head-right { display: flex; align-items: center; gap: 8px; }
     .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 17px; cursor: pointer; }
     .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
@@ -96,7 +95,6 @@
       overflow: hidden;
     }
     #watermark { display: none; }
-    /* ✅ شريط الاتصال يظهر في الشات وقت الانقطاع فقط */
     .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
     .chat-conn.wait { color: var(--muted); background: rgba(255,255,255,0.5); }
     .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
@@ -104,8 +102,8 @@
 
     .row {
       display: grid;
-      grid-template-columns: 30px minmax(0, 1fr);
-      column-gap: 4px;
+      grid-template-columns: 32px minmax(0, 1fr);
+      column-gap: 6px;
       align-items: start;
       line-height: 1.2;
       font-size: 14px;
@@ -114,12 +112,12 @@
     .row.single { align-items: center; }
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
-    .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
-    .av svg { width: 17px; height: 17px; display: block; }
-    .av.emoji-av { background: #f1ede2 !important; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    /* ✅ أفاتار SVG بإطار أبيض + ring ملوّن */
+    .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--av-ring, transparent), 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
+    .av svg { width: 16px; height: 16px; display: block; }
 
     .body { display: block; min-width: 0; direction: rtl; }
-    .nm-line { display: inline; unicode-bidi: isolate; white-space: nowrap; vertical-align: baseline; }
+    .nm-line { display: inline; vertical-align: middle; unicode-bidi: isolate; white-space: nowrap; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 14.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
     .colon { font-weight: 700; color: #475569; margin: 0 1px; }
@@ -127,7 +125,8 @@
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
     .msg { display: inline; unicode-bidi: isolate; vertical-align: baseline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
-    .sys-action { display: inline; unicode-bidi: isolate; color: var(--join-red); font-weight: 700; white-space: nowrap; }
+    /* ✅ نص الانضمام: أحمر على خلفية pill رمادية مدوّرة */
+    .sys-action { display: inline-block; vertical-align: middle; unicode-bidi: isolate; color: var(--join-red); font-weight: 700; white-space: nowrap; background: rgba(15,23,42,0.07); border-radius: 999px; padding: 1px 10px; line-height: 1.7; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
 
@@ -164,9 +163,8 @@
     #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
     #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; margin: 0; }
-    .u-item .av svg { width: 17px; height: 17px; }
-    .u-item .av.emoji-av { font-size: 16px; }
+    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; margin: 0; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+    .u-item .av svg { width: 16px; height: 16px; }
     .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
     .u-item .nm2:hover { text-decoration: underline; }
 
@@ -179,7 +177,7 @@
 <body>
   <div class="app">
 
-    <!-- ============ الدخول (مخفي افتراضيًا -> لا ومضة) ============ -->
+    <!-- ============ الدخول (مخفي افتراضيًا) ============ -->
     <section id="screenAuth" class="hidden">
       <div class="auth-card">
         <div class="auth-logo">Arabic<span>chat</span></div>
@@ -280,7 +278,7 @@
   <div id="drawer" class="hidden"><div class="panel"><h3>الموجودين في الغرفة</h3><div id="usersList"></div></div></div>
   <div id="toast"></div>
 
-  <!-- ✅ سكربت مبكر: يضبط الشاشة + التاريخ قبل أول رسم (يمنع الومضة) -->
+  <!-- سكربت مبكر: يضبط الشاشة + التاريخ قبل أول رسم -->
   <script>
   (function () {
     try {
@@ -300,7 +298,7 @@
         auth.classList.remove('hidden'); rooms.classList.add('hidden'); chat.classList.add('hidden'); view = 'auth';
       }
       try {
-        history.replaceState({ view: 'rooms' }, '');      // قاعدة ثابتة
+        history.replaceState({ view: 'rooms' }, '');
         if (view === 'chat') history.pushState({ view: 'chat' }, '');
         else if (view === 'auth') history.replaceState({ view: 'auth' }, '');
       } catch (e) {}
@@ -344,14 +342,18 @@
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    // ✅ إيموجيات كود واحد آمنة (بدون ZWJ/أعلام مركبة)
-    const MALE = ['🧑', '👨', '', '🧓', '🧔'];
-    const FEMALE = ['👩', '👧', '🧕', '', '👵'];
-    function pickAvatar(gender, seed) {
-      const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
-      if (!pool) return null;
-      let h = 0; for (let i = 0; i < (seed || '').length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-      return pool[h % pool.length];
+    // ✅ ألوان الأفاتار: العضو بلونه، الزائر حسب النوع (silhouette بدل إيموجي)
+    function avatarStyle(role, gender, color) {
+      if (role === 'member') return { bg: color, ring: color };
+      if (gender === 'ذكر') return { bg: '#4db8c9', ring: '#2f93a3' };
+      if (gender === 'أنثى') return { bg: '#e08aa6', ring: '#c46a87' };
+      return { bg: '#a8aeb8', ring: '#868d98' };
+    }
+    function fillAvatar(el, role, gender, color) {
+      const s = avatarStyle(role, gender, color);
+      el.style.background = s.bg;
+      el.style.setProperty('--av-ring', s.ring);
+      el.innerHTML = SILHOUETTE;
     }
 
     function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -383,7 +385,6 @@
       clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, 1300);
     }
 
-    // ✅ شريط الاتصال للدخول + الشات
     function setConn(cls, txt) {
       const a = $('connAuth'), c = $('connChat');
       if (cls === 'ok') { if (a) a.classList.add('hidden'); if (c) c.classList.add('hidden'); return; }
@@ -400,7 +401,6 @@
     }
     function clearAuthTimeout() { clearTimeout(authTimer); }
 
-    // ===== إدارة الشاشات + التاريخ =====
     function showScreen(view) {
       screenAuth.classList.toggle('hidden', view !== 'auth');
       screenRooms.classList.toggle('hidden', view !== 'rooms');
@@ -421,16 +421,7 @@
 
     function buildAvatar(opts) {
       const av = document.createElement('div'); av.className = 'av';
-      const role = opts.role || opts.senderRole || '';
-      const gender = opts.gender || opts.senderGender || '';
-      const name = nameOf(opts);
-      const color = opts.color || opts.senderColor || '#94a3b8';
-      if (role === 'member') { av.style.background = color; av.innerHTML = SILHOUETTE; }
-      else {
-        const emoji = pickAvatar(gender, name);
-        if (emoji) { av.classList.add('emoji-av'); av.textContent = emoji; }
-        else { av.style.background = color; av.innerHTML = SILHOUETTE; }
-      }
+      fillAvatar(av, opts.role || opts.senderRole || '', opts.gender || opts.senderGender || '', opts.color || opts.senderColor || '#94a3b8');
       return av;
     }
 
@@ -466,7 +457,7 @@
       const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : ';
       nmLine.appendChild(nm); nmLine.appendChild(colon);
       const act = document.createElement('span'); act.className = 'sys-action';
-      act.textContent = 'انضم للغرفة (' + roleLabel(role) + ')';
+      act.textContent = 'انضم للغرفة (# ' + roleLabel(role) + ' #)';
       body.appendChild(nmLine); body.appendChild(act);
       row.appendChild(body);
       messagesEl.appendChild(row);
@@ -638,16 +629,7 @@
 
     logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); localStorage.removeItem('curRoom'); location.reload(); });
 
-    function setMyAvatar() {
-      const av = $('myAv');
-      av.className = 'av';
-      if (myRole === 'member') { av.style.background = myColor; av.innerHTML = SILHOUETTE; }
-      else {
-        const emoji = pickAvatar(myGender, myName);
-        if (emoji) { av.classList.add('emoji-av'); av.style.background = ''; av.textContent = emoji; }
-        else { av.style.background = myColor; av.innerHTML = SILHOUETTE; }
-      }
-    }
+    function setMyAvatar() { fillAvatar($('myAv'), myRole, myGender, myColor); }
 
     function saveProfile() {
       try { localStorage.setItem('chatProfile', JSON.stringify({ name: myName, color: myColor, role: myRole, gender: myGender })); } catch (e) {}
@@ -694,12 +676,10 @@
 
     sendBtn.addEventListener('click', send);
     msgInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
-    // ✅ زرار الرجوع = history.back() (يتولّاه popstate)
     backBtn.addEventListener('click', () => { try { history.back(); } catch (e) {} });
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    // ✅ إدارة زرار back الفيزيائي: شات -> غرف -> خروج
     window.addEventListener('popstate', (e) => {
       const v = e.state && e.state.view;
       if (currentView === 'chat') {
@@ -724,10 +704,9 @@
       }
       if (v === 'rooms') { showScreen('rooms'); return; }
       if (v === 'auth') { showScreen('auth'); showAuthMain(); return; }
-      // v == null -> خروج طبيعي من الموقع
     });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','☕','🎵','','🕋','🌺'];
+    const EMOJIS = ['😀','😂','😍','','😎','','😢','😡','','👋','❤️','🔥','','🌹','','','✨','','😊','😉','','','😴','🤝','','⭐','🌸','☕','🎵','','🕋','🌺'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -758,7 +737,6 @@
 
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 
-    // ===== التهيئة بعد تحميل socket.io (الشاشات مضبوطة مسبقًا) =====
     (function earlyRoute() {
       currentView = window.__initialView || currentView;
       try {
