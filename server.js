@@ -1,11 +1,19 @@
 /**
  * ==========================================================
- * Chat Masr Server v2.0
- * Backend : Node.js + Express + Socket.IO + MongoDB
+ * Chat Masr Server v3.0
+ * Backend:
+ * Node.js
+ * Express
+ * Socket.IO
+ * MongoDB
  * ==========================================================
  */
 
 require("dotenv").config();
+
+/* ==========================================================
+   Packages
+========================================================== */
 
 const express = require("express");
 const http = require("http");
@@ -15,16 +23,35 @@ const socketio = require("socket.io");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
+const multer = require("multer");
+
+/* ==========================================================
+   Models
+========================================================== */
+
+const User = require("./models/User");
+const Message = require("./models/Message");
+const PrivateMessage = require("./models/PrivateMessage");
+
+/* ==========================================================
+   App
+========================================================== */
 
 const app = express();
 
 const server = http.createServer(app);
 
 const io = socketio(server, {
+
     cors: {
+
         origin: "*",
-        methods: ["GET", "POST"]
+
+        methods: ["GET","POST"]
+
     }
+
 });
 
 const PORT = process.env.PORT || 3000;
@@ -34,14 +61,26 @@ const PORT = process.env.PORT || 3000;
 ========================================================== */
 
 mongoose.connect(
+
     process.env.MONGO_URI ||
-    "mongodb://127.0.0.1:27017/chat_masr"
+    "mongodb://127.0.0.1:27017/chat_masr",
+
+    {
+
+        autoIndex: true
+
+    }
+
 )
+
 .then(() => {
 
+    console.log("=================================");
     console.log("MongoDB Connected");
+    console.log("=================================");
 
 })
+
 .catch((err) => {
 
     console.error(err);
@@ -59,20 +98,25 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use(express.urlencoded({
-    extended: true
+
+    extended:true
+
 }));
 
 app.use(session({
 
-    secret: "chat-masr-secret",
+    secret:
+        process.env.SESSION_SECRET ||
+        "chat-masr-secret",
 
-    resave: false,
+    resave:false,
 
-    saveUninitialized: false,
+    saveUninitialized:false,
 
-    cookie: {
+    cookie:{
 
-        maxAge: 1000 * 60 * 60 * 24
+        maxAge:
+            1000 * 60 * 60 * 24
 
     }
 
@@ -83,409 +127,539 @@ app.use(session({
 ========================================================== */
 
 app.use(
+
     express.static(
-        path.join(__dirname, "public")
+
+        path.join(
+            __dirname,
+            "public"
+        )
+
     )
+
 );
 
 /* ==========================================================
-   Home
+   Uploads
+========================================================== */
+
+const storage = multer.diskStorage({
+
+    destination:(req,file,cb)=>{
+
+        cb(
+
+            null,
+
+            path.join(
+
+                __dirname,
+
+                "public",
+
+                "uploads"
+
+            )
+
+        );
+
+    },
+
+    filename:(req,file,cb)=>{
+
+        const uniqueName =
+
+            Date.now() +
+
+            "-" +
+
+            Math.random()
+
+            .toString(36)
+
+            .substring(2)
+
+            +
+
+            path.extname(file.originalname);
+
+        cb(
+
+            null,
+
+            uniqueName
+
+        );
+
+    }
+
+});
+
+const upload = multer({
+
+    storage
+
+});
+
+/* ==========================================================
+   Runtime Memory
+========================================================== */
+
+let onlineUsers = [];
+/* ==========================================================
+   Routes
 ========================================================== */
 
 app.get("/", (req, res) => {
 
     res.sendFile(
+
         path.join(
+
             __dirname,
+
             "public",
+
             "index.html"
+
         )
+
+    );
+
+});
+
+app.get("/chat", (req, res) => {
+
+    res.sendFile(
+
+        path.join(
+
+            __dirname,
+
+            "public",
+
+            "chat.html"
+
+        )
+
     );
 
 });
 
 /* ==========================================================
-   Temporary Memory
+   Register API
 ========================================================== */
 
-let onlineUsers = [];
+app.post("/api/register", async (req, res) => {
 
-let publicMessages = [];
+    try {
 
-let privateMessages = [];
+        const {
+
+            username,
+
+            email,
+
+            password,
+
+            age,
+
+            gender
+
+        } = req.body;
+
+        if (
+
+            !username ||
+
+            !email ||
+
+            !password ||
+
+            !age ||
+
+            !gender
+
+        ) {
+
+            return res.status(400).json({
+
+                success:false,
+
+                message:"جميع الحقول مطلوبة"
+
+            });
+
+        }
+
+        const exists = await User.findOne({
+
+            $or:[
+
+                {
+
+                    username
+
+                },
+
+                {
+
+                    email
+
+                }
+
+            ]
+
+        });
+
+        if(exists){
+
+            return res.status(409).json({
+
+                success:false,
+
+                message:"اسم المستخدم أو البريد مستخدم بالفعل"
+
+            });
+
+        }
+
+        const hashedPassword =
+
+            await bcrypt.hash(
+
+                password,
+
+                10
+
+            );
+
+        const user = await User.create({
+
+            username,
+
+            email,
+
+            password:hashedPassword,
+
+            age,
+
+            gender,
+
+            memberType:"عضو"
+
+        });
+
+        res.json({
+
+            success:true,
+
+            userId:user._id,
+
+            username:user.username
+
+        });
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+        res.status(500).json({
+
+            success:false,
+
+            message:"حدث خطأ أثناء التسجيل"
+
+        });
+
+    }
+
+});
+
+/* ==========================================================
+   Login API
+========================================================== */
+
+app.post("/api/login", async (req,res)=>{
+
+    try{
+
+        const{
+
+            email,
+
+            password
+
+        }=req.body;
+
+        const user=
+
+        await User.findOne({
+
+            email
+
+        });
+
+        if(!user){
+
+            return res.status(404).json({
+
+                success:false,
+
+                message:"الحساب غير موجود"
+
+            });
+
+        }
+
+        const match=
+
+        await bcrypt.compare(
+
+            password,
+
+            user.password
+
+        );
+
+        if(!match){
+
+            return res.status(401).json({
+
+                success:false,
+
+                message:"كلمة المرور غير صحيحة"
+
+            });
+
+        }
+
+        req.session.userId=
+
+            user._id;
+
+        req.session.username=
+
+            user.username;
+
+        res.json({
+
+            success:true,
+
+            user:{
+
+                id:user._id,
+
+                username:user.username,
+
+                avatar:user.avatar,
+
+                memberType:user.memberType,
+
+                age:user.age,
+
+                gender:user.gender
+
+            }
+
+        });
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+        res.status(500).json({
+
+            success:false,
+
+            message:"حدث خطأ أثناء تسجيل الدخول"
+
+        });
+
+    }
+
+});
+
+/* ==========================================================
+   Upload Avatar
+========================================================== */
+
+app.post(
+
+    "/api/upload/avatar",
+
+    upload.single("avatar"),
+
+    (req,res)=>{
+
+        if(!req.file){
+
+            return res.status(400).json({
+
+                success:false,
+
+                message:"لم يتم اختيار صورة"
+
+            });
+
+        }
+
+        res.json({
+
+            success:true,
+
+            path:
+
+            "uploads/"+
+
+            req.file.filename
+
+        });
+
+    }
+
+);
 
 /* ==========================================================
    Socket.IO
 ========================================================== */
 
-io.on("connection", (socket) => {
+io.on("connection",(socket)=>{
 
     console.log(
-        "User Connected:",
+
+        "Connected:",
+
         socket.id
+
     );
         /* ==========================================================
-       Register Member
+       Join Room
     ========================================================== */
 
-    socket.on("registerUser", (data) => {
+    socket.on("joinRoom", async (data) => {
 
-        const exists = onlineUsers.find(
-            u => u.username === data.username
-        );
+        try {
 
-        if (exists) {
+            const exists = onlineUsers.find(
+                u => u.socketId === socket.id
+            );
 
-            socket.emit("registerError",
-                "اسم المستخدم مستخدم بالفعل");
+            if (exists) return;
 
-            return;
+            const user = {
+
+                socketId: socket.id,
+
+                userId: data.userId || null,
+
+                username: data.username,
+
+                age: data.age,
+
+                gender: data.gender,
+
+                memberType: data.memberType,
+
+                avatar:
+                    data.avatar ||
+                    "avatars/default.png",
+
+                status: "online",
+
+                joinedAt: new Date()
+
+            };
+
+            onlineUsers.push(user);
+
+            if (user.userId) {
+
+                await User.findByIdAndUpdate(
+
+                    user.userId,
+
+                    {
+
+                        isOnline: true,
+
+                        lastSeen: new Date()
+
+                    }
+
+                );
+
+            }
+
+            socket.emit(
+                "joinedSuccessfully",
+                user
+            );
+
+            const lastMessages = await Message
+                .find({
+                    isDeleted: false
+                })
+                .sort({
+                    createdAt: -1
+                })
+                .limit(100);
+
+            socket.emit(
+                "publicMessages",
+                lastMessages.reverse()
+            );
+
+            io.emit(
+                "onlineUsers",
+                onlineUsers
+            );
+
+            io.emit(
+                "systemMessage",
+                {
+
+                    id: Date.now(),
+
+                    type: "join",
+
+                    username: user.username,
+
+                    memberType: user.memberType,
+
+                    message:
+                        `${user.username} انضم إلى الغرفة`,
+
+                    createdAt: new Date()
+
+                }
+
+            );
+
+            console.log(
+                user.username,
+                "Joined Chat"
+            );
 
         }
 
-        socket.emit("registerSuccess");
+        catch (err) {
+
+            console.error(err);
+
+        }
 
     });
 
     /* ==========================================================
-       Login Member
+       User Status
     ========================================================== */
 
-    socket.on("loginUser", (data) => {
-
-        socket.emit("loginSuccess", {
-
-            username: data.username,
-
-            avatar: "avatars/default.png"
-
-        });
-
-    });
-
-    /* ==========================================================
-       Join Chat
-    ========================================================== */
-
-    socket.on("joinRoom", (data) => {
-
-        const oldUser = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (oldUser) return;
-
-        const user = {
-
-            socketId: socket.id,
-
-            username: data.username,
-
-            age: data.age,
-
-            gender: data.gender,
-
-            memberType: data.memberType,
-
-            avatar:
-                data.avatar ||
-                "avatars/default.png",
-
-            status: "online",
-
-            joinedAt: new Date()
-
-        };
-
-        onlineUsers.push(user);
-
-        socket.emit(
-            "joinedSuccessfully",
-            user
-        );
-
-        socket.emit(
-            "publicMessages",
-            publicMessages
-        );
-
-        io.emit(
-            "onlineUsers",
-            onlineUsers
-        );
-
-        io.emit("systemMessage", {
-
-            id: Date.now(),
-
-            type: "join",
-
-            username: user.username,
-
-            memberType: user.memberType,
-
-            message:
-                `${user.username} انضم إلى الغرفة`,
-
-            time: new Date()
-
-        });
-
-        console.log(
-            user.username,
-            "Joined"
-        );
-
-    });
-
-    /* ==========================================================
-       Public Message
-    ========================================================== */
-
-    socket.on("publicMessage", (text) => {
-
-        const sender = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (!sender) return;
-
-        const message = {
-
-            id: Date.now(),
-
-            username: sender.username,
-
-            avatar: sender.avatar,
-
-            memberType: sender.memberType,
-
-            text,
-
-            createdAt: new Date()
-
-        };
-
-        publicMessages.push(message);
-
-        io.emit(
-            "publicMessage",
-            message
-        );
-
-    });
-        /* ==========================================================
-       Private Text Message
-    ========================================================== */
-
-    socket.on("privateMessage", (data) => {
-
-        const sender = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (!sender) return;
-
-        const receiver = onlineUsers.find(
-            u => u.socketId === data.to
-        );
-
-        if (!receiver) return;
-
-        const message = {
-
-            id: Date.now(),
-
-            from: sender.socketId,
-
-            to: receiver.socketId,
-
-            senderName: sender.username,
-
-            receiverName: receiver.username,
-
-            avatar: sender.avatar,
-
-            type: "text",
-
-            text: data.text,
-
-            createdAt: new Date(),
-
-            seen: false
-
-        };
-
-        privateMessages.push(message);
-
-        io.to(receiver.socketId)
-        .emit("privateMessage", message);
-
-        socket.emit(
-            "privateMessage",
-            message
-        );
-
-    });
-
-    /* ==========================================================
-       Private Image
-    ========================================================== */
-
-    socket.on("privateImage", (data) => {
-
-        const sender = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (!sender) return;
-
-        const message = {
-
-            id: Date.now(),
-
-            from: sender.socketId,
-
-            to: data.to,
-
-            senderName: sender.username,
-
-            avatar: sender.avatar,
-
-            type: "image",
-
-            image: data.image,
-
-            createdAt: new Date()
-
-        };
-
-        privateMessages.push(message);
-
-        io.to(data.to)
-        .emit("privateImage", message);
-
-        socket.emit(
-            "privateImage",
-            message
-        );
-
-    });
-
-    /* ==========================================================
-       Private Video
-    ========================================================== */
-
-    socket.on("privateVideo", (data) => {
-
-        const sender = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (!sender) return;
-
-        const message = {
-
-            id: Date.now(),
-
-            from: sender.socketId,
-
-            to: data.to,
-
-            senderName: sender.username,
-
-            avatar: sender.avatar,
-
-            type: "video",
-
-            video: data.video,
-
-            createdAt: new Date()
-
-        };
-
-        privateMessages.push(message);
-
-        io.to(data.to)
-        .emit("privateVideo", message);
-
-        socket.emit(
-            "privateVideo",
-            message
-        );
-
-    });
-
-    /* ==========================================================
-       Private Voice
-    ========================================================== */
-
-    socket.on("privateVoice", (data) => {
-
-        const sender = onlineUsers.find(
-            u => u.socketId === socket.id
-        );
-
-        if (!sender) return;
-
-        const message = {
-
-            id: Date.now(),
-
-            from: sender.socketId,
-
-            to: data.to,
-
-            senderName: sender.username,
-
-            avatar: sender.avatar,
-
-            type: "voice",
-
-            voice: data.voice,
-
-            duration: data.duration,
-
-            createdAt: new Date()
-
-        };
-
-        privateMessages.push(message);
-
-        io.to(data.to)
-        .emit("privateVoice", message);
-
-        socket.emit(
-            "privateVoice",
-            message
-        );
-
-    });
-
-    /* ==========================================================
-       Message Seen
-    ========================================================== */
-
-    socket.on("messageSeen", (messageId) => {
-
-        const message = privateMessages.find(
-            m => m.id === messageId
-        );
-
-        if (!message) return;
-
-        message.seen = true;
-
-        io.to(message.from)
-        .emit("messageSeen", messageId);
-
-    });
-
-    /* ==========================================================
-       Update Status
-    ========================================================== */
-
-    socket.on("updateStatus", (status) => {
+    socket.on("updateStatus", async (status) => {
 
         const user = onlineUsers.find(
             u => u.socketId === socket.id
@@ -495,46 +669,487 @@ io.on("connection", (socket) => {
 
         user.status = status;
 
+        if (user.userId) {
+
+            await User.findByIdAndUpdate(
+
+                user.userId,
+
+                {
+
+                    status
+
+                }
+
+            );
+
+        }
+
         io.emit(
             "onlineUsers",
             onlineUsers
         );
 
     });
-        /* ==========================================================
-       Server Statistics
+
+    /* ==========================================================
+       Typing
     ========================================================== */
 
-    socket.on("getStatistics", () => {
+    socket.on("typing", () => {
 
-        socket.emit("statistics", {
+        const sender = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
 
-            online: onlineUsers.length,
+        if (!sender) return;
 
-            publicMessages: publicMessages.length,
+        socket.broadcast.emit(
+            "typing",
+            {
 
-            privateMessages: privateMessages.length,
+                username:
+                    sender.username
 
-            uptime: process.uptime()
+            }
 
-        });
+        );
+
+    });
+
+    socket.on("stopTyping", () => {
+
+        const sender = onlineUsers.find(
+            u => u.socketId === socket.id
+        );
+
+        if (!sender) return;
+
+        socket.broadcast.emit(
+            "stopTyping",
+            {
+
+                username:
+                    sender.username
+
+            }
+
+        );
+
+    });
+        /* ==========================================================
+       Public Messages
+    ========================================================== */
+
+    socket.on("publicMessage", async (text) => {
+
+        try {
+
+            const sender = onlineUsers.find(
+                u => u.socketId === socket.id
+            );
+
+            if (!sender) return;
+
+            if (!text || text.trim() === "") return;
+
+            const savedMessage = await Message.create({
+
+                senderId: sender.userId,
+
+                username: sender.username,
+
+                avatar: sender.avatar,
+
+                memberType: sender.memberType,
+
+                text: text.trim(),
+
+                room: "general",
+
+                messageType: "text"
+
+            });
+
+            io.emit(
+                "publicMessage",
+                savedMessage
+            );
+
+        }
+
+        catch (err) {
+
+            console.error(err);
+
+        }
 
     });
 
     /* ==========================================================
-       Delete Public Message (Admin)
+       Delete Public Message
     ========================================================== */
 
-    socket.on("deletePublicMessage", (messageId) => {
+    socket.on("deletePublicMessage", async (messageId) => {
 
-        publicMessages = publicMessages.filter(
-            m => m.id !== messageId
-        );
+        try {
 
-        io.emit(
-            "publicMessages",
-            publicMessages
-        );
+            await Message.findByIdAndUpdate(
+
+                messageId,
+
+                {
+
+                    isDeleted: true,
+
+                    deletedAt: new Date()
+
+                }
+
+            );
+
+            io.emit(
+
+                "deletePublicMessage",
+
+                messageId
+
+            );
+
+        }
+
+        catch (err) {
+
+            console.error(err);
+
+        }
+
+    });
+
+    /* ==========================================================
+       Load Old Messages
+    ========================================================== */
+
+    socket.on("loadMessages", async () => {
+
+        try {
+
+            const messages = await Message
+
+                .find({
+
+                    isDeleted: false
+
+                })
+
+                .sort({
+
+                    createdAt: -1
+
+                })
+
+                .limit(100);
+
+            socket.emit(
+
+                "publicMessages",
+
+                messages.reverse()
+
+            );
+
+        }
+
+        catch (err) {
+
+            console.error(err);
+
+        }
+
+    });
+        /* ==========================================================
+       Private Text Message
+    ========================================================== */
+
+    socket.on("privateMessage", async (data) => {
+
+        try {
+
+            const sender = onlineUsers.find(
+                u => u.socketId === socket.id
+            );
+
+            if (!sender) return;
+
+            const receiver = onlineUsers.find(
+                u => u.socketId === data.to
+            );
+
+            if (!receiver) return;
+
+            const savedMessage = await PrivateMessage.create({
+
+                senderId: sender.userId,
+
+                receiverId: receiver.userId,
+
+                senderUsername: sender.username,
+
+                receiverUsername: receiver.username,
+
+                senderAvatar: sender.avatar,
+
+                type: "text",
+
+                text: data.text,
+
+                delivered: true,
+
+                seen: false
+
+            });
+
+            io.to(receiver.socketId).emit(
+                "privateMessage",
+                savedMessage
+            );
+
+            socket.emit(
+                "privateMessage",
+                savedMessage
+            );
+
+        }
+
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    });
+
+    /* ==========================================================
+       Private Image
+    ========================================================== */
+
+    socket.on("privateImage", async (data)=>{
+
+        try{
+
+            const sender = onlineUsers.find(
+                u=>u.socketId===socket.id
+            );
+
+            if(!sender) return;
+
+            const receiver = onlineUsers.find(
+                u=>u.socketId===data.to
+            );
+
+            if(!receiver) return;
+
+            const savedMessage =
+            await PrivateMessage.create({
+
+                senderId:sender.userId,
+
+                receiverId:receiver.userId,
+
+                senderUsername:sender.username,
+
+                receiverUsername:receiver.username,
+
+                senderAvatar:sender.avatar,
+
+                type:"image",
+
+                file:data.image,
+
+                delivered:true,
+
+                seen:false
+
+            });
+
+            io.to(receiver.socketId)
+            .emit("privateImage",savedMessage);
+
+            socket.emit(
+                "privateImage",
+                savedMessage
+            );
+
+        }
+
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    });
+
+    /* ==========================================================
+       Private Video
+    ========================================================== */
+
+    socket.on("privateVideo", async (data)=>{
+
+        try{
+
+            const sender = onlineUsers.find(
+                u=>u.socketId===socket.id
+            );
+
+            if(!sender) return;
+
+            const receiver = onlineUsers.find(
+                u=>u.socketId===data.to
+            );
+
+            if(!receiver) return;
+
+            const savedMessage =
+            await PrivateMessage.create({
+
+                senderId:sender.userId,
+
+                receiverId:receiver.userId,
+
+                senderUsername:sender.username,
+
+                receiverUsername:receiver.username,
+
+                senderAvatar:sender.avatar,
+
+                type:"video",
+
+                file:data.video,
+
+                delivered:true,
+
+                seen:false
+
+            });
+
+            io.to(receiver.socketId)
+            .emit("privateVideo",savedMessage);
+
+            socket.emit(
+                "privateVideo",
+                savedMessage
+            );
+
+        }
+
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    });
+
+    /* ==========================================================
+       Private Voice
+    ========================================================== */
+
+    socket.on("privateVoice", async (data)=>{
+
+        try{
+
+            const sender = onlineUsers.find(
+                u=>u.socketId===socket.id
+            );
+
+            if(!sender) return;
+
+            const receiver = onlineUsers.find(
+                u=>u.socketId===data.to
+            );
+
+            if(!receiver) return;
+
+            const savedMessage =
+            await PrivateMessage.create({
+
+                senderId:sender.userId,
+
+                receiverId:receiver.userId,
+
+                senderUsername:sender.username,
+
+                receiverUsername:receiver.username,
+
+                senderAvatar:sender.avatar,
+
+                type:"voice",
+
+                file:data.voice,
+
+                duration:data.duration,
+
+                delivered:true,
+
+                seen:false
+
+            });
+
+            io.to(receiver.socketId)
+            .emit("privateVoice",savedMessage);
+
+            socket.emit(
+                "privateVoice",
+                savedMessage
+            );
+
+        }
+
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    });
+        /* ==========================================================
+       Message Seen
+    ========================================================== */
+
+    socket.on("messageSeen", async (messageId) => {
+
+        try {
+
+            await PrivateMessage.findByIdAndUpdate(
+
+                messageId,
+
+                {
+
+                    seen: true,
+
+                    seenAt: new Date()
+
+                }
+
+            );
+
+            io.emit(
+
+                "messageSeen",
+
+                messageId
+
+            );
+
+        }
+
+        catch (err) {
+
+            console.error(err);
+
+        }
 
     });
 
@@ -581,54 +1196,146 @@ io.on("connection", (socket) => {
     });
 
     /* ==========================================================
+       Statistics
+    ========================================================== */
+
+    socket.on("getStatistics", async () => {
+
+        try {
+
+            const members =
+                await User.countDocuments();
+
+            const messages =
+                await Message.countDocuments({
+
+                    isDeleted:false
+
+                });
+
+            const privateCount =
+                await PrivateMessage.countDocuments({
+
+                    isDeleted:false
+
+                });
+
+            socket.emit(
+
+                "statistics",
+
+                {
+
+                    online:
+                        onlineUsers.length,
+
+                    members,
+
+                    publicMessages:
+                        messages,
+
+                    privateMessages:
+                        privateCount,
+
+                    uptime:
+                        process.uptime()
+
+                }
+
+            );
+
+        }
+
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    });
+
+    /* ==========================================================
        Disconnect
     ========================================================== */
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
 
         const user = onlineUsers.find(
+
             u => u.socketId === socket.id
+
         );
 
-        if (user) {
+        if(user){
 
-            io.emit("systemMessage", {
+            if(user.userId){
 
-                id: Date.now(),
+                await User.findByIdAndUpdate(
 
-                type: "leave",
+                    user.userId,
 
-                username: user.username,
+                    {
 
-                memberType: user.memberType,
+                        isOnline:false,
 
-                message:
-                    `${user.username} غادر الغرفة`,
+                        lastSeen:new Date()
 
-                time: new Date()
+                    }
 
-            });
+                );
+
+            }
+
+            io.emit(
+
+                "systemMessage",
+
+                {
+
+                    id:Date.now(),
+
+                    type:"leave",
+
+                    username:user.username,
+
+                    memberType:user.memberType,
+
+                    message:
+                        `${user.username} غادر الغرفة`,
+
+                    createdAt:new Date()
+
+                }
+
+            );
 
         }
 
         onlineUsers = onlineUsers.filter(
+
             u => u.socketId !== socket.id
+
         );
 
         io.emit(
+
             "onlineUsers",
+
             onlineUsers
+
         );
 
         console.log(
+
             socket.id,
+
             "Disconnected"
+
         );
 
     });
 
 });
-
 /* ==========================================================
    Error Handler
 ========================================================== */
@@ -648,29 +1355,66 @@ app.use((err, req, res, next) => {
 });
 
 /* ==========================================================
-   404
+   404 Handler
 ========================================================== */
 
 app.use((req, res) => {
 
-    res.status(404).send("404 Not Found");
+    res.status(404).json({
+
+        success: false,
+
+        message: "404 - Page Not Found"
+
+    });
 
 });
 
 /* ==========================================================
-   Start Server
+   Graceful Shutdown
+========================================================== */
+
+process.on("SIGINT", async () => {
+
+    console.log("");
+    console.log("Closing Chat Masr Server...");
+
+    try {
+
+        await mongoose.connection.close();
+
+        console.log("MongoDB Disconnected");
+
+        process.exit(0);
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+        process.exit(1);
+
+    }
+
+});
+
+/* ==========================================================
+   Server Start
 ========================================================== */
 
 server.listen(PORT, () => {
 
     console.log("");
-    console.log("======================================");
-    console.log("        CHAT MASR SERVER");
-    console.log("======================================");
-    console.log(`Server : http://localhost:${PORT}`);
-    console.log("MongoDB : Connected");
-    console.log("Socket.IO : Running");
-    console.log("======================================");
+    console.log("========================================");
+    console.log("        CHAT MASR SERVER v3");
+    console.log("========================================");
+    console.log(`Server Running : http://localhost:${PORT}`);
+    console.log(`Port           : ${PORT}`);
+    console.log("Database       : MongoDB");
+    console.log("Socket.IO      : Ready");
+    console.log("Status         : Online");
+    console.log("========================================");
     console.log("");
 
 });
