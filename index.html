@@ -8,219 +8,235 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700&family=Reem+Kufi:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #f6f2e9; --bg2: #efe9da; --card: #ffffff;
-      --header: #0d9488; --header2: #0f766e;
-      --text: #1f2937; --muted: #6b7280; --line: rgba(15,23,42,0.10);
-      --accent: #0d9488; --accent2: #14b8a6; --gold: #d4a017; --danger: #dc2626;
-      --join-red: #c0392b;
-      --chat-bg: linear-gradient(180deg,#f7f4ec,#efe9da);
-      --chat-accent: #0d9488; --chat-accent2: #14b8a6;
+    :root{
+      --gold1:#b08a32; --gold2:#7c5e22; --gold-deep:#5f481a;
+      --cream:#f4efe3; --cream2:#ece3d0; --paper:#fbf8f0;
+      --text:#2a2620; --muted:#8a8170; --line:rgba(80,66,40,0.12);
+      --accent:#0d9488; --accent2:#14b8a6; --danger:#dc2626; --join-red:#c0392b;
+      --chat-bg:#f4efe3; --chat-accent:#0d9488; --chat-accent2:#14b8a6;
+      --bar-h:54px;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
-    body { font-family: "Tajawal", Tahoma, Arial, sans-serif; color: var(--text); background: radial-gradient(700px 400px at 90% -10%, #e7f5f2 0%, transparent 60%), radial-gradient(600px 400px at -10% 110%, #fbf3da 0%, transparent 55%), linear-gradient(160deg, var(--bg), var(--bg2)); }
-    .app { max-width: 760px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
-    .hidden { display: none !important; }
-
-    #screenAuth { height: 100%; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
-    .auth-card { width: 100%; max-width: 400px; margin: auto; background: var(--card); border-radius: 22px; box-shadow: 0 18px 50px rgba(0,0,0,0.12); padding: 26px 22px; border: 1px solid var(--line); animation: cardIn .4s ease; }
-    @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-    .auth-logo { text-align: center; font-family: "Reem Kufi", "Cairo"; font-size: 28px; font-weight: 700; color: var(--header); margin-bottom: 4px; }
-    .auth-logo span { color: var(--gold); }
-    .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-    .conn-bar { text-align: center; font-size: 12px; margin-bottom: 14px; min-height: 16px; font-weight: 700; }
-    .conn-bar.ok { color: #15803d; } .conn-bar.bad { color: var(--danger); } .conn-bar.wait { color: var(--muted); }
-    .tabs { display: flex; background: #f1ede2; border-radius: 12px; padding: 4px; margin-bottom: 18px; }
-    .tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted); transition: .2s; font-family: "Cairo"; }
-    .tab.active { background: var(--card); color: var(--header); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; font-weight: 700; }
-    .field input, .field select { width: 100%; padding: 11px 13px; border-radius: 11px; border: 1px solid var(--line); background: #fbfaf6; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit; transition: border-color .15s, background .15s; }
-    .field input:focus, .field select:focus { border-color: var(--accent); background: #fff; }
-    .row2 { display: flex; gap: 10px; } .row2 .field { flex: 1; }
-    .btn-primary { width: 100%; border: none; border-radius: 12px; padding: 13px; color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent2)); margin-top: 4px; font-family: "Cairo"; transition: transform .1s, filter .15s; }
-    .btn-primary:hover { filter: brightness(1.05); } .btn-primary:active { transform: scale(.98); }
-    .btn-ghost { width: 100%; border: 1.5px dashed var(--accent); background: transparent; color: var(--header); border-radius: 12px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 12px; font-family: "Cairo"; }
-    .btn-link { background: none; border: none; color: var(--muted); font-size: 12.5px; cursor: pointer; margin-top: 10px; width: 100%; text-align: center; }
-    .auth-err { color: var(--danger); font-size: 12.5px; text-align: center; min-height: 16px; margin-top: 8px; }
-    .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0 4px; }
-    .form-title { font-family: "Cairo"; font-weight: 800; font-size: 16px; text-align: center; margin-bottom: 14px; color: var(--header); }
-
-    header { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 4px 18px rgba(13,148,136,0.25); position: sticky; top: 0; z-index: 20; flex: 0 0 auto; }
-    #screenChat header { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); box-shadow: 0 4px 18px rgba(0,0,0,0.18); position: static; }
-    .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
-    .logo span { color: #fde68a; }
-    .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 4px 10px 4px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; transition: background .15s; }
-    .me-pill:hover { background: rgba(255,255,255,0.25); }
-    .me-pill .av { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; border: none; box-shadow: none; }
-    .me-pill .av svg { width: 14px; height: 14px; }
-    .head-right { display: flex; align-items: center; gap: 8px; }
-    .icon-btn { background: rgba(255,255,255,0.16); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 15px; cursor: pointer; position: relative; display: grid; place-items: center; transition: background .15s; }
-    .icon-btn:hover { background: rgba(255,255,255,0.28); }
-    .icon-btn .dot { position: absolute; top: -3px; left: -3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; font-family: "Cairo"; }
-    .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 17px; cursor: pointer; }
-    .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
-    .online-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 13px; cursor: pointer; font-weight: 700; font-family: "Cairo"; }
-    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.7); animation: pulse 1.8s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
-
-    #screenRooms:not(.hidden) { display: flex; flex-direction: column; height: 100%; }
-    .rooms-head { padding: 18px 16px 6px; flex: 0 0 auto; }
-    .rooms-head h2 { margin: 0 0 4px; font-size: 18px; font-family: "Cairo"; font-weight: 800; }
-    .rooms-head p { margin: 0; color: var(--muted); font-size: 13px; }
-    #roomsGrid { padding: 10px 14px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-    .room-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
-    .room-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.09); }
-    .room-top { display: flex; align-items: center; gap: 8px; }
-    .room-emoji { font-size: 22px; } .room-flag { font-size: 19px; margin-right: auto; }
-    .room-name { font-weight: 800; font-size: 15px; font-family: "Cairo"; }
-    .room-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--accent2); background: rgba(13,148,136,0.1); padding: 4px 10px; border-radius: 999px; width: fit-content; font-weight: 700; }
-    .room-count .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
-    .room-enter { margin-top: 2px; border: none; border-radius: 10px; padding: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: "Cairo"; }
-
-    #screenChat { position: fixed; left: 0; right: 0; margin: 0 auto; top: 0; bottom: 0; width: 100%; max-width: 760px; display: flex; flex-direction: column; background: var(--chat-bg); z-index: 10; overflow: hidden; }
-    #watermark { display: none; }
-    .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
-    .chat-conn.wait { color: var(--muted); background: rgba(255,255,255,0.5); } .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
-    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 8px 4px 8px 10px; display: flex; flex-direction: column; gap: 3px; position: relative; z-index: 1; }
-
-    .row { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 6px; align-items: start; line-height: 1.2; font-size: 14px; padding-top: 2px; animation: rowIn .25s ease; }
-    @keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-    .row.single { align-items: center; }
-    .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--av-ring, transparent), 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
-    .av svg { width: 16px; height: 16px; display: block; }
-    .body { display: block; min-width: 0; direction: rtl; }
-    .nm-line { display: inline; vertical-align: middle; unicode-bidi: isolate; white-space: nowrap; }
-    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 14.5px; cursor: pointer; }
-    .nm:hover { text-decoration: underline; }
-    .colon { font-weight: 700; color: #475569; margin: 0 1px; }
-    .rank-badge { display: inline-block; vertical-align: middle; unicode-bidi: isolate; font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; color: #fff; margin: 0 3px; }
-    .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
-    .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    .msg { display: inline; unicode-bidi: isolate; vertical-align: baseline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
-    .sys-action { display: inline-block; vertical-align: middle; unicode-bidi: isolate; color: var(--join-red); font-weight: 700; white-space: nowrap; background: rgba(15,23,42,0.07); border-radius: 999px; padding: 1px 10px; line-height: 1.7; }
-    .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
-
-    footer { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); background: rgba(255,255,255,0.9); position: relative; z-index: 2; flex: 0 0 auto; }
-    .send-circle { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); display: grid; place-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.15); transition: transform .1s ease; }
-    .send-circle:active:not(:disabled) { transform: scale(.93); } .send-circle:disabled { opacity: .5; cursor: not-allowed; }
-    .send-circle svg { width: 21px; height: 21px; fill: #fff; transform: scaleX(-1); }
-    .msg-wrap { flex: 1; position: relative; min-width: 0; }
-    .msg-wrap input { width: 100%; padding: 13px 46px 13px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); font-size: 14.5px; outline: none; font-family: inherit; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
-    .msg-wrap input:focus { border-color: var(--chat-accent); } .msg-wrap input:disabled { opacity: .6; cursor: not-allowed; }
-    .msg-wrap input.flash { animation: flashIn .6s ease; }
-    @keyframes flashIn { 0% { background: #fef9c3; } 100% { background: #fff; } }
-    .emoji-inside { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: none; background: transparent; cursor: pointer; font-size: 21px; display: grid; place-items: center; }
-    .emoji-inside:hover { background: #f1ede2; }
-    #emojiPanel { position: absolute; bottom: 64px; right: 12px; left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 190px; overflow-y: auto; z-index: 5; }
-    #emojiPanel span { font-size: 21px; text-align: center; cursor: pointer; border-radius: 8px; padding: 4px 0; } #emojiPanel span:hover { background: #f1ede2; }
-
-    #ptr { position: fixed; left: 0; right: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; z-index: 30; opacity: 0; transition: opacity .15s ease; }
-    #ptr .ptr-dot { width: 36px; height: 36px; border-radius: 50%; background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.18); display: grid; place-items: center; color: var(--accent); transition: transform .1s ease; }
-    #ptr .ptr-ico { font-size: 17px; line-height: 1; display: inline-block; font-weight: 800; }
-    #ptr.spin .ptr-ico { animation: ptrspin .8s linear infinite; } @keyframes ptrspin { to { transform: rotate(360deg); } }
-    #ptr .ptr-txt { font-size: 11px; color: var(--muted); font-weight: 700; background: rgba(255,255,255,.92); padding: 2px 9px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-
-    #drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: flex; justify-content: flex-end; animation: fadeIn .2s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; animation: slideR .25s ease; }
-    @keyframes slideR { from { transform: translateX(100%); } to { transform: none; } }
-    #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
-    .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; margin: 0; } .u-item .av svg { width: 16px; height: 16px; }
-    .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; } .u-item .nm2:hover { text-decoration: underline; }
-
-    /* ===== Overlays عام ===== */
-    .overlay { position: fixed; inset: 0; z-index: 50; }
-    .overlay .ov-back { position: absolute; inset: 0; background: rgba(0,0,0,0.45); animation: fadeIn .2s ease; }
-    .sheet { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 760px; background: #fff; border-radius: 20px 20px 0 0; padding: 8px 16px 22px; box-shadow: 0 -8px 30px rgba(0,0,0,0.18); animation: sheetUp .28s cubic-bezier(.2,.8,.2,1); }
-    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
-    .ps-handle { width: 40px; height: 5px; border-radius: 999px; background: #d8d3c8; margin: 6px auto 14px; }
-    .ps-head { display: flex; align-items: center; gap: 12px; }
-    .ps-av { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--av-ring, #ccc), 0 2px 8px rgba(0,0,0,0.15); overflow: hidden; } .ps-av svg { width: 30px; height: 30px; }
-    .ps-name { font-family: "Cairo"; font-weight: 800; font-size: 18px; }
-    .ps-meta { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-    .ps-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-    .ps-btn { flex: 1; min-width: 90px; border: none; border-radius: 12px; padding: 11px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: "Cairo"; color: #fff; transition: transform .1s, filter .15s; }
-    .ps-btn:hover { filter: brightness(1.06); } .ps-btn:active { transform: scale(.97); }
-    .ps-btn.mention { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
-    .ps-btn.profile { background: #475569; } .ps-btn.report { background: #e08a8a; } .ps-btn.friend { background: #2563eb; } .ps-btn.ignore { background: #94a3b8; }
-
-    .modal { position: fixed; inset: 0; z-index: 55; display: flex; align-items: center; justify-content: center; padding: 16px; }
-    .modal .md-back { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fadeIn .2s ease; }
-    .modal .md-card { position: relative; width: 100%; max-width: 400px; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,0.25); max-height: 88vh; overflow-y: auto; animation: popIn .26s cubic-bezier(.2,.9,.3,1.2); }
-    @keyframes popIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
-    .md-top { padding: 24px 16px 26px; color: #fff; text-align: center; position: relative; }
-    .md-close { position: absolute; top: 12px; left: 12px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(255,255,255,0.22); color: #fff; font-size: 15px; cursor: pointer; }
-    .md-av { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 8px; display: grid; place-items: center; border: 3px solid rgba(255,255,255,0.85); box-shadow: 0 0 0 2px var(--av-ring, rgba(255,255,255,0.5)); overflow: hidden; } .md-av svg { width: 40px; height: 40px; }
-    .md-name { font-family: "Cairo"; font-weight: 800; font-size: 20px; }
-    .md-rank { display: inline-block; margin-top: 6px; padding: 3px 12px; border-radius: 999px; background: rgba(255,255,255,0.22); font-weight: 800; font-size: 12px; }
-    .md-body { padding: 8px 16px 18px; }
-    .md-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--line); font-size: 13.5px; } .md-row:last-child { border-bottom: none; }
-    .md-row .k { color: var(--muted); font-weight: 700; } .md-row .v { font-weight: 800; }
-    .md-tabs { display: flex; gap: 6px; padding: 12px 16px 0; }
-    .md-tab { flex: 1; text-align: center; padding: 9px; border-radius: 10px; background: #f1ede2; color: var(--muted); font-weight: 800; font-size: 12.5px; cursor: pointer; font-family: "Cairo"; }
-    .md-tab.active { background: var(--accent); color: #fff; }
-    .md-form { padding: 14px 16px 18px; }
-    .palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 6px; }
-    .palette .sw { aspect-ratio: 1; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: transform .1s; } .palette .sw:hover { transform: scale(1.08); } .palette .sw.sel { border-color: #111827; box-shadow: 0 0 0 2px #fff inset; }
-    .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
-
-    /* ===== شاشة الرسائل الخاصة ===== */
-    #pmScreen { position: fixed; inset: 0; z-index: 45; background: var(--bg); display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; }
-    .pm-head { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-    .pm-head .ttl { font-family: "Cairo"; font-weight: 800; font-size: 16px; flex: 1; }
-    .pm-body { flex: 1 1 auto; min-height: 0; display: flex; }
-    .pm-list { width: 100%; overflow-y: auto; background: #fff; }
-    .pm-conv { display: none; flex-direction: column; width: 100%; background: var(--chat-bg); }
-    .pm-conv-head { background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); color: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-    .pm-conv-head .nm { font-family: "Cairo"; font-weight: 800; }
-    .pm-msgs { flex: 1 1 auto; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-    .bubble { max-width: 78%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; animation: rowIn .2s ease; }
-    .bubble.mine { align-self: flex-start; background: linear-gradient(135deg, var(--chat-accent), var(--chat-accent2)); color: #fff; border-bottom-right-radius: 4px; }
-    .bubble.theirs { align-self: flex-end; background: #fff; color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-    .bubble .tm { display: block; font-size: 10px; opacity: .7; margin-top: 3px; }
-    .pm-input { display: flex; gap: 8px; padding: 10px; background: rgba(255,255,255,0.9); border-top: 1px solid var(--line); flex: 0 0 auto; }
-    .pm-input input { flex: 1; padding: 11px 14px; border-radius: 999px; border: 1px solid var(--line); outline: none; font-family: inherit; font-size: 14px; }
-    .pm-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; } .pm-item:hover { background: #faf8f2; }
-    .pm-item .av { width: 40px; height: 40px; flex: 0 0 40px; } .pm-item .av svg { width: 22px; height: 22px; }
-    .pm-item .info { flex: 1; min-width: 0; } .pm-item .info .t { font-family: "Cairo"; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
-    .pm-item .info .t .time { font-size: 10px; color: var(--muted); font-weight: 600; }
-    .pm-item .info .last { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pm-item .unread { background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; }
-    .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; }
-
-    /* ===== شاشة الأصدقاء / البحث ===== */
-    #friendsScreen, #searchScreen { position: fixed; inset: 0; z-index: 45; background: var(--bg); display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; }
-    .fr-head { background: linear-gradient(135deg, var(--header), var(--header2)); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-    .fr-head .ttl { font-family: "Cairo"; font-weight: 800; font-size: 16px; flex: 1; }
-    .fr-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; }
-    .fr-sec { font-family: "Cairo"; font-weight: 800; font-size: 13px; color: var(--muted); margin: 10px 2px 6px; }
-    .fr-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .fr-item .av { width: 38px; height: 38px; flex: 0 0 38px; } .fr-item .av svg { width: 20px; height: 20px; }
-    .fr-item .info { flex: 1; min-width: 0; } .fr-item .info .nm { font-family: "Cairo"; font-weight: 800; font-size: 14px; }
-    .fr-item .info .sub { font-size: 11.5px; color: var(--muted); }
-    .fr-item .acts { display: flex; gap: 6px; }
-    .mini-btn { border: none; border-radius: 9px; padding: 7px 10px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: "Cairo"; color: #fff; transition: transform .1s, filter .15s; } .mini-btn:hover { filter: brightness(1.06); } .mini-btn:active { transform: scale(.95); }
-    .mini-btn.ok { background: #16a34a; } .mini-btn.no { background: #e08a8a; } .mini-btn.msg { background: var(--accent); } .mini-btn.ig { background: #94a3b8; }
-    .search-bar { display: flex; gap: 8px; padding: 12px 14px; background: #fff; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
-    .search-bar input { flex: 1; padding: 11px 14px; border-radius: 999px; border: 1px solid var(--line); outline: none; font-family: inherit; font-size: 14px; }
-
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(16px); background: #1f2937; color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: .25s; z-index: 80; font-family: "Cairo"; }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    @media (min-width: 640px) {
-      .pm-list { width: 320px; border-left: 1px solid var(--line); }
-      .pm-conv { display: flex; }
-      #pmScreen.show-conv .pm-list { display: none; }
+    *{box-sizing:border-box;}
+    html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;}
+    body{
+      font-family:"Tajawal",Tahoma,Arial,sans-serif;color:var(--text);
+      background:
+        radial-gradient(900px 500px at 85% -10%, rgba(176,138,50,0.10), transparent 60%),
+        radial-gradient(700px 500px at -10% 110%, rgba(176,138,50,0.08), transparent 55%),
+        var(--cream);
     }
-    @media (max-width: 639px) {
-      #pmScreen.show-conv .pm-list { display: none; }
-      #pmScreen.show-conv .pm-conv { display: flex; }
-      #pmScreen:not(.show-conv) .pm-conv { display: none; }
-    }
-    @media (max-width: 480px) { #roomsGrid { grid-template-columns: 1fr; } #emojiPanel { grid-template-columns: repeat(7, 1fr); } }
+    .app{max-width:760px;margin:0 auto;height:100%;display:flex;flex-direction:column;}
+    .hidden{display:none !important;}
+
+    /* ===== Auth ===== */
+    #screenAuth{height:100%;display:flex;flex-direction:column;padding:20px;overflow-y:auto;overscroll-behavior:contain;}
+    .auth-card{width:100%;max-width:400px;margin:auto;background:var(--paper);border-radius:22px;box-shadow:0 18px 50px rgba(80,60,20,0.18);padding:26px 22px;border:1px solid var(--line);animation:cardIn .45s ease;}
+    @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98);}to{opacity:1;transform:none;}}
+    .auth-logo{text-align:center;font-family:"Reem Kufi","Cairo";font-size:30px;font-weight:700;color:var(--gold2);margin-bottom:4px;letter-spacing:.5px;}
+    .auth-logo span{color:var(--gold1);}
+    .auth-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:10px;}
+    .conn-bar{text-align:center;font-size:12px;margin-bottom:14px;min-height:16px;font-weight:700;}
+    .conn-bar.ok{color:#15803d;} .conn-bar.bad{color:var(--danger);} .conn-bar.wait{color:var(--muted);}
+    .tabs{display:flex;background:#ece3d0;border-radius:12px;padding:4px;margin-bottom:18px;}
+    .tab{flex:1;text-align:center;padding:9px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);transition:.2s;font-family:"Cairo";}
+    .tab.active{background:var(--paper);color:var(--gold2);box-shadow:0 2px 8px rgba(80,60,20,0.12);}
+    .field{margin-bottom:12px;}
+    .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:700;}
+    .field input,.field select{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--line);background:#fffdf8;color:var(--text);font-size:14.5px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+    .field input:focus,.field select:focus{border-color:var(--gold1);box-shadow:0 0 0 3px rgba(176,138,50,0.15);}
+    .row2{display:flex;gap:10px;} .row2 .field{flex:1;}
+    .btn-primary{width:100%;border:none;border-radius:12px;padding:13px;color:#fff;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,var(--gold1),var(--gold2));margin-top:4px;font-family:"Cairo";transition:transform .1s,filter .15s;box-shadow:0 4px 14px rgba(124,94,34,0.3);}
+    .btn-primary:hover{filter:brightness(1.06);} .btn-primary:active{transform:scale(.98);}
+    .btn-ghost{width:100%;border:1.5px dashed var(--gold1);background:transparent;color:var(--gold2);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px;font-family:"Cairo";}
+    .btn-link{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;margin-top:10px;width:100%;text-align:center;}
+    .auth-err{color:var(--danger);font-size:12.5px;text-align:center;min-height:16px;margin-top:8px;}
+    .divider{text-align:center;color:var(--muted);font-size:12px;margin:14px 0 4px;}
+    .form-title{font-family:"Cairo";font-weight:800;font-size:16px;text-align:center;margin-bottom:14px;color:var(--gold2);}
+
+    /* ===== الهيدر الذهبي ===== */
+    header{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;padding:0;flex:0 0 auto;box-shadow:0 3px 14px rgba(95,72,26,0.35);position:relative;z-index:20;}
+    .hdr-bar{display:flex;align-items:stretch;gap:2px;padding:4px 6px;overflow-x:auto;scrollbar-width:none;}
+    .hdr-bar::-webkit-scrollbar{display:none;}
+    .hdr-opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:42px;padding:5px 6px;border-radius:9px;cursor:pointer;color:#fff;position:relative;transition:background .15s;flex:0 0 auto;}
+    .hdr-opt:hover{background:rgba(255,255,255,0.14);} .hdr-opt:active{background:rgba(255,255,255,0.22);}
+    .hdr-opt .ic{font-size:15px;line-height:1;} .hdr-opt .lb{font-size:9.5px;font-weight:700;font-family:"Cairo";white-space:nowrap;opacity:.92;}
+    .hdr-opt .nd{position:absolute;top:1px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:grid;place-items:center;font-family:"Cairo";box-shadow:0 0 0 1.5px var(--gold2);animation:ndpulse 1.8s infinite;}
+    @keyframes ndpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+    .hdr-logo{flex:1 1 auto;display:flex;align-items:center;justify-content:center;font-family:"Reem Kufi","Cairo";font-size:18px;font-weight:700;letter-spacing:.5px;min-width:90px;cursor:pointer;}
+    .hdr-logo span{color:#ffe9a8;}
+
+    /* ===== Rooms ===== */
+    #screenRooms:not(.hidden){display:flex;flex-direction:column;height:100%;}
+    .rooms-head{padding:16px 16px 4px;flex:0 0 auto;}
+    .rooms-head h2{margin:0 0 4px;font-size:18px;font-family:"Cairo";font-weight:800;color:var(--gold-deep);}
+    .rooms-head p{margin:0;color:var(--muted);font-size:13px;}
+    #roomsGrid{padding:10px 14px 80px;display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    .room-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;transition:transform .12s ease,box-shadow .2s ease;box-shadow:0 4px 14px rgba(80,60,20,0.08);display:flex;flex-direction:column;gap:8px;}
+    .room-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(80,60,20,0.14);}
+    .room-top{display:flex;align-items:center;gap:8px;}
+    .room-emoji{font-size:22px;} .room-flag{font-size:19px;margin-right:auto;}
+    .room-name{font-weight:800;font-size:15px;font-family:"Cairo";}
+    .room-count{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gold2);background:rgba(176,138,50,0.12);padding:4px 10px;border-radius:999px;width:fit-content;font-weight:700;}
+    .room-count .d{width:7px;height:7px;border-radius:50%;background:var(--gold1);}
+    .room-enter{margin-top:2px;border:none;border-radius:10px;padding:9px;background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;font-weight:800;font-size:13.5px;cursor:pointer;font-family:"Cairo";}
+
+    /* ===== Chat ===== */
+    #screenChat{position:fixed;left:0;right:0;margin:0 auto;top:0;bottom:var(--bar-h);width:100%;max-width:760px;display:flex;flex-direction:column;background:var(--chat-bg);z-index:10;overflow:hidden;}
+    #watermark{display:none;}
+    .chat-conn{padding:6px 14px;font-size:12px;font-weight:700;text-align:center;flex:0 0 auto;}
+    .chat-conn.wait{color:var(--muted);background:rgba(255,255,255,0.5);} .chat-conn.bad{color:var(--danger);background:rgba(255,255,255,0.5);}
+    #messages{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:2px 0;position:relative;z-index:1;}
+
+    /* رسائل كثيفة + خلفية متبادلة */
+    .row{display:grid;grid-template-columns:34px minmax(0,1fr) 16px;column-gap:7px;align-items:start;line-height:1.35;font-size:13.5px;padding:4px 8px;animation:rowIn .22s ease;border-bottom:1px solid rgba(80,66,40,0.05);}
+    .row:nth-child(even){background:var(--cream2);}
+    .row:nth-child(odd){background:var(--paper);}
+    @keyframes rowIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+    .row.single{align-items:center;}
+
+    /* أفاتار بإطار ملوّن سميك */
+    .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;font-family:"Cairo";border:2.5px solid var(--av-ring,#bbb);background:#ccc;overflow:hidden;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,0.18);}
+    .av svg{width:16px;height:16px;display:block;}
+
+    .body{display:block;min-width:0;direction:rtl;}
+    .nm-line{display:inline;vertical-align:middle;unicode-bidi:isolate;white-space:nowrap;}
+    .nm{font-family:"Cairo","Reem Kufi";font-weight:800;font-size:13.5px;cursor:pointer;}
+    .nm:hover{text-decoration:underline;}
+    .colon{font-weight:700;color:#6b6353;margin:0 1px;}
+    .rank-badge{display:inline-block;vertical-align:middle;unicode-bidi:isolate;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:999px;line-height:1.5;font-family:"Cairo";color:#fff;margin:0 3px;}
+    .badge{display:inline-block;vertical-align:middle;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.5;font-family:"Cairo";margin:0 2px;}
+    .badge.guest{background:rgba(120,110,90,0.16);color:#7a7060;}
+    .msg{display:inline;unicode-bidi:isolate;vertical-align:baseline;word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap;color:#221f1a;font-weight:500;}
+    .sys-action{display:inline-block;vertical-align:middle;unicode-bidi:isolate;color:var(--join-red);font-weight:700;white-space:nowrap;background:rgba(192,57,43,0.10);border-radius:999px;padding:1px 9px;line-height:1.6;}
+    .mention.mention-me{background:#fde047;color:#1f2937;border-radius:4px;padding:1px 3px;}
+    .row-flag{align-self:center;color:#b6ad9a;font-size:11px;cursor:pointer;opacity:.7;transition:opacity .15s,transform .1s;text-align:center;}
+    .row-flag:hover{opacity:1;transform:scale(1.2);}
+
+    /* ===== صندوق الكتابة ===== */
+    .inputbar{display:flex;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);background:var(--paper);position:relative;z-index:2;flex:0 0 auto;}
+    .send-circle{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 3px 10px rgba(13,148,136,0.3);transition:transform .1s ease;}
+    .send-circle:active:not(:disabled){transform:scale(.92);} .send-circle:disabled{opacity:.5;cursor:not-allowed;}
+    .send-circle svg{width:19px;height:19px;fill:#fff;transform:scaleX(-1);}
+    .msg-wrap{flex:1;position:relative;min-width:0;}
+    .msg-wrap input{width:100%;padding:12px 44px 12px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:14px;outline:none;font-family:inherit;}
+    .msg-wrap input:focus{border-color:var(--accent);} .msg-wrap input:disabled{opacity:.6;cursor:not-allowed;}
+    .msg-wrap input.flash{animation:flashIn .6s ease;} @keyframes flashIn{0%{background:#fef9c3;}100%{background:#fff;}}
+    .emoji-inside{position:absolute;top:50%;right:7px;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:none;background:transparent;cursor:pointer;font-size:20px;display:grid;place-items:center;}
+    .emoji-inside:hover{background:#f1ede2;}
+    #emojiPanel{position:absolute;bottom:60px;right:10px;left:10px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.18);padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:190px;overflow-y:auto;z-index:5;}
+    #emojiPanel span{font-size:21px;text-align:center;cursor:pointer;border-radius:8px;padding:4px 0;} #emojiPanel span:hover{background:#f1ede2;}
+
+    /* ===== الفوتر الذهبي السفلي ===== */
+    #gbar{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:760px;height:var(--bar-h);background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;gap:4px;padding:0 6px;z-index:25;box-shadow:0 -3px 14px rgba(95,72,26,0.35);transition:transform .22s ease;}
+    #gbar.hide-kb{transform:translateY(110%);}
+    .gbar-radio{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.16);border-radius:10px;padding:6px 9px;color:#fff;flex:0 0 auto;}
+    .gbar-radio .play{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.2);display:grid;place-items:center;cursor:pointer;font-size:11px;}
+    .gbar-radio .play:hover{background:rgba(255,255,255,0.32);}
+    .gbar-radio .st{font-size:10px;font-weight:700;font-family:"Cairo";opacity:.9;}
+    .gbar-spacer{flex:1 1 auto;}
+    .gbar-opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:46px;padding:5px 4px;border-radius:9px;cursor:pointer;color:#fff;position:relative;transition:background .15s;flex:0 0 auto;}
+    .gbar-opt:hover{background:rgba(255,255,255,0.14);} .gbar-opt:active{background:rgba(255,255,255,0.22);}
+    .gbar-opt .ic{font-size:15px;line-height:1;} .gbar-opt .lb{font-size:9.5px;font-weight:700;font-family:"Cairo";white-space:nowrap;opacity:.92;}
+    .gbar-opt .nd{position:absolute;top:1px;right:5px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:grid;place-items:center;font-family:"Cairo";box-shadow:0 0 0 1.5px var(--gold2);}
+
+    /* ===== Overlays ===== */
+    #ptr{position:fixed;left:0;right:0;top:0;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;z-index:30;opacity:0;transition:opacity .15s ease;}
+    #ptr .ptr-dot{width:36px;height:36px;border-radius:50%;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.18);display:grid;place-items:center;color:var(--gold2);transition:transform .1s ease;}
+    #ptr .ptr-ico{font-size:17px;line-height:1;display:inline-block;font-weight:800;}
+    #ptr.spin .ptr-ico{animation:ptrspin .8s linear infinite;} @keyframes ptrspin{to{transform:rotate(360deg);}}
+    #ptr .ptr-txt{font-size:11px;color:var(--muted);font-weight:700;background:rgba(255,255,255,.92);padding:2px 9px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+    #drawer{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:40;display:flex;justify-content:flex-end;animation:fadeIn .2s ease;}
+    @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+    #drawer .panel{width:82%;max-width:320px;background:var(--paper);height:100%;padding:16px;overflow-y:auto;animation:slideR .25s ease;}
+    @keyframes slideR{from{transform:translateX(100%);}to{transform:none;}}
+    #drawer h3{margin:0 0 12px;font-size:16px;font-family:"Cairo";font-weight:800;color:var(--gold-deep);}
+    .u-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+    .u-item .av{width:30px;height:30px;flex:0 0 30px;font-size:12px;cursor:pointer;margin:0;} .u-item .av svg{width:16px;height:16px;}
+    .u-item .nm2{font-family:"Cairo";font-weight:800;cursor:pointer;} .u-item .nm2:hover{text-decoration:underline;}
+
+    .overlay{position:fixed;inset:0;z-index:50;}
+    .overlay .ov-back{position:absolute;inset:0;background:rgba(0,0,0,0.45);animation:fadeIn .2s ease;}
+    .sheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:760px;background:var(--paper);border-radius:20px 20px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(0,0,0,0.2);animation:sheetUp .28s cubic-bezier(.2,.8,.2,1);}
+    @keyframes sheetUp{from{transform:translateY(100%);}to{transform:none;}}
+    .ps-handle{width:40px;height:5px;border-radius:999px;background:#d8cdb4;margin:6px auto 14px;}
+    .ps-head{display:flex;align-items:center;gap:12px;}
+    .ps-av{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 0 0 2.5px var(--av-ring,#ccc),0 2px 8px rgba(0,0,0,0.18);overflow:hidden;} .ps-av svg{width:30px;height:30px;}
+    .ps-name{font-family:"Cairo";font-weight:800;font-size:18px;}
+    .ps-meta{color:var(--muted);font-size:12.5px;margin-top:2px;}
+    .ps-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+    .ps-btn{flex:1;min-width:88px;border:none;border-radius:12px;padding:11px;font-weight:800;font-size:13px;cursor:pointer;font-family:"Cairo";color:#fff;transition:transform .1s,filter .15s;}
+    .ps-btn:hover{filter:brightness(1.06);} .ps-btn:active{transform:scale(.97);}
+    .ps-btn.mention{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+    .ps-btn.profile{background:#6b6353;} .ps-btn.report{background:#d98a8a;} .ps-btn.friend{background:#2563eb;} .ps-btn.ignore{background:#9a9080;}
+
+    .modal{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal .md-back{position:absolute;inset:0;background:rgba(0,0,0,0.5);animation:fadeIn .2s ease;}
+    .modal .md-card{position:relative;width:100%;max-width:400px;background:var(--paper);border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.3);max-height:88vh;overflow-y:auto;animation:popIn .26s cubic-bezier(.2,.9,.3,1.2);}
+    @keyframes popIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:none;}}
+    .md-top{padding:24px 16px 26px;color:#fff;text-align:center;position:relative;}
+    .md-close{position:absolute;top:12px;left:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,0.22);color:#fff;font-size:15px;cursor:pointer;}
+    .md-av{width:72px;height:72px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;border:3px solid rgba(255,255,255,0.85);box-shadow:0 0 0 2.5px var(--av-ring,rgba(255,255,255,0.5));overflow:hidden;} .md-av svg{width:40px;height:40px;}
+    .md-name{font-family:"Cairo";font-weight:800;font-size:20px;}
+    .md-rank{display:inline-block;margin-top:6px;padding:3px 12px;border-radius:999px;background:rgba(255,255,255,0.22);font-weight:800;font-size:12px;}
+    .md-body{padding:8px 16px 18px;}
+    .md-row{display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);font-size:13.5px;} .md-row:last-child{border-bottom:none;}
+    .md-row .k{color:var(--muted);font-weight:700;} .md-row .v{font-weight:800;}
+    .md-tabs{display:flex;gap:6px;padding:12px 16px 0;}
+    .md-tab{flex:1;text-align:center;padding:9px;border-radius:10px;background:#ece3d0;color:var(--muted);font-weight:800;font-size:12px;cursor:pointer;font-family:"Cairo";}
+    .md-tab.active{background:var(--gold1);color:#fff;}
+    .md-form{padding:14px 16px 18px;}
+    .palette{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px;}
+    .palette .sw{aspect-ratio:1;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:transform .1s;} .palette .sw:hover{transform:scale(1.08);} .palette .sw.sel{border-color:#2a2620;box-shadow:0 0 0 2px #fff inset;}
+    .btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c);}
+
+    /* ===== الرسائل الخاصة ===== */
+    #pmScreen{position:fixed;inset:0;z-index:45;background:var(--cream);display:flex;flex-direction:column;max-width:760px;margin:0 auto;}
+    .pm-head{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+    .pm-head .ttl{font-family:"Cairo";font-weight:800;font-size:16px;flex:1;}
+    .pm-body{flex:1 1 auto;min-height:0;display:flex;}
+    .pm-list{width:100%;overflow-y:auto;background:var(--paper);}
+    .pm-conv{display:none;flex-direction:column;width:100%;background:var(--chat-bg);}
+    .pm-conv-head{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+    .pm-conv-head .nm{font-family:"Cairo";font-weight:800;}
+    .pm-msgs{flex:1 1 auto;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+    .bubble{max-width:78%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.5;word-break:break-word;white-space:pre-wrap;animation:rowIn .2s ease;}
+    .bubble.mine{align-self:flex-start;background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;border-bottom-right-radius:4px;}
+    .bubble.theirs{align-self:flex-end;background:#fff;color:var(--text);border:1px solid var(--line);border-bottom-left-radius:4px;}
+    .bubble .tm{display:block;font-size:10px;opacity:.7;margin-top:3px;}
+    .pm-input{display:flex;gap:8px;padding:10px;background:var(--paper);border-top:1px solid var(--line);flex:0 0 auto;}
+    .pm-input input{flex:1;padding:11px 14px;border-radius:999px;border:1px solid var(--line);outline:none;font-family:inherit;font-size:14px;}
+    .pm-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s;} .pm-item:hover{background:#f7f1e3;}
+    .pm-item .av{width:40px;height:40px;flex:0 0 40px;} .pm-item .av svg{width:22px;height:22px;}
+    .pm-item .info{flex:1;min-width:0;} .pm-item .info .t{font-family:"Cairo";font-weight:800;font-size:14px;display:flex;justify-content:space-between;gap:8px;}
+    .pm-item .info .t .time{font-size:10px;color:var(--muted);font-weight:600;}
+    .pm-item .info .last{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .pm-item .unread{background:#ef4444;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:grid;place-items:center;}
+    .empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:13px;}
+
+    #friendsScreen,#searchScreen{position:fixed;inset:0;z-index:45;background:var(--cream);display:flex;flex-direction:column;max-width:760px;margin:0 auto;}
+    .fr-head{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+    .fr-head .ttl{font-family:"Cairo";font-weight:800;font-size:16px;flex:1;}
+    .fr-body{flex:1 1 auto;overflow-y:auto;padding:12px 14px;}
+    .fr-sec{font-family:"Cairo";font-weight:800;font-size:13px;color:var(--muted);margin:10px 2px 6px;}
+    .fr-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--paper);border-radius:12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(80,60,20,0.07);}
+    .fr-item .av{width:38px;height:38px;flex:0 0 38px;} .fr-item .av svg{width:20px;height:20px;}
+    .fr-item .info{flex:1;min-width:0;} .fr-item .info .nm{font-family:"Cairo";font-weight:800;font-size:14px;}
+    .fr-item .info .sub{font-size:11.5px;color:var(--muted);}
+    .fr-item .acts{display:flex;gap:6px;}
+    .mini-btn{border:none;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;font-family:"Cairo";color:#fff;transition:transform .1s,filter .15s;} .mini-btn:hover{filter:brightness(1.06);} .mini-btn:active{transform:scale(.95);}
+    .mini-btn.ok{background:#16a34a;} .mini-btn.no{background:#d98a8a;} .mini-btn.msg{background:var(--accent);} .mini-btn.ig{background:#9a9080;}
+    .search-bar{display:flex;gap:8px;padding:12px 14px;background:var(--paper);border-bottom:1px solid var(--line);flex:0 0 auto;}
+    .search-bar input{flex:1;padding:11px 14px;border-radius:999px;border:1px solid var(--line);outline:none;font-family:inherit;font-size:14px;}
+
+    .back-btn{background:rgba(255,255,255,0.18);border:none;color:#fff;width:34px;height:34px;border-radius:10px;font-size:17px;cursor:pointer;}
+
+    #toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(16px);background:#2a2620;color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;z-index:80;font-family:"Cairo";box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    @media (min-width:640px){.pm-list{width:320px;border-left:1px solid var(--line);}.pm-conv{display:flex;}#pmScreen.show-conv .pm-list{display:none;}}
+    @media (max-width:639px){#pmScreen.show-conv .pm-list{display:none;}#pmScreen.show-conv .pm-conv{display:flex;}#pmScreen:not(.show-conv) .pm-conv{display:none;}}
+    @media (max-width:480px){#roomsGrid{grid-template-columns:1fr;}#emojiPanel{grid-template-columns:repeat(7,1fr);}}
   </style>
 </head>
 <body>
@@ -272,13 +288,15 @@
 
     <section id="screenRooms" class="hidden">
       <header>
-        <div class="logo">Arabic<span>chat</span></div>
-        <div class="head-right">
-          <button class="icon-btn" id="searchBtn" title="بحث">🔍</button>
-          <button class="icon-btn" id="friendsBtn" title="الأصدقاء">👥<span class="dot hidden" id="friendsDot">0</span></button>
-          <button class="icon-btn" id="pmBtn" title="الرسائل">✉️<span class="dot hidden" id="pmDot">0</span></button>
-          <button class="logout-btn" id="logoutBtn">خروج</button>
-          <div class="me-pill" id="mePill"><span class="av" id="myAv">؟</span><span id="myName">...</span></div>
+        <div class="hdr-bar">
+          <div class="hdr-opt" id="hdrMenu"><span class="ic">☰</span><span class="lb">القائمة</span></div>
+          <div class="hdr-opt" id="hdrVip"><span class="ic">💎</span><span class="lb">الكبار</span></div>
+          <div class="hdr-opt" id="hdrRich"><span class="ic">👑</span><span class="lb">الأثرياء</span></div>
+          <div class="hdr-logo" id="hdrLogo">Arabic<span>chat</span></div>
+          <div class="hdr-opt" id="hdrPm"><span class="ic">✉️</span><span class="lb">رسالة</span><span class="nd hidden" id="pmDot">0</span></div>
+          <div class="hdr-opt" id="hdrFriends"><span class="ic">👥</span><span class="lb">طلب</span><span class="nd hidden" id="friendsDot">0</span></div>
+          <div class="hdr-opt" id="hdrNotif"><span class="ic">🔔</span><span class="lb">إشعار</span></div>
+          <div class="hdr-opt" id="hdrSettings"><span class="ic">⚙️</span><span class="lb">إعدادات</span></div>
         </div>
       </header>
       <div class="rooms-head">
@@ -291,20 +309,18 @@
 
     <section id="screenChat" class="hidden">
       <header>
-        <div class="head-right">
-          <button class="back-btn" id="backBtn">→</button>
-          <div class="logo" id="roomTitle" style="font-size:16px">الغرفة</div>
-        </div>
-        <div class="head-right">
-          <button class="icon-btn" id="pmBtn2" title="الرسائل">✉️<span class="dot hidden" id="pmDot2">0</span></button>
-          <button class="online-pill" id="usersBtn"><span class="live-dot"></span><span id="roomCount">0</span></button>
+        <div class="hdr-bar">
+          <div class="hdr-opt" id="hdrBack"><span class="ic">→</span><span class="lb">رجوع</span></div>
+          <div class="hdr-logo" id="roomTitle">الغرفة</div>
+          <div class="hdr-opt" id="hdrPm2"><span class="ic">✉️</span><span class="lb">رسالة</span><span class="nd hidden" id="pmDot2">0</span></div>
+          <div class="hdr-opt" id="hdrUsers"><span class="ic">👥</span><span class="lb" id="roomCount">0</span></div>
         </div>
       </header>
       <div class="chat-conn hidden" id="connChat"></div>
       <div id="watermark"></div>
       <main id="messages"></main>
       <div id="emojiPanel" class="hidden"></div>
-      <footer>
+      <div class="inputbar">
         <button class="send-circle" id="sendBtn" type="button" aria-label="إرسال" disabled>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 21l19-9-19-9v7l13 2-13 2z"/></svg>
         </button>
@@ -312,8 +328,18 @@
           <input id="msgInput" type="text" placeholder="اكتب رسالتك ..." autocomplete="off" disabled />
           <button class="emoji-inside" id="emojiBtn" type="button" aria-label="إيموجي">😊</button>
         </div>
-      </footer>
+      </div>
     </section>
+  </div>
+
+  <!-- الفوتر الذهبي السفلي -->
+  <div id="gbar" class="hidden">
+    <div class="gbar-radio"><span class="play" id="radioPlay">▶</span><span class="st" id="radioStation">Radio</span></div>
+    <div class="gbar-spacer"></div>
+    <div class="gbar-opt" id="gRooms"><span class="ic">🏠</span><span class="lb">الغرف</span></div>
+    <div class="gbar-opt" id="gOnline"><span class="ic">👥</span><span class="lb">المتصلين</span></div>
+    <div class="gbar-opt" id="gFriends"><span class="ic">🤝</span><span class="lb">الأصدقاء</span><span class="nd hidden" id="friendsDot2">0</span></div>
+    <div class="gbar-opt" id="gSettings"><span class="ic">⚙️</span><span class="lb">خيارات</span></div>
   </div>
 
   <div id="ptr" aria-hidden="true"><div class="ptr-dot"><span class="ptr-ico">↓</span></div><div class="ptr-txt">اسحب للتحديث</div></div>
@@ -322,26 +348,23 @@
   <div id="profileModal" class="modal hidden"><div class="md-back"></div><div class="md-card"></div></div>
   <div id="editModal" class="modal hidden"><div class="md-back"></div><div class="md-card"></div></div>
 
-  <!-- الرسائل الخاصة -->
   <section id="pmScreen" class="hidden">
     <div class="pm-head"><button class="back-btn" id="pmClose">✕</button><div class="ttl">الرسائل الخاصة ✉️</div></div>
     <div class="pm-body">
       <div class="pm-list" id="pmList"></div>
       <div class="pm-conv" id="pmConv">
-        <div class="pm-conv-head"><button class="back-btn" id="pmConvBack">→</button><span class="av" id="pmConvAv" style="width:30px;height:30px;flex:0 0 30px;border:none;box-shadow:none"></span><span class="nm" id="pmConvName">—</span></div>
+        <div class="pm-conv-head"><button class="back-btn" id="pmConvBack">→</button><span class="av" id="pmConvAv" style="width:30px;height:30px;flex:0 0 30px"></span><span class="nm" id="pmConvName">—</span></div>
         <div class="pm-msgs" id="pmMsgs"></div>
         <div class="pm-input"><input id="pmInput" type="text" placeholder="اكتب رسالة خاصة ..." autocomplete="off" /><button class="send-circle" id="pmSend" style="width:42px;height:42px"><svg viewBox="0 0 24 24"><path d="M2.5 21l19-9-19-9v7l13 2-13 2z"/></svg></button></div>
       </div>
     </div>
   </section>
 
-  <!-- الأصدقاء -->
   <section id="friendsScreen" class="hidden">
-    <div class="fr-head"><button class="back-btn" id="friendsClose">✕</button><div class="ttl">الأصدقاء 👥</div></div>
+    <div class="fr-head"><button class="back-btn" id="friendsClose">✕</button><div class="ttl">الأصدقاء 🤝</div></div>
     <div class="fr-body" id="friendsBody"></div>
   </section>
 
-  <!-- البحث -->
   <section id="searchScreen" class="hidden">
     <div class="fr-head"><button class="back-btn" id="searchClose">✕</button><div class="ttl">البحث عن أشخاص 🔍</div></div>
     <div class="search-bar"><input id="searchInput" type="text" placeholder="اكتب اسم للبحث ..." autocomplete="off" /></div>
@@ -369,15 +392,15 @@
     const $ = (id) => document.getElementById(id);
     const screenAuth = $('screenAuth'), screenRooms = $('screenRooms'), screenChat = $('screenChat');
     const roomsGrid = $('roomsGrid'), messagesEl = $('messages'), msgInput = $('msgInput');
-    const sendBtn = $('sendBtn'), backBtn = $('backBtn'), usersBtn = $('usersBtn');
+    const sendBtn = $('sendBtn'), emojiBtn = $('emojiBtn'), emojiPanel = $('emojiPanel');
     const drawer = $('drawer'), usersList = $('usersList');
     const roomTitle = $('roomTitle'), roomCount = $('roomCount'), toast = $('toast');
-    const logoutBtn = $('logoutBtn'), emojiBtn = $('emojiBtn'), emojiPanel = $('emojiPanel');
     const ptr = $('ptr'), ptrDot = ptr.querySelector('.ptr-dot'), ptrIco = ptr.querySelector('.ptr-ico'), ptrTxt = ptr.querySelector('.ptr-txt');
     const profileSheet = $('profileSheet'), profileModal = $('profileModal'), editModal = $('editModal');
-    const pmScreen = $('pmScreen'), pmList = $('pmList'), pmConv = $('pmConv'), pmMsgs = $('pmMsgs'), pmInput = $('pmInput');
+    const pmScreen = $('pmScreen'), pmList = $('pmList'), pmMsgs = $('pmMsgs'), pmInput = $('pmInput');
     const friendsScreen = $('friendsScreen'), friendsBody = $('friendsBody');
     const searchScreen = $('searchScreen'), searchBody = $('searchBody'), searchInput = $('searchInput');
+    const gbar = $('gbar');
 
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
     let myPoints = 0, myRank = 0, myTier = null;
@@ -403,13 +426,18 @@
       if (rank >= 10) return { label: 'عضو نشيط', color: '#16a34a' };
       return { label: 'عضو', color: '#a9760a' };
     }
-    function avatarStyle(role, gender, color) {
-      if (role === 'member') return { bg: color, ring: color };
-      if (gender === 'ذكر') return { bg: '#4db8c9', ring: '#2f93a3' };
-      if (gender === 'أنثى') return { bg: '#e08aa6', ring: '#c46a87' };
-      return { bg: '#a8aeb8', ring: '#868d98' };
+    function avatarRing(role, gender, color) {
+      if (role === 'member') return color || '#b08a32';
+      if (gender === 'ذكر') return '#2f93a3';
+      if (gender === 'أنثى') return '#c46a87';
+      return '#9a9080';
     }
-    function fillAvatar(el, role, gender, color) { const s = avatarStyle(role, gender, color); el.style.background = s.bg; el.style.setProperty('--av-ring', s.ring); el.innerHTML = SILHOUETTE; }
+    function fillAvatar(el, role, gender, color) {
+      const ring = avatarRing(role, gender, color);
+      el.style.setProperty('--av-ring', ring);
+      el.style.background = (role === 'member') ? (color || '#b08a32') : (gender === 'ذكر' ? '#4db8c9' : gender === 'أنثى' ? '#e08aa6' : '#a8aeb8');
+      el.innerHTML = SILHOUETTE;
+    }
     function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
     function makeKey(o) { const nm = (nameOf(o) || '').toLowerCase(); const t = o.time || 0; if (o.kind === 'join') return 'j:' + Math.floor(t / 2000) + ':' + nm; return 'm:' + Math.floor(t / 1000) + ':' + nm + ':' + (o.text || '').slice(0, 12); }
@@ -422,15 +450,20 @@
     function setConn(cls, txt) { const a = $('connAuth'), c = $('connChat'); if (cls === 'ok') { if (a) a.classList.add('hidden'); if (c) c.classList.add('hidden'); return; } if (a) { a.className = 'conn-bar ' + cls; a.textContent = txt; a.classList.remove('hidden'); } if (c) { c.className = 'chat-conn ' + cls; c.textContent = txt; c.classList.remove('hidden'); } }
     function startAuthTimeout(errEl) { clearTimeout(authTimer); authTimer = setTimeout(() => { if (errEl) errEl.textContent = 'تعذر الاتصال بالخادم. حدّث الصفحة وحاول تاني.'; setConn('bad', 'الخادم لا يرد — حدّث الصفحة'); }, 8000); }
     function clearAuthTimeout() { clearTimeout(authTimer); }
-    function showScreen(view) { screenAuth.classList.toggle('hidden', view !== 'auth'); screenRooms.classList.toggle('hidden', view !== 'rooms'); screenChat.classList.toggle('hidden', view !== 'chat'); currentView = view; }
+    function showScreen(view) {
+      screenAuth.classList.toggle('hidden', view !== 'auth');
+      screenRooms.classList.toggle('hidden', view !== 'rooms');
+      screenChat.classList.toggle('hidden', view !== 'chat');
+      currentView = view;
+      gbar.classList.toggle('hidden', view === 'auth');
+      fitViewport();
+    }
     function mentionUser(name) { if (!name) return; const cur = msgInput.value; if (cur.trim() === '') msgInput.value = name + ' '; else msgInput.value = cur + (cur.endsWith(' ') ? '' : ' ') + name + ' '; msgInput.focus(); const len = msgInput.value.length; msgInput.setSelectionRange(len, len); msgInput.classList.remove('flash'); void msgInput.offsetWidth; msgInput.classList.add('flash'); }
-    function fmtTime(ts) { try { const d = new Date(ts); return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+    function fmtTime(ts) { try { return new Date(ts).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
     function fmtDate(ts) { try { return new Date(ts).toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' }); } catch (e) { return '—'; } }
 
-    // ===== Profile sheet =====
     function openProfileSheet(name, role, gender, color) {
-      const card = profileSheet.querySelector('.sheet');
-      const isMe = name === myName;
+      const card = profileSheet.querySelector('.sheet'); const isMe = name === myName;
       let acts = '<button class="ps-btn mention" id="psMention">منشن @</button><button class="ps-btn profile" id="psProfile">الملف الشخصي</button>';
       if (!isMe) acts += '<button class="ps-btn friend" id="psFriend">إضافة صديق</button><button class="ps-btn ignore" id="psIgnore">تجاهل</button><button class="ps-btn report" id="psReport">إبلاغ 🚩</button>';
       card.innerHTML = '<div class="ps-handle"></div><div class="ps-head"><div class="ps-av" id="psAv"></div><div><div class="ps-name">' + escapeHtml(name) + '</div><div class="ps-meta">' + escapeHtml(roleLabel(role)) + (gender ? (' • ' + escapeHtml(gender)) : '') + (isMe ? ' • أنت' : '') + '</div></div></div><div class="ps-actions">' + acts + '</div>';
@@ -447,12 +480,10 @@
     function closeSheet() { profileSheet.classList.add('hidden'); }
     profileSheet.querySelector('.ov-back').addEventListener('click', closeSheet);
 
-    // ===== Profile modal (عرض) =====
     function pmRow(k, v) { return '<div class="md-row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(String(v)) + '</span></div>'; }
     function openProfileModal(d) {
-      const card = profileModal.querySelector('.md-card');
-      const isMember = d.role === 'member'; const isMe = d.name === myName;
-      const topColor = isMember ? (d.nameColor || d.tierColor || '#0d9488') : '#0d9488';
+      const card = profileModal.querySelector('.md-card'); const isMember = d.role === 'member'; const isMe = d.name === myName;
+      const topColor = isMember ? (d.nameColor || d.tierColor || '#b08a32') : '#b08a32';
       const rankText = isMember ? ('رتبة ' + d.rank + ' • ' + (d.tierLabel || 'عضو')) : 'زائر';
       let rows = '';
       if (isMember) { rows += pmRow('النقاط', (d.points || 0) + ' نقطة'); rows += pmRow('الرتبة', 'رتبة ' + d.rank); }
@@ -460,9 +491,8 @@
       if (d.relationship) rows += pmRow('الحالة الاجتماعية', d.relationship);
       if (isMember && d.joinedAt) rows += pmRow('تاريخ الانضمام', fmtDate(d.joinedAt));
       rows += pmRow('الحالة', d.online ? 'متصل الآن 🟢' : 'غير متصل');
-      let extra = '';
-      if (isMe && isMember) extra = '<div style="padding:0 16px 16px"><button class="btn-primary" id="pmEdit">تعديل الملف الشخصي ✏️</button></div>';
-      card.innerHTML = '<div class="md-top" style="background:' + topColor + '"><button class="md-close" id="mdClose">✕</button><div class="md-av" id="mdAv"></div><div class="md-name">' + escapeHtml(d.name) + '</div><div class="md-rank">' + escapeHtml(rankText) + '</div></div><div class="md-body">' + rows + '</div>' + extra;
+      let extra = isMe && isMember ? '<div style="padding:0 16px 16px"><button class="btn-primary" id="pmEdit">تعديل الملف الشخصي ✏️</button></div>' : '';
+      card.innerHTML = '<div class="md-top" style="background:linear-gradient(135deg,' + topColor + ',#5f481a)"><button class="md-close" id="mdClose">✕</button><div class="md-av" id="mdAv"></div><div class="md-name">' + escapeHtml(d.name) + '</div><div class="md-rank">' + escapeHtml(rankText) + '</div></div><div class="md-body">' + rows + '</div>' + extra;
       fillAvatar($('mdAv'), d.role, d.gender, topColor); $('mdAv').style.setProperty('--av-ring', 'rgba(255,255,255,0.85)');
       $('mdClose').onclick = closeModal;
       if (isMe && isMember) $('pmEdit').onclick = () => { closeModal(); openEditModal(d); };
@@ -471,19 +501,14 @@
     function closeModal() { profileModal.classList.add('hidden'); }
     profileModal.querySelector('.md-back').addEventListener('click', closeModal);
 
-    // ===== Edit modal (تعديل / باسورد / حذف) =====
     let editSelColor = '';
     function openEditModal(d) {
       editSelColor = d.nameColor || myColor || '';
       const card = editModal.querySelector('.md-card');
-      card.innerHTML =
-        '<div class="md-top" style="background:linear-gradient(135deg,var(--accent),var(--accent2))"><button class="md-close" id="edClose">✕</button><div class="md-name">تعديل الحساب</div></div>' +
-        '<div class="md-tabs"><div class="md-tab active" data-t="info">بياناتي</div><div class="md-tab" data-t="pass">كلمة المرور</div><div class="md-tab" data-t="del">حذف الحساب</div></div>' +
-        '<div class="md-form" id="edBody"></div>';
+      card.innerHTML = '<div class="md-top" style="background:linear-gradient(135deg,var(--gold1),var(--gold2))"><button class="md-close" id="edClose">✕</button><div class="md-name">تعديل الحساب</div></div><div class="md-tabs"><div class="md-tab active" data-t="info">بياناتي</div><div class="md-tab" data-t="pass">كلمة المرور</div><div class="md-tab" data-t="del">حذف الحساب</div></div><div class="md-form" id="edBody"></div>';
       $('edClose').onclick = closeEdit;
       card.querySelectorAll('.md-tab').forEach((t) => t.onclick = () => { card.querySelectorAll('.md-tab').forEach((x) => x.classList.remove('active')); t.classList.add('active'); renderEditTab(t.dataset.t, d); });
-      renderEditTab('info', d);
-      editModal.classList.remove('hidden');
+      renderEditTab('info', d); editModal.classList.remove('hidden');
     }
     function renderEditTab(t, d) {
       const body = $('edBody');
@@ -491,53 +516,41 @@
         const relOpts = ['', 'عازب', 'مرتبط', 'مخطوب', 'متزوج', 'في علاقة', 'مطلق', 'أرمل', 'لا أفصح'];
         const countryOpts = ['مصر','السعودية','الإمارات','الكويت','قطر','البحرين','عمان','اليمن','الأردن','سوريا','لبنان','العراق','فلسطين','المغرب','الجزائر','تونس','ليبيا','السودان','موريتانيا','أخرى'];
         const sel = (arr, val) => arr.map((x) => '<option value="' + escapeHtml(x) + '"' + (x === (val || '') ? ' selected' : '') + '>' + (x ? escapeHtml(x) : 'اختر') + '</option>').join('');
-        body.innerHTML =
-          '<div class="field"><label>النوع</label><select id="edGender"><option value="">اختر</option><option value="ذكر"' + (d.gender === 'ذكر' ? ' selected' : '') + '>ذكر</option><option value="أنثى"' + (d.gender === 'أنثى' ? ' selected' : '') + '>أنثى</option><option value="لا أفصح"' + (d.gender === 'لا أفصح' ? ' selected' : '') + '>لا أفصح</option></select></div>' +
-          '<div class="row2"><div class="field"><label>العمر</label><input type="number" id="edAge" min="10" max="80" value="' + (d.age || '') + '"></div><div class="field"><label>الحالة</label><select id="edRel">' + sel(relOpts, d.relationship) + '</select></div></div>' +
-          '<div class="field"><label>الدولة</label><select id="edCountry">' + sel([''].concat(countryOpts), d.country) + '</select></div>' +
-          '<div class="field"><label>لون الاسم</label><div class="palette" id="edPalette"></div></div>' +
-          '<button class="btn-primary" id="edSaveInfo">حفظ التغييرات 💾</button><div class="auth-err" id="edInfoErr"></div>';
+        body.innerHTML = '<div class="field"><label>النوع</label><select id="edGender"><option value="">اختر</option><option value="ذكر"' + (d.gender === 'ذكر' ? ' selected' : '') + '>ذكر</option><option value="أنثى"' + (d.gender === 'أنثى' ? ' selected' : '') + '>أنثى</option><option value="لا أفصح"' + (d.gender === 'لا أفصح' ? ' selected' : '') + '>لا أفصح</option></select></div><div class="row2"><div class="field"><label>العمر</label><input type="number" id="edAge" min="10" max="80" value="' + (d.age || '') + '"></div><div class="field"><label>الحالة</label><select id="edRel">' + sel(relOpts, d.relationship) + '</select></div></div><div class="field"><label>الدولة</label><select id="edCountry">' + sel([''].concat(countryOpts), d.country) + '</select></div><div class="field"><label>لون الاسم</label><div class="palette" id="edPalette"></div></div><button class="btn-primary" id="edSaveInfo">حفظ التغييرات 💾</button><div class="auth-err" id="edInfoErr"></div>';
         const pal = $('edPalette');
         NAME_PALETTE.forEach((c) => { const sw = document.createElement('div'); sw.className = 'sw' + (c.toLowerCase() === (editSelColor || '').toLowerCase() ? ' sel' : ''); sw.style.background = c; sw.onclick = () => { editSelColor = c; pal.querySelectorAll('.sw').forEach((x) => x.classList.remove('sel')); sw.classList.add('sel'); }; pal.appendChild(sw); });
-        $('edSaveInfo').onclick = () => {
-          $('edInfoErr').textContent = '';
-          socket.emit('profile_update', { gender: $('edGender').value, age: $('edAge').value, country: $('edCountry').value, relationship: $('edRel').value, nameColor: editSelColor });
-        };
+        $('edSaveInfo').onclick = () => { $('edInfoErr').textContent = ''; socket.emit('profile_update', { gender: $('edGender').value, age: $('edAge').value, country: $('edCountry').value, relationship: $('edRel').value, nameColor: editSelColor }); };
       } else if (t === 'pass') {
-        body.innerHTML =
-          '<div class="field"><label>كلمة المرور الحالية</label><input type="password" id="edOld"></div>' +
-          '<div class="field"><label>كلمة المرور الجديدة</label><input type="password" id="edNew"></div>' +
-          '<button class="btn-primary" id="edSavePass">تغيير كلمة المرور 🔑</button><div class="auth-err" id="edPassErr"></div>';
+        body.innerHTML = '<div class="field"><label>كلمة المرور الحالية</label><input type="password" id="edOld"></div><div class="field"><label>كلمة المرور الجديدة</label><input type="password" id="edNew"></div><button class="btn-primary" id="edSavePass">تغيير كلمة المرور 🔑</button><div class="auth-err" id="edPassErr"></div>';
         $('edSavePass').onclick = () => { $('edPassErr').textContent = ''; socket.emit('change_password', { oldPass: $('edOld').value, newPass: $('edNew').value }); };
       } else {
-        body.innerHTML =
-          '<p style="color:var(--muted);font-size:13px;line-height:1.7">حذف الحساب نهائي ولا يمكن التراجع عنه. أدخل كلمة المرور للتأكيد.</p>' +
-          '<div class="field"><label>كلمة المرور</label><input type="password" id="edDelPass"></div>' +
-          '<button class="btn-primary btn-danger" id="edDel">حذف الحساب نهائيًا 🗑️</button><div class="auth-err" id="edDelErr"></div>';
+        body.innerHTML = '<p style="color:var(--muted);font-size:13px;line-height:1.7">حذف الحساب نهائي ولا يمكن التراجع عنه. أدخل كلمة المرور للتأكيد.</p><div class="field"><label>كلمة المرور</label><input type="password" id="edDelPass"></div><button class="btn-primary btn-danger" id="edDel">حذف الحساب نهائيًا 🗑️</button><div class="auth-err" id="edDelErr"></div>';
         $('edDel').onclick = () => { if (confirm('متأكد إنك عايز تحذف حسابك نهائيًا؟')) { $('edDelErr').textContent = ''; socket.emit('delete_account', { password: $('edDelPass').value }); } };
       }
     }
     function closeEdit() { editModal.classList.add('hidden'); }
     editModal.querySelector('.md-back').addEventListener('click', closeEdit);
 
-    function buildAvatar(opts) { const av = document.createElement('div'); av.className = 'av'; fillAvatar(av, opts.role || opts.senderRole || '', opts.gender || opts.senderGender || '', opts.color || opts.senderColor || '#94a3b8'); return av; }
-    function applyTheme(theme) { if (!theme) return; screenChat.style.setProperty('--chat-bg', theme.bg || ''); screenChat.style.setProperty('--chat-accent', theme.accent || '#0d9488'); screenChat.style.setProperty('--chat-accent2', theme.accent2 || '#14b8a6'); }
+    function buildAvatar(opts) { const av = document.createElement('div'); av.className = 'av'; fillAvatar(av, opts.role || opts.senderRole || '', opts.gender || opts.senderGender || '', opts.color || opts.senderColor || '#b08a32'); return av; }
     function setInputEnabled(on) { msgInput.disabled = !on; sendBtn.disabled = !on; }
-    function checkSingle(row) { requestAnimationFrame(() => { const body = row.querySelector('.body'); if (!body) return; const cs = getComputedStyle(body); const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.2) || 18; if (body.scrollHeight <= lh * 1.7) row.classList.add('single'); else row.classList.remove('single'); }); }
+    function checkSingle(row) { requestAnimationFrame(() => { const body = row.querySelector('.body'); if (!body) return; const cs = getComputedStyle(body); const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.35) || 18; if (body.scrollHeight <= lh * 1.6) row.classList.add('single'); else row.classList.remove('single'); }); }
     function makeRankBadge(o) { if ((o.role || o.senderRole) !== 'member') return null; const label = o.senderTierLabel || o.tierLabel || ''; const color = o.senderTierColor || o.tierColor || ''; const rank = o.senderRank || o.rank || 0; if (!label) return null; const b = document.createElement('span'); b.className = 'rank-badge'; b.style.background = color; b.textContent = 'رتبة ' + rank; b.title = label; return b; }
 
     function drawJoin(o) {
-      const name = nameOf(o), color = o.color || o.senderColor || '#94a3b8', role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '';
+      const name = nameOf(o), color = o.color || o.senderColor || '#b08a32', role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '';
       const row = document.createElement('div'); row.className = 'row'; row.appendChild(buildAvatar({ role, gender, name, color }));
       const body = document.createElement('div'); body.className = 'body';
       const nmLine = document.createElement('span'); nmLine.className = 'nm-line';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name; nm.style.color = color; nm.addEventListener('click', () => openProfileSheet(name, role, gender, color));
       const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : '; nmLine.appendChild(nm); nmLine.appendChild(colon);
       const act = document.createElement('span'); act.className = 'sys-action'; act.textContent = 'انضم للغرفة (# ' + roleLabel(role) + ' #)';
-      body.appendChild(nmLine); body.appendChild(act); row.appendChild(body); messagesEl.appendChild(row); messagesEl.scrollTop = messagesEl.scrollHeight; checkSingle(row);
+      body.appendChild(nmLine); body.appendChild(act); row.appendChild(body);
+      const flag = document.createElement('div'); flag.className = 'row-flag'; flag.textContent = '🚩'; flag.title = 'إبلاغ'; flag.onclick = () => { socket.emit('report', { name }); showToast('تم إرسال البلاغ 🚩'); };
+      row.appendChild(flag);
+      messagesEl.appendChild(row); messagesEl.scrollTop = messagesEl.scrollHeight; checkSingle(row);
     }
     function drawMsg(o, markPending) {
-      const name = nameOf(o), color = o.color || o.senderColor || '#94a3b8', role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '', text = o.text || '';
+      const name = nameOf(o), color = o.color || o.senderColor || '#b08a32', role = o.role || o.senderRole || '', gender = o.gender || o.senderGender || '', text = o.text || '';
       const row = document.createElement('div'); row.className = 'row'; row.appendChild(buildAvatar({ role, gender, name, color }));
       const body = document.createElement('div'); body.className = 'body';
       const rb = makeRankBadge(o); if (rb) body.appendChild(rb);
@@ -545,7 +558,10 @@
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name; nm.style.color = color; nm.addEventListener('click', () => openProfileSheet(name, role, gender, color));
       const colon = document.createElement('span'); colon.className = 'colon'; colon.textContent = ' : '; nmLine.appendChild(nm); nmLine.appendChild(colon); body.appendChild(nmLine);
       if (text) { const tx = document.createElement('span'); tx.className = 'msg'; tx.innerHTML = renderText(text, o.mentions); if (markPending) tx.setAttribute('data-pending', '1'); body.appendChild(tx); }
-      row.appendChild(body); messagesEl.appendChild(row); messagesEl.scrollTop = messagesEl.scrollHeight; checkSingle(row);
+      row.appendChild(body);
+      const flag = document.createElement('div'); flag.className = 'row-flag'; flag.textContent = '🚩'; flag.title = 'إبلاغ'; flag.onclick = () => { socket.emit('report', { name }); showToast('تم إرسال البلاغ 🚩'); };
+      row.appendChild(flag);
+      messagesEl.appendChild(row); messagesEl.scrollTop = messagesEl.scrollHeight; checkSingle(row);
     }
     function renderAllFromCache() { messagesEl.innerHTML = ''; cacheItems.forEach((it) => { if (it.kind === 'join') drawJoin(it); else drawMsg(it, false); }); }
     function ingest(o, opts) {
@@ -557,7 +573,6 @@
     function loadCache(roomId) { try { const raw = localStorage.getItem('chatCache_' + roomId); cacheItems = raw ? JSON.parse(raw) : []; } catch (e) { cacheItems = []; } cacheKeys = new Set(cacheItems.map((x) => x._key)); }
     function saveCache() { if (!currentRoomId) return; try { localStorage.setItem('chatCache_' + currentRoomId, JSON.stringify(cacheItems)); } catch (e) {} }
 
-    // ===== PTR =====
     function ptrTopFor(el) { try { if (el === messagesEl) { const h = screenChat.querySelector('header'); return h ? Math.round(h.getBoundingClientRect().bottom) : 0; } if (el === roomsGrid) { const h = screenRooms.querySelector('header'); return h ? Math.round(h.getBoundingClientRect().bottom) : 0; } } catch (e) {} return 0; }
     function setupPTR(el) {
       let startY = 0, active = false, dy = 0, loading = false;
@@ -569,7 +584,6 @@
     }
     setupPTR(roomsGrid); setupPTR(messagesEl); setupPTR(screenAuth);
 
-    // ===== Auth UI =====
     function showAuthMain() { $('authTabs').classList.remove('hidden'); $('formLogin').classList.remove('hidden'); $('formRegister').classList.add('hidden'); $('formGuest').classList.add('hidden'); $('authFooter').classList.remove('hidden'); document.querySelectorAll('.tab').forEach((x, i) => x.classList.toggle('active', i === 0)); }
     document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => { document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active')); t.classList.add('active'); const isLogin = t.dataset.tab === 'login'; $('formLogin').classList.toggle('hidden', !isLogin); $('formRegister').classList.toggle('hidden', isLogin); $('liErr').textContent = ''; $('rgErr').textContent = ''; }));
     $('guestBtn').addEventListener('click', () => { $('authTabs').classList.add('hidden'); $('formLogin').classList.add('hidden'); $('formRegister').classList.add('hidden'); $('authFooter').classList.add('hidden'); $('formGuest').classList.remove('hidden'); });
@@ -577,20 +591,20 @@
     $('formLogin').addEventListener('submit', (e) => { e.preventDefault(); $('liErr').textContent = ''; if (!socket.connected) { $('liErr').textContent = 'جاري الاتصال...'; socket.connect(); startAuthTimeout($('liErr')); return; } socket.emit('login', { email: $('liEmail').value, password: $('liPass').value }); startAuthTimeout($('liErr')); });
     $('formRegister').addEventListener('submit', (e) => { e.preventDefault(); $('rgErr').textContent = ''; if (!socket.connected) { $('rgErr').textContent = 'جاري الاتصال...'; socket.connect(); startAuthTimeout($('rgErr')); return; } socket.emit('register', { username: $('rgName').value, email: $('rgEmail').value, password: $('rgPass').value, gender: $('rgGender').value, age: $('rgAge').value, country: $('rgCountry').value }); startAuthTimeout($('rgErr')); });
     $('formGuest').addEventListener('submit', (e) => { e.preventDefault(); const name = $('gName').value.trim(); if (name.length < 2) { $('gErr').textContent = 'اكتب اسمك (حرفين على الأقل)'; return; } $('gErr').textContent = ''; if (!socket.connected) socket.connect(); pendingGuest = { name, age: $('gAge').value, gender: $('gGender').value, guestId: getGuestId() }; socket.emit('guest_login', pendingGuest); startAuthTimeout($('gErr')); });
-    logoutBtn.addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('guest'); localStorage.removeItem('curRoom'); location.reload(); });
+
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('guest'); localStorage.removeItem('curRoom'); location.reload(); }
 
     function setMyAvatar() { fillAvatar($('myAv'), myRole, myGender, myColor); }
     function saveProfile() { try { localStorage.setItem('chatProfile', JSON.stringify({ name: myName, color: myColor, role: myRole, gender: myGender, points: myPoints })); } catch (e) {} }
     function enterApp(user, isMember) {
       clearAuthTimeout(); myName = user.name; myColor = user.color; myRole = user.role; myGender = user.gender || ''; myPoints = user.points || 0;
       myRank = myRole === 'member' ? rankFromPoints(myPoints) : 0; myTier = myRole === 'member' ? rankTier(myRank) : null;
-      $('myName').textContent = myName; setMyAvatar(); saveProfile();
+      setMyAvatar(); saveProfile();
       const saved = localStorage.getItem('curRoom');
       if (saved) { const wasChat = currentView === 'chat'; showScreen('chat'); try { const r = JSON.parse(saved); socket.emit('join_room', { id: r.id, isReload: true }); } catch (e) { showScreen('rooms'); } if (!wasChat) { try { history.pushState({ view: 'chat' }, ''); } catch (e) {} } }
       else { showScreen('rooms'); try { history.replaceState({ view: 'rooms' }, ''); } catch (e) {} }
       if (myRole === 'member') { socket.emit('pm_list'); socket.emit('friend_list'); }
     }
-    $('mePill').addEventListener('click', () => { if (myRole === 'member') socket.emit('profile_get', myName); else openProfileSheet(myName, myRole, myGender, myColor); });
 
     function renderRooms(list) {
       roomsGrid.innerHTML = '';
@@ -605,13 +619,27 @@
     }
     sendBtn.addEventListener('click', send);
     msgInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
-    backBtn.addEventListener('click', () => { try { history.back(); } catch (e) {} });
-    usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
-    drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    // ===== فتح الشاشات =====
-    $('pmBtn').onclick = openPM; $('pmBtn2').onclick = openPM;
-    $('friendsBtn').onclick = openFriends; $('searchBtn').onclick = openSearch;
+    // ===== أزرار الهيدر =====
+    $('hdrMenu').onclick = () => { drawer.classList.remove('hidden'); socket.emit('request_users'); };
+    $('hdrVip').onclick = () => showToast('قائمة الكبار — قريبًا 💎');
+    $('hdrRich').onclick = () => showToast('قائمة الأثرياء — قريبًا 👑');
+    $('hdrLogo').onclick = () => { if (currentView === 'chat') { try { history.back(); } catch (e) {} } };
+    $('hdrPm').onclick = openPM; $('hdrPm2').onclick = openPM;
+    $('hdrFriends').onclick = openFriends;
+    $('hdrNotif').onclick = () => showToast('لا توجد إشعارات جديدة 🔔');
+    $('hdrSettings').onclick = () => { if (myRole === 'member') { socket.emit('profile_get', myName); } else openProfileSheet(myName, myRole, myGender, myColor); };
+    $('hdrBack').onclick = () => { try { history.back(); } catch (e) {} };
+    $('hdrUsers').onclick = () => { drawer.classList.remove('hidden'); socket.emit('request_users'); };
+
+    // ===== أزرار الفوتر الذهبي =====
+    let radioOn = false;
+    $('radioPlay').onclick = () => { radioOn = !radioOn; $('radioPlay').textContent = radioOn ? '⏸' : '▶'; showToast(radioOn ? 'الراديو شغّال 🎵' : 'الراديو متوقف'); };
+    $('gRooms').onclick = () => { if (currentView === 'chat') { try { history.back(); } catch (e) {} } else showToast('أنت في قائمة الغرف'); };
+    $('gOnline').onclick = () => { drawer.classList.remove('hidden'); socket.emit('request_users'); };
+    $('gFriends').onclick = openFriends;
+    $('gSettings').onclick = () => { if (myRole === 'member') socket.emit('profile_get', myName); else showToast('سجّل دخولك عشان تعدّل حسابك'); };
+
     function openPM() { pmScreen.classList.remove('hidden'); pmScreen.classList.remove('show-conv'); if (myRole === 'member') socket.emit('pm_list'); }
     $('pmClose').onclick = () => pmScreen.classList.add('hidden');
     function openFriends() { friendsScreen.classList.remove('hidden'); if (myRole === 'member') socket.emit('friend_list'); }
@@ -621,9 +649,8 @@
     let searchTimer = null;
     searchInput.addEventListener('input', () => { clearTimeout(searchTimer); const q = searchInput.value.trim(); if (!q) { searchBody.innerHTML = '<div class="empty">ابحث عن أعضاء بالاسم</div>'; return; } searchTimer = setTimeout(() => socket.emit('search_users', { q }), 300); });
 
-    // ===== PM logic =====
     function updatePmDot() { pmTotalUnread = Object.values(pmUnread).reduce((a, b) => a + b, 0); [$('pmDot'), $('pmDot2')].forEach((d) => { if (!d) return; if (pmTotalUnread > 0) { d.textContent = pmTotalUnread; d.classList.remove('hidden'); } else d.classList.add('hidden'); }); }
-    function updateFriendsDot() { const d = $('friendsDot'); if (friendsReqCount > 0) { d.textContent = friendsReqCount; d.classList.remove('hidden'); } else d.classList.add('hidden'); }
+    function updateFriendsDot() { [$('friendsDot'), $('friendsDot2')].forEach((d) => { if (!d) return; if (friendsReqCount > 0) { d.textContent = friendsReqCount; d.classList.remove('hidden'); } else d.classList.add('hidden'); }); }
     function renderPmList(list) {
       if (!list.length) { pmList.innerHTML = '<div class="empty">لا توجد محادثات بعد ✉️</div>'; return; }
       pmList.innerHTML = '';
@@ -634,19 +661,15 @@
         info.innerHTML = '<div class="t"><span>' + escapeHtml(c.name) + '</span><span class="time">' + fmtTime(c.lastTime) + '</span></div><div class="last">' + (c.lastFrom === myName ? 'أنت: ' : '') + escapeHtml(c.lastText) + '</div>';
         it.appendChild(av); it.appendChild(info);
         if (c.unread > 0) { const u = document.createElement('div'); u.className = 'unread'; u.textContent = c.unread; it.appendChild(u); pmUnread[c.name] = c.unread; }
-        it.onclick = () => openConv(c.name, c);
-        pmList.appendChild(it);
+        it.onclick = () => openConv(c.name, c); pmList.appendChild(it);
       });
       updatePmDot();
     }
     function openConv(name, meta) {
-      pmActive = name; pmScreen.classList.add('show-conv');
-      $('pmConvName').textContent = name;
-      fillAvatar($('pmConvAv'), meta ? meta.role : 'guest', meta ? meta.gender : '', meta ? meta.color : '#94a3b8');
-      $('pmConvAv').style.border = 'none'; $('pmConvAv').style.boxShadow = 'none';
+      pmActive = name; pmScreen.classList.add('show-conv'); $('pmConvName').textContent = name;
+      fillAvatar($('pmConvAv'), meta ? meta.role : 'guest', meta ? meta.gender : '', meta ? meta.color : '#b08a32');
       pmMsgs.innerHTML = '<div class="empty">جاري التحميل...</div>';
-      socket.emit('pm_history', { with: name }); socket.emit('pm_open', { with: name });
-      pmUnread[name] = 0; updatePmDot();
+      socket.emit('pm_history', { with: name }); socket.emit('pm_open', { with: name }); pmUnread[name] = 0; updatePmDot();
       setTimeout(() => pmInput.focus(), 100);
     }
     $('pmConvBack').onclick = () => { pmScreen.classList.remove('show-conv'); pmActive = null; if (myRole === 'member') socket.emit('pm_list'); };
@@ -659,45 +682,25 @@
     function sendPM() { const t = pmInput.value.trim(); if (!t || !pmActive) return; socket.emit('pm_send', { to: pmActive, text: t }); pmInput.value = ''; }
     $('pmSend').onclick = sendPM; pmInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendPM(); });
 
-    // ===== Friends render =====
     function renderFriends(data) {
       friendsReqCount = (data.requests || []).length; updateFriendsDot();
-      let html = '';
-      html += '<div class="fr-sec">طلبات الصداقة (' + (data.requests || []).length + ')</div>';
+      let html = '<div class="fr-sec">طلبات الصداقة (' + (data.requests || []).length + ')</div>';
       if (!(data.requests || []).length) html += '<div class="empty" style="padding:14px">لا توجد طلبات</div>';
-      (data.requests || []).forEach((r) => {
-        html += '<div class="fr-item"><div class="av" data-av=\'' + JSON.stringify(r).replace(/'/g, '') + '\'></div><div class="info"><div class="nm">' + escapeHtml(r.name) + '</div><div class="sub">طلب صداقة</div></div><div class="acts"><button class="mini-btn ok" data-act="accept" data-n="' + escapeHtml(r.name) + '">قبول</button><button class="mini-btn no" data-act="reject" data-n="' + escapeHtml(r.name) + '">رفض</button></div></div>';
-      });
+      (data.requests || []).forEach((r) => { html += '<div class="fr-item"><div class="av" data-av=\'' + JSON.stringify(r).replace(/'/g, '') + '\'></div><div class="info"><div class="nm">' + escapeHtml(r.name) + '</div><div class="sub">طلب صداقة</div></div><div class="acts"><button class="mini-btn ok" data-act="accept" data-n="' + escapeHtml(r.name) + '">قبول</button><button class="mini-btn no" data-act="reject" data-n="' + escapeHtml(r.name) + '">رفض</button></div></div>'; });
       html += '<div class="fr-sec">الأصدقاء (' + (data.friends || []).length + ')</div>';
       if (!(data.friends || []).length) html += '<div class="empty" style="padding:14px">لا يوجد أصدقاء بعد</div>';
-      (data.friends || []).forEach((f) => {
-        html += '<div class="fr-item"><div class="av" data-av=\'' + JSON.stringify(f).replace(/'/g, '') + '\'></div><div class="info"><div class="nm">' + escapeHtml(f.name) + ' ' + (f.online ? '🟢' : '') + '</div><div class="sub">' + escapeHtml(roleLabel(f.role)) + (f.gender ? ' • ' + escapeHtml(f.gender) : '') + '</div></div><div class="acts"><button class="mini-btn msg" data-act="msg" data-n="' + escapeHtml(f.name) + '">رسالة</button></div></div>';
-      });
+      (data.friends || []).forEach((f) => { html += '<div class="fr-item"><div class="av" data-av=\'' + JSON.stringify(f).replace(/'/g, '') + '\'></div><div class="info"><div class="nm">' + escapeHtml(f.name) + ' ' + (f.online ? '🟢' : '') + '</div><div class="sub">' + escapeHtml(roleLabel(f.role)) + (f.gender ? ' • ' + escapeHtml(f.gender) : '') + '</div></div><div class="acts"><button class="mini-btn msg" data-act="msg" data-n="' + escapeHtml(f.name) + '">رسالة</button></div></div>'; });
       friendsBody.innerHTML = html;
       friendsBody.querySelectorAll('[data-av]').forEach((el) => { try { const o = JSON.parse(el.getAttribute('data-av')); fillAvatar(el, o.role, o.gender, o.color); el.style.cursor = 'pointer'; el.onclick = () => openProfileSheet(o.name, o.role, o.gender, o.color); } catch (e) {} });
-      friendsBody.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => {
-        const n = b.getAttribute('data-n'), act = b.getAttribute('data-act');
-        if (act === 'accept') { socket.emit('friend_accept', { from: n }); showToast('تم قبول الطلب'); }
-        else if (act === 'reject') { socket.emit('friend_reject', { from: n }); }
-        else if (act === 'msg') { friendsScreen.classList.add('hidden'); openPM(); setTimeout(() => openConv(n, null), 150); }
-        setTimeout(() => socket.emit('friend_list'), 300);
-      });
+      friendsBody.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => { const n = b.getAttribute('data-n'), act = b.getAttribute('data-act'); if (act === 'accept') { socket.emit('friend_accept', { from: n }); showToast('تم قبول الطلب'); } else if (act === 'reject') { socket.emit('friend_reject', { from: n }); } else if (act === 'msg') { friendsScreen.classList.add('hidden'); openPM(); setTimeout(() => openConv(n, null), 150); } setTimeout(() => socket.emit('friend_list'), 300); });
     }
-
-    // ===== Search render =====
     function renderSearch(list) {
       if (!list.length) { searchBody.innerHTML = '<div class="empty">لا توجد نتائج</div>'; return; }
       searchBody.innerHTML = '';
-      list.forEach((u) => {
-        const it = document.createElement('div'); it.className = 'fr-item';
-        const av = buildAvatar(u); av.style.width = '38px'; av.style.height = '38px'; av.style.flex = '0 0 38px';
-        const info = document.createElement('div'); info.className = 'info';
-        info.innerHTML = '<div class="nm">' + escapeHtml(u.name) + ' ' + (u.online ? '🟢' : '') + '</div><div class="sub">' + (u.tierLabel ? escapeHtml(u.tierLabel) + ' • ' : '') + escapeHtml(roleLabel(u.role)) + '</div>';
-        const acts = document.createElement('div'); acts.className = 'acts';
-        const b = document.createElement('button'); b.className = 'mini-btn msg'; b.textContent = 'بروفايل'; b.onclick = () => socket.emit('profile_get', u.name);
-        acts.appendChild(b); it.appendChild(av); it.appendChild(info); it.appendChild(acts); searchBody.appendChild(it);
-      });
+      list.forEach((u) => { const it = document.createElement('div'); it.className = 'fr-item'; const av = buildAvatar(u); av.style.width = '38px'; av.style.height = '38px'; av.style.flex = '0 0 38px'; const info = document.createElement('div'); info.className = 'info'; info.innerHTML = '<div class="nm">' + escapeHtml(u.name) + ' ' + (u.online ? '🟢' : '') + '</div><div class="sub">' + (u.tierLabel ? escapeHtml(u.tierLabel) + ' • ' : '') + escapeHtml(roleLabel(u.role)) + '</div>'; const acts = document.createElement('div'); acts.className = 'acts'; const b = document.createElement('button'); b.className = 'mini-btn msg'; b.textContent = 'بروفايل'; b.onclick = () => socket.emit('profile_get', u.name); acts.appendChild(b); it.appendChild(av); it.appendChild(info); it.appendChild(acts); searchBody.appendChild(it); });
     }
+
+    drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
     window.addEventListener('popstate', (e) => {
       if (!pmScreen.classList.contains('hidden')) { pmScreen.classList.add('hidden'); return; }
@@ -705,17 +708,24 @@
       if (!searchScreen.classList.contains('hidden')) { searchScreen.classList.add('hidden'); return; }
       const v = e.state && e.state.view;
       if (currentView === 'chat') { socket.emit('leave_room'); showScreen('rooms'); currentRoomId = null; localStorage.removeItem('curRoom'); setInputEnabled(false); drawer.classList.add('hidden'); emojiPanel.classList.add('hidden'); return; }
-      if (v === 'chat') { showScreen('chat'); const saved = localStorage.getItem('curRoom'); if (saved) { try { const r = JSON.parse(saved); currentRoomId = r.id; loadCache(r.id); renderAllFromCache(); applyTheme(r.theme); roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || ''); fitViewport(); setInputEnabled(true); } catch (er) {} } return; }
+      if (v === 'chat') { showScreen('chat'); const saved = localStorage.getItem('curRoom'); if (saved) { try { const r = JSON.parse(saved); currentRoomId = r.id; loadCache(r.id); renderAllFromCache(); roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || ''); fitViewport(); setInputEnabled(true); } catch (er) {} } return; }
       if (v === 'rooms') { showScreen('rooms'); return; }
       if (v === 'auth') { showScreen('auth'); showAuthMain(); return; }
     });
 
-    const EMOJIS = ['😀','😂','😍','','😎','🤔','😢','😡','👍','','❤️','','💔','🌹','🙏','🎉','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👋','❤️','🔥','💔','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','☕','🎵','⚽','🕋','🌺','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
 
-    function fitViewport() { if (window.visualViewport) { const vv = window.visualViewport; screenChat.style.top = vv.offsetTop + 'px'; screenChat.style.height = vv.height + 'px'; screenChat.style.bottom = 'auto'; } else { screenChat.style.top = '0px'; screenChat.style.height = window.innerHeight + 'px'; screenChat.style.bottom = 'auto'; } }
+    function fitViewport() {
+      const vv = window.visualViewport; let kb = 0;
+      if (vv) kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const barH = (kb > 120) ? 0 : 54;
+      if (gbar) gbar.classList.toggle('hide-kb', barH === 0);
+      if (vv) { screenChat.style.top = vv.offsetTop + 'px'; screenChat.style.height = (vv.height - barH) + 'px'; screenChat.style.bottom = 'auto'; }
+      else { screenChat.style.top = '0px'; screenChat.style.bottom = (currentView === 'auth' ? '0' : '54px'); screenChat.style.height = 'auto'; }
+    }
     fitViewport();
     if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitViewport); window.visualViewport.addEventListener('scroll', fitViewport); }
     window.addEventListener('resize', fitViewport);
@@ -726,8 +736,9 @@
     (function earlyRoute() {
       currentView = window.__initialView || currentView;
       try { const p = JSON.parse(localStorage.getItem('chatProfile') || 'null'); if (p) { myName = p.name || myName; myColor = p.color || myColor; myRole = p.role || myRole; myGender = p.gender || myGender; myPoints = p.points || 0; myRank = myRole === 'member' ? rankFromPoints(myPoints) : 0; myTier = myRole === 'member' ? rankTier(myRank) : null; } } catch (e) {}
-      $('myName').textContent = myName; setMyAvatar();
-      if (currentView === 'chat') { const saved = localStorage.getItem('curRoom'); if (saved) { try { const r = JSON.parse(saved); roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || ''); applyTheme(r.theme); currentRoomId = r.id; loadCache(r.id); renderAllFromCache(); fitViewport(); } catch (e) { showScreen('rooms'); try { history.replaceState({ view: 'rooms' }, ''); } catch (er) {} } } else { showScreen('rooms'); try { history.replaceState({ view: 'rooms' }, ''); } catch (er) {} } }
+      setMyAvatar();
+      gbar.classList.toggle('hidden', currentView === 'auth');
+      if (currentView === 'chat') { const saved = localStorage.getItem('curRoom'); if (saved) { try { const r = JSON.parse(saved); roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || ''); currentRoomId = r.id; loadCache(r.id); renderAllFromCache(); fitViewport(); } catch (e) { showScreen('rooms'); } } else { showScreen('rooms'); } }
     })();
 
     socket.on('connect', () => { setConn('ok', 'متصل بالخادم ✓'); const token = localStorage.getItem('token'); const guest = localStorage.getItem('guest'); if (token) socket.emit('auth_check', token); else if (guest) { try { const g = JSON.parse(guest); g.guestId = getGuestId(); pendingGuest = g; socket.emit('guest_login', g); } catch (e) {} } });
@@ -735,7 +746,7 @@
     socket.on('disconnect', () => { setConn('wait', 'انقطع الاتصال، جاري إعادة المحاولة...'); });
 
     socket.on('auth_ok', (user) => enterApp(user, true));
-    socket.on('auth_fail', () => { localStorage.removeItem('token'); const g = localStorage.getItem('guest'); if (g) { try { const gg = JSON.parse(g); gg.guestId = getGuestId(); pendingGuest = gg; socket.emit('guest_login', gg); } catch (e) {} } else { showScreen('auth'); showAuthMain(); try { history.replaceState({ view: 'auth' }, ''); } catch (e) {} setConn('wait', 'سجّل دخولك للمتابعة'); } });
+    socket.on('auth_fail', () => { localStorage.removeItem('token'); const g = localStorage.getItem('guest'); if (g) { try { const gg = JSON.parse(g); gg.guestId = getGuestId(); pendingGuest = gg; socket.emit('guest_login', gg); } catch (e) {} } else { showScreen('auth'); showAuthMain(); setConn('wait', 'سجّل دخولك للمتابعة'); } });
     socket.on('register_ok', (d) => { clearAuthTimeout(); localStorage.setItem('token', d.token); enterApp(d.user, true); });
     socket.on('register_err', (d) => { clearAuthTimeout(); $('rgErr').textContent = d.msg; });
     socket.on('login_ok', (d) => { clearAuthTimeout(); localStorage.setItem('token', d.token); enterApp(d.user, true); });
@@ -745,7 +756,7 @@
     socket.on('rooms_list', renderRooms);
     socket.on('joined_room', (d) => {
       const wasChat = currentView === 'chat'; const sameRoom = wasChat && (currentRoomId === d.room.id);
-      showScreen('chat'); roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name; applyTheme(d.room.theme); currentRoomId = d.room.id;
+      showScreen('chat'); roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name; currentRoomId = d.room.id;
       localStorage.setItem('curRoom', JSON.stringify({ id: d.room.id, name: d.room.name, emoji: d.room.emoji, theme: d.room.theme }));
       const hist = (d.history || []).map((m) => Object.assign({}, m, { _key: makeKey(m) }));
       if (!sameRoom || cacheItems.length === 0) { cacheItems = hist; cacheKeys = new Set(hist.map((x) => x._key)); saveCache(); renderAllFromCache(); }
@@ -761,7 +772,7 @@
 
     socket.on('profile_data', (d) => { if (!d) { showToast('المستخدم غير موجود'); return; } openProfileModal(d); });
     socket.on('report_ok', () => {});
-    socket.on('profile_updated', (p) => { myColor = p.color; myGender = p.gender; myPoints = p.points || 0; myRank = p.rank; myTier = rankTier(myRank); $('myName').textContent = myName; setMyAvatar(); saveProfile(); showToast('تم حفظ التغييرات ✅'); closeEdit(); });
+    socket.on('profile_updated', (p) => { myColor = p.color; myGender = p.gender; myPoints = p.points || 0; myRank = p.rank; myTier = rankTier(myRank); setMyAvatar(); saveProfile(); showToast('تم حفظ التغييرات ✅'); closeEdit(); });
     socket.on('profile_update_err', (d) => { const e = $('edInfoErr'); if (e) e.textContent = d.msg; });
     socket.on('change_password_ok', (d) => { if (d.token) localStorage.setItem('token', d.token); showToast('تم تغيير كلمة المرور ✅'); closeEdit(); });
     socket.on('change_password_err', (d) => { const e = $('edPassErr'); if (e) e.textContent = d.msg; });
@@ -769,25 +780,18 @@
     socket.on('delete_account_err', (d) => { const e = $('edDelErr'); if (e) e.textContent = d.msg; });
     socket.on('ignore_state', (d) => { showToast(d.ignored ? ('تم تجاهل ' + d.name) : ('تم إلغاء تجاهل ' + d.name)); });
 
-    // PM events
     socket.on('pm_list_data', renderPmList);
     socket.on('pm_history_data', (d) => { if (d.with === pmActive) renderPmMsgs(d.msgs); });
-    socket.on('pm_sent', (m) => { if (pmActive === m.to) { pmMsgs.innerHTML = pmMsgs.querySelector('.empty') ? '' : pmMsgs.innerHTML; const b = document.createElement('div'); b.className = 'bubble mine'; b.innerHTML = escapeHtml(m.text) + '<span class="tm">' + fmtTime(m.time) + ' ✓</span>'; pmMsgs.appendChild(b); pmMsgs.scrollTop = pmMsgs.scrollHeight; } });
-    socket.on('pm_receive', (m) => {
-      if (pmActive === m.from && !pmScreen.classList.contains('hidden') && pmScreen.classList.contains('show-conv')) {
-        const b = document.createElement('div'); b.className = 'bubble theirs'; b.innerHTML = escapeHtml(m.text) + '<span class="tm">' + fmtTime(m.time) + '</span>'; pmMsgs.appendChild(b); pmMsgs.scrollTop = pmMsgs.scrollHeight; socket.emit('pm_open', { with: m.from });
-      } else { pmUnread[m.from] = (pmUnread[m.from] || 0) + 1; updatePmDot(); showToast('رسالة خاصة من ' + m.from); }
-    });
+    socket.on('pm_sent', (m) => { if (pmActive === m.to) { if (pmMsgs.querySelector('.empty')) pmMsgs.innerHTML = ''; const b = document.createElement('div'); b.className = 'bubble mine'; b.innerHTML = escapeHtml(m.text) + '<span class="tm">' + fmtTime(m.time) + ' ✓</span>'; pmMsgs.appendChild(b); pmMsgs.scrollTop = pmMsgs.scrollHeight; } });
+    socket.on('pm_receive', (m) => { if (pmActive === m.from && !pmScreen.classList.contains('hidden') && pmScreen.classList.contains('show-conv')) { const b = document.createElement('div'); b.className = 'bubble theirs'; b.innerHTML = escapeHtml(m.text) + '<span class="tm">' + fmtTime(m.time) + '</span>'; pmMsgs.appendChild(b); pmMsgs.scrollTop = pmMsgs.scrollHeight; socket.emit('pm_open', { with: m.from }); } else { pmUnread[m.from] = (pmUnread[m.from] || 0) + 1; updatePmDot(); showToast('رسالة خاصة من ' + m.from); } });
     socket.on('pm_read', (d) => { if (pmActive === d.by) { pmMsgs.querySelectorAll('.bubble.mine .tm').forEach((t) => { if (t.textContent.indexOf('✓✓') < 0) t.textContent = t.textContent.replace('✓', '✓✓'); }); } });
     socket.on('pm_blocked', () => {});
 
-    // Friends events
     socket.on('friend_list_data', renderFriends);
     socket.on('friend_request_in', (d) => { friendsReqCount++; updateFriendsDot(); showToast('طلب صداقة من ' + d.from); if (!friendsScreen.classList.contains('hidden')) socket.emit('friend_list'); });
     socket.on('friend_accepted', (d) => { showToast('أصبحتَ صديقًا لـ ' + d.name); if (!friendsScreen.classList.contains('hidden')) socket.emit('friend_list'); });
     socket.on('friend_request_ok', () => {});
     socket.on('friend_err', (d) => { showToast(d.msg); });
-
     socket.on('search_results', renderSearch);
 
     socket.on('room_users', (list) => {
