@@ -1,7 +1,7 @@
 {
   "name": "chat-masr",
   "version": "1.0.0",
-  "description": "Masr Chat - Arabic Real Time Chat",
+  "description": "Chat Masr - Arabic Real Time Chat",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,12 +9,14 @@
   },
   "keywords": [
     "chat",
+    "socket",
     "socket.io",
-    "nodejs",
+    "express",
     "mongodb",
-    "arabic"
+    "arabic",
+    "realtime"
   ],
-  "author": "",
+  "author": "ChatGPT",
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.1.1",
