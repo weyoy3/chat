@@ -97,40 +97,38 @@
     }
     #watermark { display: none; }
     .chat-conn { display: none; }
-    /* ✅ مسافات جانبية أقل (يمين 4px) */
     #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 8px 4px 8px 10px; display: flex; flex-direction: column; gap: 3px; position: relative; z-index: 1; }
 
-    /* ✅ grid [أفاتار 30px | body] + مسافة جانبية 4px */
+    /* ✅ grid [أفاتار | body] */
     .row {
       display: grid;
       grid-template-columns: 30px minmax(0, 1fr);
       column-gap: 4px;
-      align-items: start;
+      align-items: start;            /* متعدد الأسطر: الأفاتار فوق */
       line-height: 1.2;
       font-size: 14px;
       padding-top: 2px;
     }
-    .row.single { align-items: center; }
+    .row.single { align-items: center; }   /* سطر واحد: الأفاتار متمركز */
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
-    /* ✅ أفاتار أكبر (30px) */
     .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
     .av svg { width: 17px; height: 17px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* ✅ body block + overflow hidden (BFC يحتوي الـ float) */
-    .body { display: block; min-width: 0; overflow: hidden; direction: rtl; }
-    /* ✅ الاسم يطوف يمين -> ثابت على اليمين مهما كان اتجاه النص (يحل مشكلة الأعلام) */
-    .nm-line { float: right; white-space: nowrap; margin-left: 3px; }
+    /* ✅ body block عادي، اتجاه rtl */
+    .body { display: block; min-width: 0; direction: rtl; }
+    /* ✅ الاسم inline + معزول اتجاهيًا (مش بيتحرك مع الأعلام) + على نفس الـ baseline */
+    .nm-line { display: inline; unicode-bidi: isolate; white-space: nowrap; vertical-align: baseline; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 14.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
     .colon { font-weight: 700; color: #475569; margin: 0 1px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* ✅ النص inline -> يكمل شمال saad في السطر 1، ويلف تحت saad في الباقي */
-    .msg { display: inline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
-    .sys-action { display: inline; color: var(--join-red); font-weight: 700; white-space: nowrap; }
+    /* ✅ النص inline + معزول اتجاهيًا -> السطر 1 جنب saad، والباقي تحت saad */
+    .msg { display: inline; unicode-bidi: isolate; vertical-align: baseline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
+    .sys-action { display: inline; unicode-bidi: isolate; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
     .mention.mention-me { background: #fde047; color: #1f2937; border-radius: 4px; padding: 1px 3px; }
 
@@ -663,7 +661,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👋','❤️','🔥','','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
