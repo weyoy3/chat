@@ -61,9 +61,9 @@
     .logo { font-family: "Reem Kufi", "Cairo"; font-size: 20px; font-weight: 700; }
     .logo span { color: #fde68a; }
     .me-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 4px 10px 4px 12px; border-radius: 999px; font-size: 13px; }
-    .me-pill .av { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; }
-    .me-pill .av svg { width: 13px; height: 13px; }
-    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); font-size: 13px; }
+    .me-pill .av { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; font-weight: bold; font-family: "Cairo"; overflow: hidden; align-self: center; line-height: 1; }
+    .me-pill .av svg { width: 14px; height: 14px; }
+    .me-pill .av.emoji-av { background: rgba(255,255,255,0.9); font-size: 14px; }
     .head-right { display: flex; align-items: center; gap: 8px; }
     .back-btn { background: rgba(255,255,255,0.18); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 17px; cursor: pointer; }
     .logout-btn { background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 6px 10px; border-radius: 9px; font-size: 12px; cursor: pointer; }
@@ -97,36 +97,38 @@
     }
     #watermark { display: none; }
     .chat-conn { display: none; }
-    /* ✅ مسافة بين الرسائل أقل */
-    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px 6px 10px 12px; display: flex; flex-direction: column; gap: 3px; position: relative; z-index: 1; }
+    /* ✅ مسافات جانبية أقل (يمين 4px) */
+    #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 8px 4px 8px 10px; display: flex; flex-direction: column; gap: 3px; position: relative; z-index: 1; }
 
-    /* ✅ grid عمودين: [أفاتار | body] */
+    /* ✅ grid [أفاتار 30px | body] + مسافة جانبية 4px */
     .row {
       display: grid;
-      grid-template-columns: 26px minmax(0, 1fr);
-      column-gap: 6px;
+      grid-template-columns: 30px minmax(0, 1fr);
+      column-gap: 4px;
       align-items: start;
-      line-height: 1.2;            /* ✅ تباعد أسطر أقل */
+      line-height: 1.2;
       font-size: 14px;
       padding-top: 2px;
     }
     .row.single { align-items: center; }
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
-    .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
-    .av svg { width: 15px; height: 15px; display: block; }
-    .av.emoji-av { background: #f1ede2 !important; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    /* ✅ أفاتار أكبر (30px) */
+    .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
+    .av svg { width: 17px; height: 17px; display: block; }
+    .av.emoji-av { background: #f1ede2 !important; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* ✅ body block عادي -> الاسم والنص inline جوه بعض -> الأسطر الملفوفة تحت saad */
-    .body { display: block; min-width: 0; }
-    .nm-line { display: inline; white-space: nowrap; }
-    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 13.5px; cursor: pointer; }
+    /* ✅ body block + overflow hidden (BFC يحتوي الـ float) */
+    .body { display: block; min-width: 0; overflow: hidden; direction: rtl; }
+    /* ✅ الاسم يطوف يمين -> ثابت على اليمين مهما كان اتجاه النص (يحل مشكلة الأعلام) */
+    .nm-line { float: right; white-space: nowrap; margin-left: 3px; }
+    .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 14.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
-    .colon { font-weight: 700; color: #475569; margin: 0 2px; }
+    .colon { font-weight: 700; color: #475569; margin: 0 1px; }
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* ✅ النص inline -> يكمل جنب النقطتين ويلف تحت بداية الـ body (= تحت saad) */
+    /* ✅ النص inline -> يكمل شمال saad في السطر 1، ويلف تحت saad في الباقي */
     .msg { display: inline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
     .sys-action { display: inline; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
@@ -165,9 +167,9 @@
     #drawer .panel { width: 80%; max-width: 320px; background: var(--card); height: 100%; padding: 16px; overflow-y: auto; }
     #drawer h3 { margin: 0 0 12px; font-size: 16px; font-family: "Cairo"; font-weight: 800; }
     .u-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-    .u-item .av { width: 26px; height: 26px; flex: 0 0 26px; font-size: 11px; cursor: pointer; margin: 0; }
-    .u-item .av svg { width: 15px; height: 15px; }
-    .u-item .av.emoji-av { font-size: 14px; }
+    .u-item .av { width: 30px; height: 30px; flex: 0 0 30px; font-size: 12px; cursor: pointer; margin: 0; }
+    .u-item .av svg { width: 17px; height: 17px; }
+    .u-item .av.emoji-av { font-size: 16px; }
     .u-item .nm2 { font-family: "Cairo"; font-weight: 800; cursor: pointer; }
     .u-item .nm2:hover { text-decoration: underline; }
 
@@ -412,7 +414,7 @@
         if (!body) return;
         const cs = getComputedStyle(body);
         const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.2) || 18;
-        if (body.scrollHeight <= lh * 1.6) row.classList.add('single');
+        if (body.scrollHeight <= lh * 1.7) row.classList.add('single');
         else row.classList.remove('single');
       });
     }
@@ -661,7 +663,7 @@
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','','😴','🤝','🌙','⭐','🌸','','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👋','❤️','🔥','','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','☕','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
