@@ -1,1 +1,297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>شات مصر</title>
+
+<link rel="stylesheet" href="css/chat.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script src="/socket.io/socket.io.js"></script>
+
+</head>
+
+<body>
+
+<div class="mainContainer">
+
+    <!-- القائمة اليمنى -->
+
+    <aside class="usersPanel">
+
+        <div class="panelHeader">
+
+            <h2>المتواجدون</h2>
+
+        </div>
+
+        <input
+            type="text"
+            id="searchUser"
+            placeholder="بحث عن مستخدم">
+
+        <div id="usersList">
+
+        </div>
+
+    </aside>
+
+    <!-- منتصف الصفحة -->
+
+    <section class="chatPanel">
+
+        <header class="chatHeader">
+
+            <div class="roomName">
+
+                💬 شات مصر
+
+            </div>
+
+            <div class="headerActions">
+
+                <button id="profileBtn">
+
+                    الملف الشخصي
+
+                </button>
+
+                <button id="settingsBtn">
+
+                    الإعدادات
+
+                </button>
+
+                <button id="logoutBtn">
+
+                    خروج
+
+                </button>
+
+            </div>
+
+        </header>
+
+        <div id="messages">
+
+        </div>
+
+        <div id="typingStatus">
+
+        </div>
+
+        <div class="sendBox">
+
+            <button id="emojiBtn">
+
+                😊
+
+            </button>
+
+            <input
+                id="messageInput"
+                type="text"
+                placeholder="اكتب هنا...">
+
+            <button id="sendBtn">
+
+                إرسال
+
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+<!-- ==========================
+رسائل النظام
+========================== -->
+
+<div id="systemMessages" class="systemMessages">
+
+</div>
+
+<!-- ==========================
+نافذة معلومات المستخدم
+========================== -->
+
+<div id="userMenu" class="userMenu">
+
+    <div class="userMenuContent">
+
+        <div class="userAvatar">
+
+            <img
+            id="menuAvatar"
+            src="avatars/default.png"
+            alt="Avatar">
+
+        </div>
+
+        <h3 id="menuUsername">
+
+            اسم المستخدم
+
+        </h3>
+
+        <button id="privateChatBtn">
+
+            💬 محادثة خاصة
+
+        </button>
+
+        <button id="viewProfileBtn">
+
+            👤 عرض الملف الشخصي
+
+        </button>
+
+        <button id="closeUserMenu">
+
+            إغلاق
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ==========================
+نافذة الملف الشخصي
+========================== -->
+
+<div id="profileModal" class="profileModal">
+
+    <div class="profileContent">
+
+        <span id="closeProfile">
+
+            ✖
+
+        </span>
+
+        <img
+        id="profileAvatar"
+        src="avatars/default.png">
+
+        <h2 id="profileUsername">
+
+            اسم المستخدم
+
+        </h2>
+
+        <p>
+
+            العمر :
+            <span id="profileAge">
+
+            </span>
+
+        </p>
+
+        <p>
+
+            النوع :
+            <span id="profileGender">
+
+            </span>
+
+        </p>
+
+        <p>
+
+            الحالة :
+            <span id="profileType">
+
+            </span>
+
+        </p>
+
+    </div>
+
+</div>
+
+<!-- ==========================
+نافذة المحادثة الخاصة
+========================== -->
+
+<div id="privateChatWindow" class="privateChat">
+
+    <div class="privateHeader">
+
+        <img
+        id="privateAvatar"
+        src="avatars/default.png">
+
+        <span id="privateUsername">
+
+        </span>
+
+        <button id="closePrivate">
+
+            ✖
+
+        </button>
+
+    </div>
+
+    <div id="privateMessages">
+
+    </div>
+
+    <div class="privateSendBox">
+
+        <button id="privateEmoji">
+
+            😊
+
+        </button>
+
+        <button id="sendImage">
+
+            🖼
+
+        </button>
+
+        <button id="sendVideo">
+
+            🎥
+
+        </button>
+
+        <button id="recordVoice">
+
+            🎤
+
+        </button>
+
+        <input
+        id="privateInput"
+        type="text"
+        placeholder="اكتب رسالة...">
+
+        <button id="privateSend">
+
+            إرسال
+
+        </button>
+
+    </div>
+
+</div>
+<script src="js/chat.js"></script>
+
+</body>
+
+</html>
