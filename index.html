@@ -96,29 +96,29 @@
       overflow: hidden;
     }
     #watermark { display: none; }
-    .chat-conn { display: none; }
+    /* ✅ شريط الاتصال يظهر في الشات وقت الانقطاع فقط */
+    .chat-conn { padding: 6px 14px; font-size: 12px; font-weight: 700; text-align: center; flex: 0 0 auto; }
+    .chat-conn.wait { color: var(--muted); background: rgba(255,255,255,0.5); }
+    .chat-conn.bad { color: var(--danger); background: rgba(255,255,255,0.5); }
     #messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 8px 4px 8px 10px; display: flex; flex-direction: column; gap: 3px; position: relative; z-index: 1; }
 
-    /* ✅ grid [أفاتار | body] */
     .row {
       display: grid;
       grid-template-columns: 30px minmax(0, 1fr);
       column-gap: 4px;
-      align-items: start;            /* متعدد الأسطر: الأفاتار فوق */
+      align-items: start;
       line-height: 1.2;
       font-size: 14px;
       padding-top: 2px;
     }
-    .row.single { align-items: center; }   /* سطر واحد: الأفاتار متمركز */
+    .row.single { align-items: center; }
     .row.sys { display: flex; justify-content: center; align-self: center; max-width: 92%; }
 
     .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; font-family: "Cairo"; box-shadow: 0 2px 6px rgba(0,0,0,0.12); overflow: hidden; line-height: 1; }
     .av svg { width: 17px; height: 17px; display: block; }
     .av.emoji-av { background: #f1ede2 !important; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-    /* ✅ body block عادي، اتجاه rtl */
     .body { display: block; min-width: 0; direction: rtl; }
-    /* ✅ الاسم inline + معزول اتجاهيًا (مش بيتحرك مع الأعلام) + على نفس الـ baseline */
     .nm-line { display: inline; unicode-bidi: isolate; white-space: nowrap; vertical-align: baseline; }
     .nm { font-family: "Cairo", "Reem Kufi"; font-weight: 800; font-size: 14.5px; cursor: pointer; }
     .nm:hover { text-decoration: underline; }
@@ -126,7 +126,6 @@
     .badge { display: inline-block; vertical-align: middle; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; line-height: 1.6; font-family: "Cairo"; margin: 0 2px; }
     .badge.member { background: rgba(212,160,23,0.16); color: #a9760a; }
     .badge.guest { background: rgba(107,114,128,0.14); color: #6b7280; }
-    /* ✅ النص inline + معزول اتجاهيًا -> السطر 1 جنب saad، والباقي تحت saad */
     .msg { display: inline; unicode-bidi: isolate; vertical-align: baseline; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; color: #111827; font-weight: 600; }
     .sys-action { display: inline; unicode-bidi: isolate; color: var(--join-red); font-weight: 700; white-space: nowrap; }
 
@@ -180,8 +179,8 @@
 <body>
   <div class="app">
 
-    <!-- ============ الدخول ============ -->
-    <section id="screenAuth">
+    <!-- ============ الدخول (مخفي افتراضيًا -> لا ومضة) ============ -->
+    <section id="screenAuth" class="hidden">
       <div class="auth-card">
         <div class="auth-logo">Arabic<span>chat</span></div>
         <div class="auth-sub">غرف دردشة عربية — ادخل وابدأ الكلام</div>
@@ -281,6 +280,35 @@
   <div id="drawer" class="hidden"><div class="panel"><h3>الموجودين في الغرفة</h3><div id="usersList"></div></div></div>
   <div id="toast"></div>
 
+  <!-- ✅ سكربت مبكر: يضبط الشاشة + التاريخ قبل أول رسم (يمنع الومضة) -->
+  <script>
+  (function () {
+    try {
+      var auth = document.getElementById('screenAuth');
+      var rooms = document.getElementById('screenRooms');
+      var chat = document.getElementById('screenChat');
+      var known = localStorage.getItem('token') || localStorage.getItem('guest');
+      var view = 'auth';
+      if (known) {
+        auth.classList.add('hidden');
+        if (localStorage.getItem('curRoom')) {
+          chat.classList.remove('hidden'); rooms.classList.add('hidden'); view = 'chat';
+        } else {
+          rooms.classList.remove('hidden'); chat.classList.add('hidden'); view = 'rooms';
+        }
+      } else {
+        auth.classList.remove('hidden'); rooms.classList.add('hidden'); chat.classList.add('hidden'); view = 'auth';
+      }
+      try {
+        history.replaceState({ view: 'rooms' }, '');      // قاعدة ثابتة
+        if (view === 'chat') history.pushState({ view: 'chat' }, '');
+        else if (view === 'auth') history.replaceState({ view: 'auth' }, '');
+      } catch (e) {}
+      window.__initialView = view;
+    } catch (e) {}
+  })();
+  </script>
+
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const socket = io({ reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000, reconnectionDelayMax: 5000, timeout: 20000 });
@@ -297,6 +325,7 @@
     let myName = 'أنت', myColor = '#0d9488', myRole = 'guest', myGender = '';
     let toastTimer = null, pendingGuest = null, authTimer = null;
     let currentRoomId = null;
+    let currentView = window.__initialView || 'auth';
     let lastRoomUsers = [];
 
     let cacheItems = [];
@@ -310,13 +339,13 @@
       return g;
     }
 
-    const ini = (n) => (n || '?').replace(/^(ضيف_|زائر_)/, '').charAt(0) || '?';
     const roleLabel = (r) => r === 'member' ? 'عضو' : 'زائر';
     const nameOf = (o) => o.senderName || o.name || '';
 
     const SILHOUETTE = '<svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true"><circle cx="12" cy="8.3" r="3.9"/><path d="M4.5 20c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6z"/></svg>';
 
-    const MALE = ['🧑', '👨', '', '', '🧔'];
+    // ✅ إيموجيات كود واحد آمنة (بدون ZWJ/أعلام مركبة)
+    const MALE = ['🧑', '👨', '', '🧓', '🧔'];
     const FEMALE = ['👩', '👧', '🧕', '', '👵'];
     function pickAvatar(gender, seed) {
       const pool = gender === 'ذكر' ? MALE : gender === 'أنثى' ? FEMALE : null;
@@ -354,12 +383,12 @@
       clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.className = ''; }, 1300);
     }
 
+    // ✅ شريط الاتصال للدخول + الشات
     function setConn(cls, txt) {
-      const a = $('connAuth');
-      if (!a) return;
-      if (cls === 'ok') { a.classList.add('hidden'); return; }
-      if (cls === 'wait') { a.className = 'conn-bar wait'; a.textContent = txt; return; }
-      a.className = 'conn-bar bad'; a.textContent = txt;
+      const a = $('connAuth'), c = $('connChat');
+      if (cls === 'ok') { if (a) a.classList.add('hidden'); if (c) c.classList.add('hidden'); return; }
+      if (a) { a.className = 'conn-bar ' + cls; a.textContent = txt; a.classList.remove('hidden'); }
+      if (c) { c.className = 'chat-conn ' + cls; c.textContent = txt; c.classList.remove('hidden'); }
     }
 
     function startAuthTimeout(errEl) {
@@ -370,6 +399,14 @@
       }, 8000);
     }
     function clearAuthTimeout() { clearTimeout(authTimer); }
+
+    // ===== إدارة الشاشات + التاريخ =====
+    function showScreen(view) {
+      screenAuth.classList.toggle('hidden', view !== 'auth');
+      screenRooms.classList.toggle('hidden', view !== 'rooms');
+      screenChat.classList.toggle('hidden', view !== 'chat');
+      currentView = view;
+    }
 
     function mentionUser(name) {
       if (!name) return;
@@ -622,16 +659,16 @@
       $('myName').textContent = myName;
       setMyAvatar();
       saveProfile();
-      screenAuth.classList.add('hidden');
 
       const saved = localStorage.getItem('curRoom');
       if (saved) {
-        try {
-          const r = JSON.parse(saved);
-          socket.emit('join_room', { id: r.id, isReload: true });
-        } catch (e) { screenRooms.classList.remove('hidden'); }
-      } else if (screenRooms.classList.contains('hidden') && screenChat.classList.contains('hidden')) {
-        screenRooms.classList.remove('hidden');
+        const wasChat = currentView === 'chat';
+        showScreen('chat');
+        try { const r = JSON.parse(saved); socket.emit('join_room', { id: r.id, isReload: true }); } catch (e) { showScreen('rooms'); }
+        if (!wasChat) { try { history.pushState({ view: 'chat' }, ''); } catch (e) {} }
+      } else {
+        showScreen('rooms');
+        try { history.replaceState({ view: 'rooms' }, ''); } catch (e) {}
       }
     }
 
@@ -657,11 +694,40 @@
 
     sendBtn.addEventListener('click', send);
     msgInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
-    backBtn.addEventListener('click', () => socket.emit('leave_room'));
+    // ✅ زرار الرجوع = history.back() (يتولّاه popstate)
+    backBtn.addEventListener('click', () => { try { history.back(); } catch (e) {} });
     usersBtn.addEventListener('click', () => { drawer.classList.remove('hidden'); socket.emit('request_users'); });
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.classList.add('hidden'); });
 
-    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','','🌹','','🎉','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','','🎵','','🕋','🌺','🇪🇬','🇸🇦'];
+    // ✅ إدارة زرار back الفيزيائي: شات -> غرف -> خروج
+    window.addEventListener('popstate', (e) => {
+      const v = e.state && e.state.view;
+      if (currentView === 'chat') {
+        socket.emit('leave_room');
+        showScreen('rooms');
+        currentRoomId = null; localStorage.removeItem('curRoom'); setInputEnabled(false);
+        drawer.classList.add('hidden'); emojiPanel.classList.add('hidden');
+        return;
+      }
+      if (v === 'chat') {
+        showScreen('chat');
+        const saved = localStorage.getItem('curRoom');
+        if (saved) {
+          try {
+            const r = JSON.parse(saved);
+            currentRoomId = r.id; loadCache(r.id); renderAllFromCache();
+            applyTheme(r.theme); roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || '');
+            fitViewport(); setInputEnabled(true);
+          } catch (er) {}
+        }
+        return;
+      }
+      if (v === 'rooms') { showScreen('rooms'); return; }
+      if (v === 'auth') { showScreen('auth'); showAuthMain(); return; }
+      // v == null -> خروج طبيعي من الموقع
+    });
+
+    const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','','👋','❤️','🔥','💔','🌹','🙏','','✨','😅','😊','😉','😘','','😴','🤝','','⭐','🌸','☕','🎵','','🕋','🌺'];
     EMOJIS.forEach((e) => { const s = document.createElement('span'); s.textContent = e; s.addEventListener('click', () => { msgInput.value += e; msgInput.focus(); }); emojiPanel.appendChild(s); });
     emojiBtn.addEventListener('click', (ev) => { ev.stopPropagation(); emojiPanel.classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) emojiPanel.classList.add('hidden'); });
@@ -692,31 +758,29 @@
 
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 
+    // ===== التهيئة بعد تحميل socket.io (الشاشات مضبوطة مسبقًا) =====
     (function earlyRoute() {
-      const known = localStorage.getItem('token') || localStorage.getItem('guest');
-      if (!known) return;
+      currentView = window.__initialView || currentView;
       try {
         const p = JSON.parse(localStorage.getItem('chatProfile') || 'null');
         if (p) { myName = p.name || myName; myColor = p.color || myColor; myRole = p.role || myRole; myGender = p.gender || myGender; }
       } catch (e) {}
-      screenAuth.classList.add('hidden');
       $('myName').textContent = myName;
       setMyAvatar();
 
-      const saved = localStorage.getItem('curRoom');
-      if (saved) {
-        try {
-          const r = JSON.parse(saved);
-          screenChat.classList.remove('hidden');
-          roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || '');
-          applyTheme(r.theme);
-          currentRoomId = r.id;
-          loadCache(r.id);
-          renderAllFromCache();
-          fitViewport();
-        } catch (e) { screenRooms.classList.remove('hidden'); }
-      } else {
-        screenRooms.classList.remove('hidden');
+      if (currentView === 'chat') {
+        const saved = localStorage.getItem('curRoom');
+        if (saved) {
+          try {
+            const r = JSON.parse(saved);
+            roomTitle.textContent = (r.emoji || '') + ' ' + (r.name || '');
+            applyTheme(r.theme);
+            currentRoomId = r.id;
+            loadCache(r.id);
+            renderAllFromCache();
+            fitViewport();
+          } catch (e) { showScreen('rooms'); try { history.replaceState({ view: 'rooms' }, ''); } catch (er) {} }
+        } else { showScreen('rooms'); try { history.replaceState({ view: 'rooms' }, ''); } catch (er) {} }
       }
     })();
 
@@ -735,7 +799,7 @@
       }
     });
     socket.on('connect_error', () => setConn('bad', 'تعذر الاتصال بالخادم — حدّث الصفحة'));
-    socket.on('disconnect', () => { if (!screenAuth.classList.contains('hidden')) setConn('wait', 'انقطع الاتصال، جاري إعادة المحاولة...'); });
+    socket.on('disconnect', () => { setConn('wait', 'انقطع الاتصال، جاري إعادة المحاولة...'); });
 
     socket.on('auth_ok', (user) => enterApp(user, true));
     socket.on('auth_fail', () => {
@@ -744,10 +808,8 @@
       if (g) {
         try { const gg = JSON.parse(g); gg.guestId = getGuestId(); pendingGuest = gg; socket.emit('guest_login', gg); } catch (e) {}
       } else {
-        screenAuth.classList.remove('hidden');
-        screenRooms.classList.add('hidden');
-        screenChat.classList.add('hidden');
-        showAuthMain();
+        showScreen('auth'); showAuthMain();
+        try { history.replaceState({ view: 'auth' }, ''); } catch (e) {}
         setConn('wait', 'سجّل دخولك للمتابعة');
       }
     });
@@ -766,17 +828,15 @@
     socket.on('rooms_list', renderRooms);
 
     socket.on('joined_room', (d) => {
-      const wasShowingChat = !screenChat.classList.contains('hidden');
-      const sameRoom = wasShowingChat && (currentRoomId === d.room.id);
-      screenRooms.classList.add('hidden');
-      screenChat.classList.remove('hidden');
+      const wasChat = currentView === 'chat';
+      const sameRoom = wasChat && (currentRoomId === d.room.id);
+      showScreen('chat');
       roomTitle.textContent = (d.room.emoji || '') + ' ' + d.room.name;
       applyTheme(d.room.theme);
       currentRoomId = d.room.id;
       localStorage.setItem('curRoom', JSON.stringify({ id: d.room.id, name: d.room.name, emoji: d.room.emoji, theme: d.room.theme }));
 
       const hist = (d.history || []).map((m) => Object.assign({}, m, { _key: makeKey(m) }));
-
       if (!sameRoom || cacheItems.length === 0) {
         cacheItems = hist;
         cacheKeys = new Set(hist.map((x) => x._key));
@@ -792,14 +852,14 @@
         }
       }
 
+      if (!wasChat) { try { history.pushState({ view: 'chat' }, ''); } catch (e) {} }
       fitViewport();
       setInputEnabled(true);
       msgInput.focus();
     });
 
     socket.on('left_room', () => {
-      screenChat.classList.add('hidden');
-      screenRooms.classList.remove('hidden');
+      showScreen('rooms');
       drawer.classList.add('hidden');
       emojiPanel.classList.add('hidden');
       currentRoomId = null;
