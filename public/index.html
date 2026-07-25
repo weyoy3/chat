@@ -6,8 +6,10 @@
 <meta name="theme-color" content="#0C332A">
 <title>كاشير POS — نظام نقاط البيع</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 :root{
   --pine:#0C332A; --pine2:#145244; --moss:#1E8E5A; --amber:#F5A623; --amber-d:#C97F06;
@@ -17,15 +19,15 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'IBM Plex Sans Arabic',sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:var(--paper);background-image:radial-gradient(rgba(12,51,42,.055) 1px,transparent 1px);background-size:22px 22px;color:var(--ink);overflow:hidden;height:100vh;height:100dvh}
 h1,h2,h3,.num{font-family:'Changa',sans-serif}
-button{cursor:pointer;border:none;background:none;color:inherit}
+button{cursor:pointer;border:none;background:none;color:inherit;touch-action:manipulation}
 input,select{font:inherit;color:inherit}
+.pcard,.cat,.qty button{touch-action:manipulation}
 ::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#B9C9BE;border-radius:9px}
 @keyframes rise{from{opacity:0;transform:translateY(22px)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(22px)}}
 @keyframes bmp{40%{transform:scale(1.22)}}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,142,90,.55)}70%{box-shadow:0 0 0 8px rgba(30,142,90,0)}100%{box-shadow:0 0 0 0 rgba(30,142,90,0)}}
 @keyframes shk{25%{transform:translateX(7px)}75%{transform:translateX(-7px)}}
-.bump{animation:bmp .35s}
 
 /* ===== الدخول ===== */
 #login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:
@@ -41,7 +43,6 @@ input,select{font:inherit;color:inherit}
 .dots span.f{background:var(--amber);border-color:var(--amber);transform:scale(1.15);box-shadow:0 0 12px rgba(245,166,35,.6)}
 .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .keypad button{padding:14px 0;border-radius:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#EAF4EE;font-family:'Changa';font-size:21px;font-weight:700;transition:.15s}
-.keypad button:hover{background:rgba(245,166,35,.22);border-color:var(--amber)}
 .keypad button:active{transform:scale(.92)}
 .keypad .k-ok{background:var(--amber);color:var(--pine);border-color:transparent}
 .lg-hint{margin-top:16px;font-size:12px;color:#8FB3A2}.lg-hint b{color:var(--amber)}
@@ -52,10 +53,8 @@ input,select{font:inherit;color:inherit}
 #app.on{display:grid}
 aside{background:linear-gradient(180deg,var(--pine),#0A2B23);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:7px;z-index:35}
 .a-logo{width:50px;height:50px;border-radius:15px;background:linear-gradient(145deg,var(--amber),#E08E00);display:grid;place-items:center;font-family:'Changa';font-size:26px;font-weight:800;color:var(--pine);margin-bottom:14px;transform:rotate(-4deg);transition:.3s}
-.a-logo:hover{transform:rotate(4deg) scale(1.06)}
 .navbtn{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;color:#7FA394;position:relative;transition:.2s}
 .navbtn svg{width:23px;height:23px}
-.navbtn:hover{color:#fff;background:rgba(255,255,255,.08)}
 .navbtn.on{color:var(--amber);background:rgba(245,166,35,.14)}
 .navbtn.on::before{content:'';position:absolute;right:-15px;width:4px;height:26px;border-radius:4px;background:var(--amber)}
 .navbtn .tip{position:absolute;right:66px;background:var(--pine);color:#fff;font-size:12px;padding:5px 11px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s;transform:translateX(6px)}
@@ -63,36 +62,32 @@ aside{background:linear-gradient(180deg,var(--pine),#0A2B23);display:flex;flex-d
 .a-user{margin-top:auto;text-align:center}
 .a-avatar{width:44px;height:44px;border-radius:50%;background:var(--pine2);border:2px solid var(--amber);display:grid;place-items:center;color:#fff;font-weight:700}
 .a-user small{color:#8FB3A2;font-size:10px;display:block;margin-top:5px}
-.a-out{color:#7FA394;margin-top:9px;transition:.2s}.a-out:hover{color:var(--danger);transform:scale(1.15)}
+.a-out{color:#7FA394;margin-top:9px;transition:.2s}
 
 main{display:flex;flex-direction:column;overflow:hidden;min-width:0}
-header{height:60px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:13px;padding:0 20px;flex-shrink:0}
+header{height:60px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px;padding:0 20px;flex-shrink:0}
 header h2{font-size:20px;white-space:nowrap}
 .conn{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;padding:5px 13px;border-radius:20px;background:#E7F4EC;color:var(--moss);border:1px solid #BFE0CC;white-space:nowrap}
 .conn i{width:8px;height:8px;border-radius:50%;background:var(--moss);animation:pulse 1.6s infinite}
 .conn.off{background:#FFF3DC;color:var(--amber-d);border-color:#F0D9A8}
 .conn.off i{background:var(--amber);animation:none}
+.qbadge{display:none;align-items:center;font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:20px;background:#FDECEC;color:var(--danger);border:1px solid #F2C4C4;white-space:nowrap}
 #clock{margin-right:auto;font-size:12.5px;color:var(--mut);font-weight:500;white-space:nowrap}
 .view{display:none;flex:1;overflow:hidden}
 .view.on{display:flex}
 
 /* ===== البيع ===== */
 .prods{flex:1;display:flex;flex-direction:column;padding:16px 18px;overflow:hidden;min-width:0}
-.p-tools{display:flex;gap:10px;margin-bottom:13px;flex-wrap:wrap}
-.search{flex:2;min-width:180px;position:relative}
-.search input{width:100%;padding:12px 42px 12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-size:14px;transition:.2s}
+.p-tools{display:flex;gap:10px;margin-bottom:13px}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;padding:13px 46px 13px 14px;border-radius:13px;border:1.5px solid var(--line);background:var(--card);font-size:15px;transition:.2s}
 .search input:focus{outline:none;border-color:var(--moss);box-shadow:0 0 0 4px rgba(30,142,90,.12)}
-.search::before{content:'🔍';position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:14px}
-.scan-in{flex:1;min-width:130px;position:relative}
-.scan-in input{width:100%;padding:12px 42px 12px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-family:monospace;font-size:13.5px;transition:.2s}
-.scan-in input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 4px rgba(245,166,35,.15)}
-.scan-in::before{content:'▮▯▮▯';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--moss);letter-spacing:-1px}
-.b-cam{width:47px;height:47px;border-radius:12px;background:var(--pine);color:#fff;font-size:18px;transition:.2s;flex-shrink:0;box-shadow:0 6px 14px rgba(12,51,42,.28)}
-.b-cam:hover{background:var(--moss);transform:translateY(-2px)}
-.b-cam:active{transform:scale(.92)}
+.search.hit input{border-color:var(--moss);box-shadow:0 0 0 5px rgba(30,142,90,.3);background:#F2FBF6}
+.search::before{content:'▮▯▮';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--moss);letter-spacing:-1px}
+.b-cam{width:49px;height:49px;border-radius:13px;background:var(--pine);color:#fff;font-size:18px;transition:.2s;flex-shrink:0;box-shadow:0 6px 14px rgba(12,51,42,.28)}
+.b-cam:active{transform:scale(.9)}
 .cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:13px;flex-shrink:0}
 .cat{padding:8px 17px;border-radius:22px;background:var(--card);border:1.5px solid var(--line);font-size:12.5px;font-weight:700;white-space:nowrap;transition:.2s}
-.cat:hover{border-color:var(--moss);transform:translateY(-2px)}
 .cat.on{background:var(--pine);color:#fff;border-color:var(--pine);box-shadow:0 6px 16px rgba(12,51,42,.28)}
 .pgrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;align-content:start;padding-left:4px}
 .pcard{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:14px 12px;display:flex;flex-direction:column;gap:5px;transition:.2s;position:relative;overflow:hidden;animation:rise .35s ease backwards}
@@ -115,13 +110,11 @@ header h2{font-size:20px;white-space:nowrap}
 .c-head h3{font-size:16.5px}
 #cNum{font-size:11.5px;color:var(--mut);background:var(--paper);padding:3px 10px;border-radius:10px}
 .hold-wrap{position:relative;margin-right:auto}
-.hold-btn{background:#FFF3DC;color:var(--amber-d);border:1px solid #F0D9A8;width:36px;height:36px;border-radius:10px;font-size:15px;transition:.2s}
-.hold-btn:hover{transform:translateY(-2px)}
+.hold-btn{background:#FFF3DC;color:var(--amber-d);border:1px solid #F0D9A8;width:36px;height:36px;border-radius:10px;font-size:15px}
 #heldCount{position:absolute;top:-7px;left:-7px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:none;place-items:center}
 #heldPanel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);width:235px;padding:9px;display:none;z-index:45}
 #heldPanel.open{display:block;animation:rise .2s}
 .held-it{display:flex;align-items:center;gap:7px;padding:8px;border-radius:9px;font-size:12px}
-.held-it:hover{background:var(--paper)}
 .held-it button{margin-right:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px}
 .h-r{background:#E7F4EC;color:var(--moss)}.h-d{background:#FDECEC;color:var(--danger)}
 .c-items{flex:1;overflow-y:auto;padding:11px 15px;display:flex;flex-direction:column;gap:8px}
@@ -131,11 +124,10 @@ header h2{font-size:20px;white-space:nowrap}
 .ci-e{font-size:21px}
 .ci-n{flex:1;line-height:1.3;min-width:0}.ci-n b{font-size:12px;display:block}.ci-n span{font-size:10.5px;color:var(--mut)}
 .qty{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:2px 5px}
-.qty button{width:24px;height:24px;border-radius:6px;font-weight:700;font-size:14px;color:var(--pine2);transition:.15s}
-.qty button:hover{background:var(--amber);color:var(--pine)}
+.qty button{width:26px;height:26px;border-radius:6px;font-weight:700;font-size:15px;color:var(--pine2)}
 .qty b{min-width:18px;text-align:center;font-family:'Changa';font-size:14px}
 .ci-t{font-family:'Changa';font-weight:700;font-size:13.5px;color:var(--pine);min-width:56px;text-align:left}
-.ci-x{color:var(--danger);font-size:12px;opacity:.6;transition:.2s}.ci-x:hover{opacity:1;transform:scale(1.25)}
+.ci-x{color:var(--danger);font-size:12px;opacity:.6}
 .c-foot{border-top:1px solid var(--line);padding:12px 17px 15px;background:#FBFDFB}
 .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:6px;align-items:center}
 .row input[type=number]{width:62px;padding:4px 8px;border:1.5px solid var(--line);border-radius:8px;text-align:center;font-family:'Changa'}
@@ -150,9 +142,7 @@ header h2{font-size:20px;white-space:nowrap}
 .btn{border-radius:11px;font-weight:700;font-size:13.5px;padding:12px 15px;transition:.18s}
 .btn:active{transform:scale(.95)}
 .b-ghost{background:var(--paper);border:1.5px solid var(--line);color:var(--pine2)}
-.b-ghost:hover{border-color:var(--moss);background:#E7F4EC}
 .b-pay{flex:1;background:linear-gradient(145deg,var(--amber),#E89400);color:var(--pine);font-family:'Changa';font-size:16.5px;box-shadow:0 8px 20px rgba(245,166,35,.4)}
-.b-pay:hover{transform:translateY(-2px)}
 
 /* ===== مودالات ===== */
 .modal{position:fixed;inset:0;background:rgba(10,32,26,.55);display:grid;place-items:center;z-index:60;opacity:0;visibility:hidden;transition:.25s;padding:14px}
@@ -171,25 +161,30 @@ header h2{font-size:20px;white-space:nowrap}
 .meth span{display:block;font-size:20px;margin-bottom:2px}
 .meth.on{border-color:var(--amber);background:#FFF7E6;box-shadow:0 5px 14px rgba(245,166,35,.22);transform:translateY(-2px)}
 .tender{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px}
-.tender button{padding:9px 14px;border-radius:10px;background:var(--paper);border:1.5px solid var(--line);font-family:'Changa';font-weight:700;transition:.15s}
-.tender button:hover{border-color:var(--moss);background:#E7F4EC;transform:translateY(-2px)}
+.tender button{padding:9px 14px;border-radius:10px;background:var(--paper);border:1.5px solid var(--line);font-family:'Changa';font-weight:700}
 #tendered{flex:1;min-width:120px;padding:10px;border:1.5px solid var(--line);border-radius:11px;font-family:'Changa';font-size:17px;font-weight:700;text-align:center}
-#tendered:focus{outline:none;border-color:var(--amber)}
 .change{display:flex;justify-content:space-between;background:#E7F4EC;border:1.5px dashed var(--moss);border-radius:12px;padding:11px 15px;margin-bottom:15px;font-weight:700;font-size:13.5px}
 .change b{font-family:'Changa';font-size:20px;color:var(--moss)}
 .b-confirm{width:100%;background:var(--moss);color:#fff;font-family:'Changa';font-size:16.5px;padding:13px;border-radius:13px;box-shadow:0 8px 20px rgba(30,142,90,.35)}
-.b-confirm:hover{transform:translateY(-2px)}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}
 .fld label{font-size:11.5px;font-weight:700;color:var(--mut);display:block;margin-bottom:5px}
 .fld input,.fld select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;background:#fff}
-.fld input:focus{outline:none;border-color:var(--moss)}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--moss)}
 #camReader{width:100%;border-radius:14px;overflow:hidden;background:#0A2B23;min-height:250px}
 #camReader video{width:100%!important;border-radius:14px;object-fit:cover}
 .scan-hint{font-size:12px;color:var(--mut);text-align:center;margin:11px 0}
 
+/* ملصقات الباركود */
+.lbl-prev{display:flex;justify-content:center;background:var(--paper);border:1.5px dashed var(--line);border-radius:12px;padding:14px;margin-bottom:13px}
+.lbl{background:#fff;border:1.5px dashed #999;border-radius:3mm;padding:4mm 3mm;text-align:center;break-inside:avoid;width:190px}
+.lbl .ln{font-size:12px;font-weight:700;margin-bottom:1mm}
+.lbl .lp{font-family:'Changa';font-size:17px;font-weight:800;margin-bottom:1mm;color:var(--pine)}
+.lbl svg{max-width:100%;height:auto}
+.lbl-tip{font-size:11px;color:var(--mut);text-align:center;margin-bottom:12px}
+
 /* الإيصال */
 #receipt{background:#fff;border-radius:6px;padding:20px 18px;font-size:12.5px;box-shadow:0 0 0 1px var(--line)}
-#receipt h4{font-family:'Changa';text-align:center;font-size:17px}
+.r-title{font-family:'Changa';text-align:center;font-size:17px}
 .r-sub{text-align:center;color:var(--mut);font-size:10.5px;margin-bottom:8px}
 .r-line{border-top:1.5px dashed #999;margin:8px 0}
 .r-row{display:flex;justify-content:space-between;margin-bottom:5px}
@@ -222,7 +217,6 @@ header h2{font-size:20px;white-space:nowrap}
 .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
 .bar i{width:100%;max-width:38px;background:linear-gradient(180deg,var(--moss),#146640);border-radius:7px 7px 3px 3px;height:0;transition:height .9s cubic-bezier(.2,.8,.3,1)}
 .bar:last-child i{background:linear-gradient(180deg,var(--amber),#D98B0F)}
-.bar i:hover{filter:brightness(1.12)}
 .bar small{font-size:10px;color:var(--mut)}
 .b-top,.b-recent{grid-column:span 2}
 .top-it{display:flex;align-items:center;gap:10px;padding:6.5px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
@@ -240,11 +234,13 @@ header h2{font-size:20px;white-space:nowrap}
 /* ===== المخزون والفواتير ===== */
 #v-inv,#v-orders{overflow-y:auto;padding:18px 22px;display:block}
 .toolbar{display:flex;gap:10px;margin-bottom:15px;align-items:center;flex-wrap:wrap}
-.toolbar input{flex:1;min-width:200px;max-width:340px;padding:11px 15px;border:1.5px solid var(--line);border-radius:11px;background:#fff}
+.toolbar input{flex:1;min-width:180px;max-width:340px;padding:11px 15px;border:1.5px solid var(--line);border-radius:11px;background:#fff}
 .b-add{background:var(--pine);color:#fff;padding:11px 19px;border-radius:11px;font-weight:700;transition:.2s;box-shadow:0 6px 16px rgba(12,51,42,.3)}
-.b-add:hover{transform:translateY(-2px);background:var(--pine2)}
+.b-add:active{transform:scale(.95)}
+.b-lbl{background:#FFF3DC;color:var(--amber-d);border:1.5px solid #F0D9A8;padding:11px 19px;border-radius:11px;font-weight:700;transition:.2s}
+.b-lbl:active{transform:scale(.95)}
 .table-wrap{overflow-x:auto;border-radius:15px;border:1.5px solid var(--line)}
-table{width:100%;min-width:660px;background:var(--card);border-collapse:collapse}
+table{width:100%;min-width:700px;background:var(--card);border-collapse:collapse}
 th{background:var(--pine);color:#fff;font-size:12px;padding:12px 15px;text-align:right;font-weight:500}
 td{padding:11px 15px;border-top:1px solid var(--line);font-size:13px}
 tbody tr{transition:.15s}tbody tr:hover{background:#F4F9F5}
@@ -253,17 +249,19 @@ tbody tr.low-row{background:#FFFBF0}
 .s-ok{background:#E7F4EC;color:var(--moss)}.s-low{background:#FFF3DC;color:var(--amber-d)}.s-out{background:#FDECEC;color:var(--danger)}
 .t-act{display:flex;gap:6px}
 .t-act button{width:31px;height:31px;border-radius:9px;font-size:12.5px;transition:.15s}
+.t-act button:active{transform:scale(.9)}
+.t-lbl{background:#FFF3DC;color:var(--amber-d)}
 .t-edit{background:#E6F0F7;color:var(--info)}.t-del{background:#FDECEC;color:var(--danger)}
-.t-act button:hover{transform:scale(1.12)}
 .ochips{display:flex;gap:8px}
-.ochip{padding:8px 16px;border-radius:20px;background:#fff;border:1.5px solid var(--line);font-size:12px;font-weight:700;transition:.2s}
+.ochip{padding:8px 16px;border-radius:20px;background:#fff;border:1.5px solid var(--line);font-size:12px;font-weight:700}
 .ochip.on{background:var(--pine);color:#fff;border-color:var(--pine)}
-.o-it{display:flex;align-items:center;gap:13px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:13px 17px;margin-bottom:8px;transition:.2s;animation:rise .3s ease backwards;flex-wrap:wrap}
-.o-it:hover{border-color:var(--amber);transform:translateX(-4px);box-shadow:var(--sh)}
+.o-it{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:13px 17px;margin-bottom:8px;transition:.2s;animation:rise .3s ease backwards;flex-wrap:wrap}
+.o-it:hover{border-color:var(--amber);box-shadow:var(--sh)}
 .o-num{font-family:'Changa';font-weight:800;color:var(--pine);font-size:15px}
 .o-tot{margin-right:auto;font-family:'Changa';font-weight:800;font-size:16.5px;color:var(--moss)}
-.b-view{background:var(--paper);border:1px solid var(--line);padding:7px 14px;border-radius:9px;font-size:11.5px;font-weight:700;transition:.15s}
-.b-view:hover{background:var(--pine);color:#fff}
+.schip{font-size:10px;font-weight:700;padding:2px 9px;border-radius:9px}
+.s-sync{background:#E7F4EC;color:var(--moss)}.s-pend{background:#FFF3DC;color:var(--amber-d)}
+.b-view{background:var(--paper);border:1px solid var(--line);padding:7px 14px;border-radius:9px;font-size:11.5px;font-weight:700}
 
 #toasts{position:fixed;bottom:20px;left:20px;z-index:99;display:flex;flex-direction:column;gap:8px;max-width:88vw}
 .toast{background:var(--pine);color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;box-shadow:0 12px 30px rgba(0,0,0,.3);animation:tIn .35s cubic-bezier(.2,1.2,.4,1);border-right:4px solid var(--amber);max-width:100%}
@@ -272,9 +270,9 @@ tbody tr.low-row{background:#FFFBF0}
 
 /* ===== موبايل ===== */
 @media(max-width:767px){
-  .search input,.scan-in input,.toolbar input,#tendered,.fld input,.fld select{font-size:16px}
-  #app.on{grid-template-columns:1fr;grid-template-rows:1fr 60px}
-  aside{flex-direction:row;order:2;padding:0 6px;gap:2px;box-shadow:0 -6px 24px rgba(12,51,42,.3)}
+  .search input,.toolbar input,#tendered,.fld input,.fld select{font-size:16px}
+  #app.on{grid-template-columns:1fr;grid-template-rows:1fr calc(60px + env(safe-area-inset-bottom))}
+  aside{flex-direction:row;order:2;padding:0 6px;padding-bottom:env(safe-area-inset-bottom);gap:2px;box-shadow:0 -6px 24px rgba(12,51,42,.3)}
   .a-logo{display:none}
   .navbtn{flex:1;height:100%;border-radius:0}
   .navbtn.on::before{right:auto;top:5px;left:50%;transform:translateX(-50%);width:24px;height:4px}
@@ -284,35 +282,32 @@ tbody tr.low-row{background:#FFFBF0}
   .a-avatar{width:35px;height:35px;font-size:14px}
   .a-out{margin:0 4px 0 0}
   main{order:1}
-  header{padding:0 13px;gap:9px}
-  header h2{font-size:16px}
+  header{padding:0 12px;gap:8px}
+  header h2{font-size:15.5px}
   #clock{display:none}
+  .conn{font-size:10px;padding:4px 9px}
+  .qbadge{font-size:9.5px;padding:4px 8px}
   .prods{padding:11px}
-  .search{flex:1 1 100%}
-  .scan-in{flex:1}
-  .pgrid{grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:8px}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
   .pcard{padding:10px 9px;border-radius:13px}
   .pemoji{font-size:25px}
   .pcard b{font-size:11.5px}
   .pprice{font-size:13.5px}
-  /* السلة = درج سفلي */
-  .cart{position:fixed;bottom:60px;left:0;right:0;width:auto;height:min(74vh,560px);border-right:none;border-radius:20px 20px 0 0;transform:translateY(calc(100% - 58px));transition:transform .38s cubic-bezier(.2,.9,.3,1);box-shadow:0 -14px 44px rgba(12,51,42,.3)}
+  .cart{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;width:auto;height:min(74vh,560px);border-right:none;border-radius:20px 20px 0 0;transform:translateY(calc(100% - 58px));transition:transform .38s cubic-bezier(.2,.9,.3,1);box-shadow:0 -14px 44px rgba(12,51,42,.3)}
   .cart.open{transform:none}
-  .c-handle{display:flex;align-items:center;gap:11px;padding:11px 16px;background:var(--pine);color:#fff;border-radius:20px 20px 0 0;cursor:pointer;flex-shrink:0}
+  .c-handle{display:flex;align-items:center;gap:11px;padding:12px 16px;background:var(--pine);color:#fff;border-radius:20px 20px 0 0;cursor:pointer;flex-shrink:0;user-select:none}
   .c-handle .ch-chev{font-size:11px;transition:.3s;color:#9FBFAE}
   .cart.open .ch-chev{transform:rotate(180deg)}
   .c-handle b{font-size:12px;color:#CFE3D8;font-weight:500}
   .c-handle .ch-tot{margin-right:auto;font-family:'Changa';font-size:19px;font-weight:800;color:var(--amber)}
   .c-handle .ch-tot.flash{animation:bmp .35s}
-  .ch-pay{background:var(--amber);color:var(--pine);font-family:'Changa';font-weight:700;padding:8px 20px;border-radius:10px;font-size:14px}
+  .ch-pay{background:var(--amber);color:var(--pine);font-family:'Changa';font-weight:700;padding:9px 22px;border-radius:10px;font-size:14px}
   .c-head{display:none}
   .hold-wrap{position:static}
-  #heldPanel{position:fixed;bottom:135px;left:13px;right:13px;width:auto}
+  #heldPanel{position:fixed;bottom:calc(135px + env(safe-area-inset-bottom));left:13px;right:13px;width:auto}
   .grand b{font-size:27px}
-  /* مودالات = شيت سفلي */
   .modal{align-items:end;padding:0}
   .m-box{width:100%;max-width:none;border-radius:20px 20px 0 0;max-height:90vh}
-  /* داشبورد */
   #v-dash{padding:12px}
   .bento{grid-template-columns:1fr 1fr;gap:9px}
   .b-hero,.b-chart,.b-top,.b-recent{grid-column:span 2}
@@ -322,7 +317,7 @@ tbody tr.low-row{background:#FFFBF0}
   .chart{height:105px}
   #v-inv,#v-orders{padding:12px}
   .o-tot{margin-right:0;width:100%;order:5}
-  #toasts{bottom:74px;left:12px;right:12px}
+  #toasts{bottom:calc(74px + env(safe-area-inset-bottom));left:12px;right:12px}
 }
 @media(max-width:1100px) and (min-width:768px){
   .cart{width:330px}
@@ -330,7 +325,15 @@ tbody tr.low-row{background:#FFFBF0}
   .bento{grid-template-columns:repeat(2,1fr)}
   .b-hero,.b-chart,.b-top,.b-recent{grid-column:span 2}
 }
-@media print{body *{visibility:hidden}#rcModal,#rcModal *{visibility:visible}#rcModal{position:fixed;inset:0;background:#fff;display:block;padding:20px}.no-print{display:none!important}}
+
+/* ===== طباعة ===== */
+#printHost{display:none}
+.lsheet{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm;padding:6mm}
+@media print{
+  html,body{overflow:visible!important;height:auto!important}
+  body>*{display:none!important}
+  #printHost{display:block!important}
+}
 </style>
 </head>
 <body>
@@ -371,14 +374,14 @@ tbody tr.low-row{background:#FFFBF0}
     <header>
       <h2 id="viewTitle">شاشة البيع</h2>
       <span class="conn" id="conn"><i></i><span id="connTxt">جاري الاتصال…</span></span>
+      <span class="qbadge" id="qBadge"></span>
       <span id="clock"></span>
     </header>
 
     <section class="view on" id="v-pos">
       <div class="prods">
         <div class="p-tools">
-          <div class="search"><input id="search" placeholder="ابحث بالاسم… (F2)" oninput="S.q=this.value;renderProducts()"></div>
-          <div class="scan-in"><input id="scanIn" placeholder="باركود + Enter" inputmode="numeric" onkeydown="if(event.key==='Enter'){handleScan(this.value);this.value='';}"></div>
+          <div class="search" id="searchWrap"><input id="search" placeholder="امسح الباركود أو اكتب اسم المنتج…" autocomplete="off" oninput="onSearch()" onkeydown="if(event.key==='Enter')onSearchEnter()"></div>
           <button class="b-cam" onclick="openCam()" title="مسح بالكاميرا (F8)">📷</button>
         </div>
         <div class="cats" id="cats"></div>
@@ -386,7 +389,7 @@ tbody tr.low-row{background:#FFFBF0}
       </div>
 
       <div class="cart">
-        <div class="c-handle" onclick="toggleCart()">
+        <div class="c-handle" id="cHandle" onclick="toggleCart()">
           <span class="ch-chev">▲</span>
           <b id="chCount">0 صنف</b>
           <span class="ch-tot" id="chTot">0 ج.م</span>
@@ -404,7 +407,7 @@ tbody tr.low-row{background:#FFFBF0}
         <div class="c-foot">
           <div class="row"><span>الإجمالي الفرعي</span><b class="num" id="tSub">0</b></div>
           <div class="row"><span>خصم %</span><input type="number" id="discIn" value="0" min="0" max="100" oninput="S.discount=+this.value||0;renderCart()"></div>
-          <div class="row"><span>ضريبة 14%</span><div class="sw on" id="taxSw" onclick="S.taxOn=!S.taxOn;this.classList.toggle('on');renderCart()"></div></div>
+          <div class="row"><span>ضريبة 14%</span><div class="sw on" onclick="S.taxOn=!S.taxOn;this.classList.toggle('on');renderCart()"></div></div>
           <div class="row"><span>الخصم</span><b class="num" id="tDisc" style="color:var(--danger)">0</b></div>
           <div class="row"><span>الضريبة</span><b class="num" id="tTax">0</b></div>
           <div class="grand"><span>الإجمالي</span><b id="tGrand">0 ج.م</b></div>
@@ -421,6 +424,7 @@ tbody tr.low-row{background:#FFFBF0}
     <section class="view" id="v-inv">
       <div class="toolbar">
         <input id="invQ" placeholder="ابحث في المخزون…" oninput="renderInv()">
+        <button class="b-lbl" onclick="openLabels()">🏷 طباعة باركود</button>
         <button class="b-add" onclick="openProdForm()">＋ منتج جديد</button>
       </div>
       <div class="table-wrap"><table><thead><tr><th>المنتج</th><th>الباركود</th><th>الفئة</th><th>السعر</th><th>التكلفة</th><th>المخزون</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
@@ -459,8 +463,8 @@ tbody tr.low-row{background:#FFFBF0}
 <div class="modal" id="rcModal"><div class="m-box" style="width:min(360px,100%)">
   <div class="m-head no-print"><h3>الإيصال</h3><button class="m-x" onclick="closeM('#rcModal')">✕</button></div>
   <div id="receipt"></div>
-  <div class="c-actions no-print" style="margin-top:14px">
-    <button class="btn b-ghost" style="flex:1" onclick="window.print()">🖨 طباعة</button>
+  <div class="c-actions" style="margin-top:14px">
+    <button class="btn b-ghost" style="flex:1" onclick="printReceipt()">🖨 طباعة</button>
     <button class="btn b-pay" style="flex:1.4" onclick="closeM('#rcModal')">طلب جديد</button>
   </div>
 </div></div>
@@ -471,6 +475,19 @@ tbody tr.low-row{background:#FFFBF0}
   <div id="camReader"></div>
   <p class="scan-hint">وجّه الكاميرا نحو الباركود — كل مسح ناجح بيضيف المنتج فورًا</p>
   <div class="c-actions"><button class="btn b-ghost" style="flex:1" onclick="closeCam()">إغلاق</button></div>
+</div></div>
+
+<!-- طباعة ملصقات -->
+<div class="modal" id="lblModal"><div class="m-box">
+  <div class="m-head"><h3>🏷 توليد وطباعة باركود</h3><button class="m-x" onclick="closeM('#lblModal')">✕</button></div>
+  <div class="f2">
+    <div class="fld" style="grid-column:span 2"><label>المنتج</label><select id="lblProd" onchange="updLbl()"></select></div>
+    <div class="fld"><label>عدد الملصقات</label><input id="lblQty" type="number" value="12" min="1" max="120" inputmode="numeric"></div>
+    <div class="fld"><label>الورق</label><select><option>A4 — 3 أعمدة</option></select></div>
+  </div>
+  <div class="lbl-prev" id="lblPrev"></div>
+  <p class="lbl-tip">معاينة حية — الملصق يشمل الاسم والسعر والباركود (CODE128)</p>
+  <button class="b-confirm" onclick="doPrintLabels()">🖨 طباعة الملصقات</button>
 </div></div>
 
 <!-- نموذج منتج -->
@@ -486,10 +503,14 @@ tbody tr.low-row{background:#FFFBF0}
     <div class="fld"><label>التكلفة</label><input id="pf_cost" type="number" inputmode="numeric"></div>
     <div class="fld"><label>الكمية</label><input id="pf_stock" type="number" inputmode="numeric"></div>
   </div>
-  <button class="b-confirm" onclick="saveProduct()">💾 حفظ</button>
+  <div class="c-actions">
+    <button class="btn b-ghost" onclick="saveProduct(true)">💾 حفظ + طباعة باركود</button>
+    <button class="b-confirm" style="flex:1" onclick="saveProduct()">💾 حفظ</button>
+  </div>
 </div></div>
 
 <div id="toasts"></div>
+<div id="printHost"></div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -504,26 +525,77 @@ const SEED=[
  ['شيبسي','6220022',15,9,70,'سوبر ماركت','🥔'],['شيكولاتة','6220023',25,14,44,'سوبر ماركت','🍬'],['بسكويت','6220024',12,7,55,'سوبر ماركت','🍪'],['لبن','6220025',18,11,4,'سوبر ماركت','🥛']
 ].map((p,i)=>({_id:'p'+(i+1),name:p[0],barcode:p[1],price:p[2],cost:p[3],stock:p[4],category:p[5],emoji:p[6]}));
 
-/* ===== API + وضع تجريبي ===== */
+/* ===== تخزين + API ===== */
+const LS={
+  get p(){try{return JSON.parse(localStorage.getItem('pos_p')||'null')}catch(e){return null}},
+  get o(){try{return JSON.parse(localStorage.getItem('pos_o')||'[]')}catch(e){return[]}},
+  get q(){try{return JSON.parse(localStorage.getItem('pos_q')||'[]')}catch(e){return[]}},
+  sp(v){localStorage.setItem('pos_p',JSON.stringify(v))},
+  so(v){localStorage.setItem('pos_o',JSON.stringify(v))},
+  sq(v){localStorage.setItem('pos_q',JSON.stringify(v))}
+};
 async function api(path,opts={}){const r=await fetch('/api'+path,{headers:{'Content-Type':'application/json'},...opts});if(!r.ok)throw 0;return r.json();}
-const Demo={get p(){return JSON.parse(localStorage.getItem('pos_p')||'null')},get o(){return JSON.parse(localStorage.getItem('pos_o')||'[]')},
-  sp(v){localStorage.setItem('pos_p',JSON.stringify(v))},so(v){localStorage.setItem('pos_o',JSON.stringify(v))}};
-async function loadProducts(){try{S.products=await api('/products');}catch(e){S.demo=true;S.products=Demo.p||SEED;if(!Demo.p)Demo.sp(S.products);}markDemo();}
-async function loadOrders(){try{S.orders=await api('/orders');}catch(e){S.demo=true;S.orders=Demo.o;}markDemo();}
-async function saveOrder(o){
-  if(!S.demo){try{return await api('/orders',{method:'POST',body:JSON.stringify(o)});}catch(e){S.demo=true;markDemo();}}
-  const rec={...o,_id:Date.now(),number:1001+Demo.o.length,createdAt:new Date().toISOString()};
-  S.orders.unshift(rec);Demo.so(S.orders);return rec;
+
+/* تحميل فوري: ارسم من الكاش فورًا ثم حدّث من السيرفر */
+async function loadProducts(){
+  const cached=LS.p;
+  if(cached&&cached.length){S.products=cached;renderPOS();}
+  try{S.products=await api('/products');LS.sp(S.products);S.demo=false;}
+  catch(e){if(!cached||!cached.length){S.products=SEED;LS.sp(S.products);}S.demo=true;}
+  markDemo();renderPOS();
 }
-function setConn(on){$('#conn').classList.toggle('off',!on);$('#connTxt').textContent=on?'متصل بـ MongoDB':'وضع تجريبي';}
+async function loadOrders(){
+  const cached=LS.o;
+  if(cached.length)S.orders=cached;
+  try{S.orders=await api('/orders');S.orders.forEach(o=>o.synced=true);S.demo=false;}
+  catch(e){S.demo=true;}
+  markDemo();
+}
+
+/* حفظ متفائل + طابور مزامنة */
+async function saveOrder(o){
+  const tmpId=Date.now();
+  const rec={...o,_id:tmpId,number:1001+S.orders.length,createdAt:new Date().toISOString(),synced:false};
+  S.orders.unshift(rec);
+  try{
+    const saved=await api('/orders',{method:'POST',body:JSON.stringify(o)});
+    rec._id=saved._id;rec.number=saved.number;rec.synced=true;
+    S.demo=false;markDemo();
+  }catch(e){
+    S.demo=true;markDemo();
+    const q=LS.q;q.push({tmpId,order:o});LS.sq(q);
+  }
+  LS.so(S.orders.slice(0,200));updQ();
+  return rec;
+}
+function updQ(){const n=LS.q.length;const b=$('#qBadge');b.style.display=n?'flex':'none';b.textContent='⏳ '+n+' بانتظار المزامنة';}
+async function syncLoop(){
+  let q=LS.q;if(!q.length){updQ();return;}
+  let done=0;
+  for(const item of q.slice()){
+    try{
+      const rec=await api('/orders',{method:'POST',body:JSON.stringify(item.order)});
+      const loc=S.orders.find(x=>x._id===item.tmpId);
+      if(loc){loc._id=rec._id;loc.number=rec.number;loc.synced=true;}
+      q=q.filter(x=>x.tmpId!==item.tmpId);done++;
+    }catch(e){break;}
+  }
+  LS.sq(q);updQ();
+  if(done){LS.so(S.orders.slice(0,200));toast('تمت مزامنة '+done+' فاتورة ✅');if(S.view==='orders')renderOrders();}
+}
+
+/* نبض الاتصال */
+function setConn(on){$('#conn').classList.toggle('off',!on);$('#connTxt').textContent=on?'متصل بـ MongoDB':'غير متصل — حفظ محلي';}
 function markDemo(){setConn(!S.demo);}
 async function ping(){
-  try{await api('/health');
-    if(S.demo){S.demo=false;await loadProducts();await loadOrders();renderPOS();toast('تم الاتصال بقاعدة البيانات ✅');}
-    setConn(true);
-  }catch(e){setConn(false);}
+  try{
+    await api('/health');
+    const was=S.demo;S.demo=false;
+    if(was){await loadProducts();await loadOrders();renderPOS();toast('تم الاتصال بقاعدة البيانات ✅');}
+    setConn(true);syncLoop();
+  }catch(e){S.demo=true;setConn(false);}
 }
-setInterval(ping,12000);
+setInterval(ping,8000);
 
 /* ===== صوت + اهتزاز ===== */
 let AC=null;
@@ -560,7 +632,7 @@ async function tryLogin(){
 function enterApp(){
   $('#login').classList.add('off');$('#app').classList.add('on');
   $('#uAvatar').textContent=S.user.name[0];$('#uRole').textContent=S.user.role;
-  loadAll();ping();
+  loadAll();ping();updQ();
 }
 function logout(){location.reload();}
 async function loadAll(){await loadProducts();await loadOrders();renderPOS();$('#cNum').textContent='#'+(1001+S.orders.length);}
@@ -571,13 +643,36 @@ function renderCats(){
   const cats=['الكل',...new Set(S.products.map(p=>p.category))];
   $('#cats').innerHTML=cats.map(c=>`<button class="cat ${S.cat===c?'on':''}" onclick="S.cat='${c}';renderCats();renderProducts()">${c}</button>`).join('');
 }
+function filtered(){return S.products.filter(p=>(S.cat==='الكل'||p.category===S.cat)&&(p.name.includes(S.q)||String(p.barcode).includes(S.q)));}
 function renderProducts(){
-  const list=S.products.filter(p=>(S.cat==='الكل'||p.category===S.cat)&&(p.name.includes(S.q)||String(p.barcode).includes(S.q)));
+  const list=filtered();
   $('#pgrid').innerHTML=list.map((p,i)=>`<div class="pcard ${p.stock<=0?'out':''}" data-id="${p._id}" style="animation-delay:${i*20}ms" onclick="addCart('${p._id}')">
     <span class="pemoji">${p.emoji}</span><b>${p.name}</b>
     <span class="pprice">${fmt(p.price)}</span>
     <span class="pstock ${p.stock<=5?'low':''}">${p.stock>0?p.stock+' متبقي':'نفد'}</span></div>`).join('')
     ||'<p style="color:var(--mut);grid-column:1/-1;text-align:center;padding:40px">لا توجد نتائج 🔍</p>';
+}
+
+/* البحث الذكي: باركود أولًا */
+let _sd;
+function onSearch(){
+  const v=$('#search').value.trim();
+  const exact=S.products.find(p=>String(p.barcode)===v);
+  if(exact){scanHit(exact);return;}
+  clearTimeout(_sd);_sd=setTimeout(()=>{S.q=v;renderProducts();},110);
+}
+function onSearchEnter(){
+  const v=$('#search').value.trim();
+  const exact=S.products.find(p=>String(p.barcode)===v);
+  if(exact){scanHit(exact);return;}
+  const list=S.products.filter(p=>(S.cat==='الكل'||p.category===S.cat)&&p.name.includes(v));
+  if(v&&list.length===1){addCart(String(list[0]._id));beep(920);$('#search').value='';S.q='';renderProducts();}
+}
+function scanHit(p){
+  addCart(String(p._id));beep(920);vib(30);
+  $('#search').value='';S.q='';renderProducts();flashScan(String(p._id));
+  const w=$('#searchWrap');w.classList.add('hit');setTimeout(()=>w.classList.remove('hit'),450);
+  if(window.innerWidth>767)$('#search').focus();
 }
 function addCart(id){
   const p=S.products.find(x=>String(x._id)===String(id));if(!p||p.stock<=0)return;
@@ -596,29 +691,35 @@ function renderCart(bumpIt){
     <div class="qty"><button onclick="chg(${ix},1)">+</button><b>${i.qty}</b><button onclick="chg(${ix},-1)">−</button></div>
     <b class="ci-t">${fmt(i.price*i.qty)}</b>
     <button class="ci-x" onclick="rmItem(${ix})">✕</button></div>`).join('')
-    :'<div class="c-empty"><span>🛒</span>السلة فاضية — دوس على أي منتج</div>';
+    :'<div class="c-empty"><span>🛒</span>السلة فاضية — امسح باركود للبدء</div>';
   $('#tSub').textContent=fmt(subtotal());
   $('#tDisc').textContent='− '+fmt(discVal());
   $('#tTax').textContent=fmt(taxVal());
   const g=$('#tGrand');g.textContent=fmt(total());
   $('#chCount').textContent=S.cart.reduce((s,i)=>s+i.qty,0)+' صنف';
   const cht=$('#chTot');cht.textContent=fmt(total());
-  if(bumpIt){[g,cht].forEach(el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});}
+  if(bumpIt)[g,cht].forEach(el=>{el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});
 }
-function toggleCart(){if(window.innerWidth<768)$('.cart').classList.toggle('open');}
+/* سحب الدرج بالموبايل */
+let _sy=0,_swiped=false;
+const _hdl=$('#cHandle');
+_hdl.addEventListener('touchstart',e=>{_sy=e.touches[0].clientY;_swiped=false;},{passive:true});
+_hdl.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientY-_sy)>25)_swiped=true;},{passive:true});
+_hdl.addEventListener('touchend',e=>{if(!_swiped)return;const dy=e.changedTouches[0].clientY-_sy;
+  if(dy<0)$('.cart').classList.add('open');else $('.cart').classList.remove('open');},{passive:true});
+function toggleCart(){if(window.innerWidth<768){if(_swiped){_swiped=false;return;}$('.cart').classList.toggle('open');}}
 
-/* ===== الباركود ===== */
+/* ===== الباركود (سكانر خارجي + كاميرا) ===== */
 function handleScan(code){
   code=String(code||'').trim();if(code.length<4)return;
   const p=S.products.find(x=>String(x.barcode)===code);
-  if(p){addCart(String(p._id));beep(920);vib(35);flashScan(String(p._id));toast('📷 '+p.name+' اتضاف');}
+  if(p){scanHit(p);toast('📷 '+p.name);}
   else{beep(200);vib([70,50,70]);toast('باركود غير مسجل: '+code,1);openProdForm();$('#pf_barcode').value=code;}
 }
 function flashScan(id){
   const el=[...$('#pgrid').children].find(c=>c.dataset.id===String(id));
   if(el){el.classList.add('hit');el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.classList.remove('hit'),900);}
 }
-/* سكانر USB/بلوتوث — بيكتب بسرعة كأنه كيبورة */
 let _b='',_t=0;
 document.addEventListener('keydown',e=>{
   const tag=e.target.tagName;
@@ -629,7 +730,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){if(_b.length>=6)handleScan(_b);_b='';}
   else if(e.key.length===1)_b+=e.key;
 });
-/* كاميرا الموبايل */
 let scanner=null;
 function openCam(){
   if(typeof Html5Qrcode==='undefined')return toast('مكتبة الكاميرا لم تُحمّل',1);
@@ -642,6 +742,35 @@ function openCam(){
   .catch(()=>{toast('تعذر فتح الكاميرا — تأكد من الإذن',1);closeM('#scanModal');});
 }
 function closeCam(){if(scanner){try{scanner.stop();}catch(e){}scanner=null;}closeM('#scanModal');}
+
+/* ===== توليد وطباعة الباركود ===== */
+function labelHTML(p){
+  return `<div class="lbl"><div class="ln">${p.emoji} ${p.name}</div><div class="lp">${fmt(p.price)}</div><svg></svg></div>`;
+}
+function drawBarcode(svg,code){
+  try{JsBarcode(svg,String(code),{format:'CODE128',width:1.5,height:38,displayValue:true,fontSize:10,margin:2});}catch(e){}
+}
+function openLabels(id){
+  if(!S.products.length)return toast('ضيف منتجات الأول',1);
+  $('#lblProd').innerHTML=S.products.map(p=>`<option value="${p._id}" ${String(p._id)===String(id)?'selected':''}>${p.emoji} ${p.name} — ${p.barcode}</option>`).join('');
+  updLbl();show('#lblModal');
+}
+function updLbl(){
+  const p=S.products.find(x=>String(x._id)===String($('#lblProd').value));if(!p)return;
+  $('#lblPrev').innerHTML=labelHTML(p);
+  drawBarcode($('#lblPrev svg'),p.barcode);
+}
+function doPrintLabels(){
+  const p=S.products.find(x=>String(x._id)===String($('#lblProd').value));if(!p)return;
+  const n=Math.min(120,Math.max(1,+$('#lblQty').value||1));
+  $('#printHost').innerHTML=`<div class="lsheet">${Array(n).fill(labelHTML(p)).join('')}</div>`;
+  $$('#printHost .lbl svg').forEach(sv=>drawBarcode(sv,p.barcode));
+  setTimeout(()=>window.print(),200);
+}
+function printReceipt(){
+  $('#printHost').innerHTML='<div style="max-width:300px;margin:0 auto">'+$('#receipt').innerHTML+'</div>';
+  setTimeout(()=>window.print(),150);
+}
 
 /* ===== تعليق الطلبات ===== */
 function holdOrder(){if(!S.cart.length)return toast('مفيش طلب للتعليق',1);
@@ -669,15 +798,15 @@ async function confirmPay(){
     change:Math.max(0,paid-t),method:S.method,cashier:S.user.name};
   const rec=await saveOrder(order);
   S.cart.forEach(i=>{const p=S.products.find(x=>String(x._id)===i.id);if(p)p.stock=Math.max(0,p.stock-i.qty);});
-  if(S.demo)Demo.sp(S.products);
+  if(S.demo)LS.sp(S.products);
   closeM('#payModal');$('.cart').classList.remove('open');showReceipt(rec);
   S.cart=[];S.discount=0;$('#discIn').value=0;renderCart();renderProducts();
   $('#cNum').textContent='#'+(1001+S.orders.length);
   beep(880);setTimeout(()=>beep(1320),130);vib(60);
-  toast('تم حفظ الفاتورة #'+rec.number+' 🎉');
+  toast(rec.synced?'تم حفظ الفاتورة #'+rec.number+' 🎉':'فاتورة #'+rec.number+' اتحفظت — هتتزامن تلقائيًا ⏳', !rec.synced);
 }
 function showReceipt(o){
-  $('#receipt').innerHTML=`<h4>☕ كاشير POS</h4>
+  $('#receipt').innerHTML=`<div class="r-title">☕ كاشير POS</div>
   <div class="r-sub">فاتورة ضريبية مبسطة • ${new Date(o.createdAt).toLocaleString('ar-EG')}</div>
   <div class="r-line"></div>
   <div class="r-row"><span>رقم الفاتورة</span><b>#${o.number}</b></div>
@@ -742,7 +871,7 @@ function renderInv(){
     <td>${p.emoji} <b>${p.name}</b></td><td style="color:var(--mut);font-family:monospace;font-size:12px">${p.barcode}</td>
     <td>${p.category}</td><td class="num" style="font-weight:700">${fmt(p.price)}</td><td style="color:var(--mut)">${fmt(p.cost)}</td>
     <td><span class="stk ${st[0]}">${p.stock} • ${st[1]}</span></td>
-    <td><div class="t-act"><button class="t-edit" onclick="openProdForm('${p._id}')">✎</button><button class="t-del" onclick="delProd('${p._id}')">🗑</button></div></td></tr>`;}).join('');
+    <td><div class="t-act"><button class="t-lbl" onclick="openLabels('${p._id}')" title="طباعة باركود">🏷</button><button class="t-edit" onclick="openProdForm('${p._id}')">✎</button><button class="t-del" onclick="delProd('${p._id}')">🗑</button></div></td></tr>`;}).join('');
 }
 function openProdForm(id){
   S.editId=id||null;
@@ -752,29 +881,32 @@ function openProdForm(id){
   $('#pf_cat').value=p.category||'';$('#pf_price').value=p.price||'';$('#pf_cost').value=p.cost||'';$('#pf_stock').value=p.stock!=null?p.stock:'';
   show('#prodModal');
 }
-async function saveProduct(){
+async function saveProduct(andLabel){
   const data={name:$('#pf_name').value.trim(),emoji:$('#pf_emoji').value||'🛒',barcode:$('#pf_barcode').value.trim(),
     category:$('#pf_cat').value.trim()||'عام',price:+$('#pf_price').value||0,cost:+$('#pf_cost').value||0,stock:+$('#pf_stock').value||0};
   if(!data.name||!data.price)return toast('اكتب الاسم والسعر على الأقل',1);
+  let savedId=S.editId;
   if(!S.demo){
     try{
       if(S.editId)await api('/products/'+S.editId,{method:'PUT',body:JSON.stringify(data)});
-      else{const p=await api('/products',{method:'POST',body:JSON.stringify(data)});
+      else{const p=await api('/products',{method:'POST',body:JSON.stringify(data)});savedId=p._id;
         const ex=S.products.findIndex(x=>String(x._id)===String(p._id));
-        if(ex>-1)S.products[ex]=p;else S.products.push(p);
-        closeM('#prodModal');renderInv();renderProducts();return toast('تم حفظ المنتج 💾');}
+        if(ex>-1)S.products[ex]=p;else S.products.push(p);}
     }catch(e){S.demo=true;markDemo();}
   }
-  if(S.editId)Object.assign(S.products.find(x=>String(x._id)===String(S.editId)),data);
-  else S.products.push({...data,_id:'p'+Date.now()});
-  Demo.sp(S.products);
+  if(S.demo){
+    if(S.editId){Object.assign(S.products.find(x=>String(x._id)===String(S.editId)),data);}
+    else{savedId='p'+Date.now();S.products.push({...data,_id:savedId});}
+    LS.sp(S.products);
+  }
   closeM('#prodModal');renderInv();renderProducts();toast('تم حفظ المنتج 💾');
+  if(andLabel)openLabels(savedId);
 }
 async function delProd(id){
   if(!confirm('متأكد من حذف المنتج؟'))return;
   if(!S.demo){try{await api('/products/'+id,{method:'DELETE'});}catch(e){S.demo=true;markDemo();}}
   S.products=S.products.filter(p=>String(p._id)!==String(id));
-  if(S.demo)Demo.sp(S.products);
+  if(S.demo)LS.sp(S.products);
   renderInv();renderProducts();toast('تم الحذف');
 }
 
@@ -786,6 +918,7 @@ function renderOrders(){
   $('#oList').innerHTML=list.length?list.map((o,i)=>`<div class="o-it" style="animation-delay:${i*30}ms">
     <span class="o-num">#${o.number}</span>
     <span class="mchip m-${o.method}">${mName[o.method]}</span>
+    <span class="schip ${o.synced===false?'s-pend':'s-sync'}">${o.synced===false?'⏳ قيد المزامنة':'✓ في القاعدة'}</span>
     <span class="o-meta">${new Date(o.createdAt).toLocaleString('ar-EG')} • ${o.cashier} • ${o.items.reduce((s,x)=>s+x.qty,0)} صنف</span>
     <span class="o-tot">${fmt(o.total)}</span>
     <button class="b-view" onclick='showReceipt(${JSON.stringify(o).replace(/'/g,"&#39;")})'>عرض 🧾</button></div>`).join('')
