@@ -1,12 +1,18 @@
 /* ==========================================
-   Chat Masr - Chat Page
+   Chat Masr
+   chat.css v2
 ========================================== */
 
 *{
+
     margin:0;
+
     padding:0;
+
     box-sizing:border-box;
+
     font-family:'Cairo',sans-serif;
+
 }
 
 body{
@@ -49,7 +55,7 @@ Users Panel
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     padding:18px;
 
@@ -72,6 +78,14 @@ Users Panel
     border-radius:8px;
 
     outline:none;
+
+}
+
+#searchUser:focus{
+
+    border-color:#1565c0;
+
+    box-shadow:0 0 8px rgba(21,101,192,.25);
 
 }
 
@@ -99,7 +113,7 @@ User Item
 
     cursor:pointer;
 
-    transition:.3s;
+    transition:.25s;
 
     border-bottom:1px solid #eee;
 
@@ -111,6 +125,7 @@ User Item
 
 }
 
+.userAvatar,
 .user img{
 
     width:48px;
@@ -144,7 +159,6 @@ User Item
     font-size:13px;
 
 }
-
 /* ==========================================
 Chat Panel
 ========================================== */
@@ -165,7 +179,7 @@ Chat Panel
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     display:flex;
 
@@ -197,7 +211,7 @@ Chat Panel
 
     border:none;
 
-    background:white;
+    background:#fff;
 
     color:#1565c0;
 
@@ -207,7 +221,18 @@ Chat Panel
 
     cursor:pointer;
 
+    transition:.25s;
+
 }
+
+.headerActions button:hover{
+
+    background:#0d47a1;
+
+    color:#fff;
+
+}
+
 /* ==========================================
 Messages Area
 ========================================== */
@@ -256,7 +281,7 @@ Public Message
 
 .messageContent{
 
-    background:white;
+    background:#fff;
 
     padding:12px;
 
@@ -323,12 +348,28 @@ System Message
 }
 
 /* ==========================================
+Typing
+========================================== */
+
+#typingStatus{
+
+    min-height:22px;
+
+    padding:0 20px;
+
+    color:#666;
+
+    font-size:13px;
+
+}
+
+/* ==========================================
 Send Box
 ========================================== */
 
 .sendBox{
 
-    background:white;
+    background:#fff;
 
     border-top:1px solid #ddd;
 
@@ -336,9 +377,9 @@ Send Box
 
     display:flex;
 
-    gap:10px;
-
     align-items:center;
+
+    gap:10px;
 
 }
 
@@ -358,6 +399,14 @@ Send Box
 
 }
 
+#messageInput:focus{
+
+    border-color:#1565c0;
+
+    box-shadow:0 0 8px rgba(21,101,192,.20);
+
+}
+
 #emojiBtn,
 #sendBtn{
 
@@ -369,11 +418,13 @@ Send Box
 
     padding:12px 18px;
 
+    transition:.25s;
+
 }
 
 #emojiBtn{
 
-    background:#f5f5f5;
+    background:#f3f3f3;
 
     font-size:20px;
 
@@ -383,7 +434,7 @@ Send Box
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     font-weight:bold;
 
@@ -394,15 +445,7 @@ Send Box
     background:#0d47a1;
 
 }
-
 /* ==========================================
-Responsive
-========================================== */
-
-@media(max-width:768px){
-
-.users
-  /* ==========================================
 Private Chat Window
 ========================================== */
 
@@ -418,7 +461,7 @@ Private Chat Window
 
     height:520px;
 
-    background:white;
+    background:#fff;
 
     border-radius:15px;
 
@@ -440,7 +483,7 @@ Private Chat Window
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     display:flex;
 
@@ -460,6 +503,8 @@ Private Chat Window
 
     border-radius:50%;
 
+    object-fit:cover;
+
 }
 
 .privateHeader span{
@@ -476,11 +521,11 @@ Private Chat Window
 
     border:none;
 
-    color:white;
-
-    cursor:pointer;
+    color:#fff;
 
     font-size:22px;
+
+    cursor:pointer;
 
 }
 
@@ -496,9 +541,35 @@ Private Chat Window
 
 }
 
+.privateMessage{
+
+    margin-bottom:12px;
+
+}
+
+.privateImage{
+
+    max-width:220px;
+
+    border-radius:10px;
+
+    display:block;
+
+}
+
+.privateVideo{
+
+    max-width:250px;
+
+    border-radius:10px;
+
+}
+
 .privateSendBox{
 
     display:flex;
+
+    align-items:center;
 
     gap:8px;
 
@@ -506,7 +577,7 @@ Private Chat Window
 
     border-top:1px solid #ddd;
 
-    background:white;
+    background:#fff;
 
 }
 
@@ -524,19 +595,31 @@ Private Chat Window
 
 }
 
+.privateSendBox input:focus{
+
+    border-color:#1565c0;
+
+}
+
 .privateSendBox button{
 
     border:none;
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     border-radius:8px;
 
     padding:10px 12px;
 
     cursor:pointer;
+
+}
+
+.privateSendBox button:hover{
+
+    background:#0d47a1;
 
 }
 
@@ -550,13 +633,7 @@ Profile Window
 
     position:fixed;
 
-    top:0;
-
-    left:0;
-
-    width:100%;
-
-    height:100%;
+    inset:0;
 
     background:rgba(0,0,0,.55);
 
@@ -572,7 +649,7 @@ Profile Window
 
     width:350px;
 
-    background:white;
+    background:#fff;
 
     border-radius:15px;
 
@@ -621,7 +698,6 @@ Profile Window
     font-size:22px;
 
 }
-
 /* ==========================================
 User Menu
 ========================================== */
@@ -648,13 +724,15 @@ User Menu
 
     width:300px;
 
-    background:white;
+    background:#fff;
 
     border-radius:15px;
 
     padding:20px;
 
     text-align:center;
+
+    animation:fadeIn .25s;
 
 }
 
@@ -672,6 +750,14 @@ User Menu
 
 }
 
+.userMenuContent h3{
+
+    color:#1565c0;
+
+    margin-bottom:20px;
+
+}
+
 .userMenuContent button{
 
     width:100%;
@@ -686,14 +772,150 @@ User Menu
 
     background:#1565c0;
 
-    color:white;
+    color:#fff;
 
     cursor:pointer;
+
+    transition:.25s;
 
 }
 
 .userMenuContent button:hover{
 
     background:#0d47a1;
+
+}
+
+/* ==========================================
+Scrollbar
+========================================== */
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#edf2f7;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#1565c0;
+
+    border-radius:20px;
+
+}
+
+/* ==========================================
+Animation
+========================================== */
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+        transform:scale(.95);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:scale(1);
+
+    }
+
+}
+
+/* ==========================================
+Responsive
+========================================== */
+
+@media (max-width:768px){
+
+    body{
+
+        overflow:auto;
+
+    }
+
+    .mainContainer{
+
+        flex-direction:column;
+
+        height:auto;
+
+    }
+
+    .usersPanel{
+
+        width:100%;
+
+        height:220px;
+
+        border-left:none;
+
+        border-bottom:1px solid #ddd;
+
+    }
+
+    .chatHeader{
+
+        flex-direction:column;
+
+        height:auto;
+
+        gap:10px;
+
+        padding:15px;
+
+    }
+
+    .headerActions{
+
+        flex-wrap:wrap;
+
+        justify-content:center;
+
+    }
+
+    .messageContent{
+
+        max-width:90%;
+
+    }
+
+    .privateChat{
+
+        left:0;
+
+        bottom:0;
+
+        width:100%;
+
+        height:100%;
+
+        border-radius:0;
+
+    }
+
+    .profileContent{
+
+        width:95%;
+
+    }
+
+    .userMenuContent{
+
+        width:95%;
+
+    }
 
 }
