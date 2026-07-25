@@ -1,1 +1,12 @@
-
+services:
+  - type: web
+    name: pos-system
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: PORT
+        value: 10000
