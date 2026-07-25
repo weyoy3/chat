@@ -72,6 +72,8 @@ header h2{font-size:20px;white-space:nowrap}
 .conn.off{background:#FFF3DC;color:var(--amber-d);border-color:#F0D9A8}
 .conn.off i{background:var(--amber);animation:none}
 .qbadge{display:none;align-items:center;font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:20px;background:#FDECEC;color:var(--danger);border:1px solid #F2C4C4;white-space:nowrap}
+.b-help{width:34px;height:34px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);font-family:'Changa';font-weight:800;font-size:16px;color:var(--pine2);transition:.25s;flex-shrink:0}
+.b-help:hover{background:var(--pine);color:#fff;transform:rotate(14deg) scale(1.08)}
 #clock{margin-right:auto;font-size:12.5px;color:var(--mut);font-weight:500;white-space:nowrap}
 .view{display:none;flex:1;overflow:hidden}
 .view.on{display:flex}
@@ -90,7 +92,8 @@ header h2{font-size:20px;white-space:nowrap}
 .cat{padding:8px 17px;border-radius:22px;background:var(--card);border:1.5px solid var(--line);font-size:12.5px;font-weight:700;white-space:nowrap;transition:.2s}
 .cat.on{background:var(--pine);color:#fff;border-color:var(--pine);box-shadow:0 6px 16px rgba(12,51,42,.28)}
 .pgrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;align-content:start;padding-left:4px}
-.pcard{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:14px 12px;display:flex;flex-direction:column;gap:5px;transition:.2s;position:relative;overflow:hidden;animation:rise .35s ease backwards}
+.pcard{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:14px 12px;display:flex;flex-direction:column;gap:5px;transition:.2s;position:relative;overflow:hidden}
+.pcard.anim{animation:rise .35s ease backwards}
 .pcard::after{content:'';position:absolute;inset:0;background:linear-gradient(145deg,rgba(245,166,35,.09),transparent);opacity:0;transition:.25s}
 .pcard:hover{transform:translateY(-4px);border-color:var(--amber);box-shadow:var(--sh)}
 .pcard:hover::after{opacity:1}
@@ -147,6 +150,7 @@ header h2{font-size:20px;white-space:nowrap}
 /* ===== مودالات ===== */
 .modal{position:fixed;inset:0;background:rgba(10,32,26,.55);display:grid;place-items:center;z-index:60;opacity:0;visibility:hidden;transition:.25s;padding:14px}
 .modal.open{opacity:1;visibility:visible}
+#scanModal{z-index:75}
 .m-box{background:var(--card);border-radius:19px;width:min(480px,100%);max-height:92vh;overflow-y:auto;padding:22px;transform:scale(.92) translateY(14px);transition:.28s cubic-bezier(.2,1.2,.4,1);box-shadow:0 30px 70px rgba(0,0,0,.35)}
 .modal.open .m-box{transform:none}
 .m-head{display:flex;align-items:center;margin-bottom:16px}
@@ -196,6 +200,17 @@ header h2{font-size:20px;white-space:nowrap}
 .lbl .lp{font-family:'Changa';font-size:17px;font-weight:800;margin-bottom:1mm;color:var(--pine)}
 .lbl svg{max-width:100%;height:auto}
 .lbl-tip{font-size:11px;color:var(--mut);text-align:center;margin-bottom:12px}
+
+/* المساعدة */
+.help-g{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.help-it{display:flex;gap:12px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px;transition:.2s}
+.help-it:hover{border-color:var(--amber);transform:translateX(-3px);box-shadow:var(--sh)}
+.h-ic{font-size:19px;background:#fff;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;border:1px solid var(--line);flex-shrink:0}
+.help-it b{font-size:13px;display:block;margin-bottom:2px}
+.help-it small{font-size:11.5px;color:var(--mut);line-height:1.55;display:block}
+.keys{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.keys span{font-size:11.5px;color:var(--mut);background:var(--paper);padding:5px 11px;border-radius:9px;border:1px solid var(--line)}
+kbd{font-family:'Changa';background:var(--pine);color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:4px}
 
 /* الإيصال */
 #receipt{background:#fff;border-radius:6px;padding:20px 18px;font-size:12.5px;box-shadow:0 0 0 1px var(--line)}
@@ -390,6 +405,7 @@ tbody tr.low-row{background:#FFFBF0}
       <h2 id="viewTitle">شاشة البيع</h2>
       <span class="conn" id="conn"><i></i><span id="connTxt">جاري الاتصال…</span></span>
       <span class="qbadge" id="qBadge"></span>
+      <button class="b-help" onclick="openHelp()" title="المساعدة">؟</button>
       <span id="clock"></span>
     </header>
 
@@ -397,7 +413,7 @@ tbody tr.low-row{background:#FFFBF0}
       <div class="prods">
         <div class="p-tools">
           <div class="search" id="searchWrap"><input id="search" placeholder="امسح الباركود أو اكتب اسم المنتج…" autocomplete="off" oninput="onSearch()" onkeydown="if(event.key==='Enter')onSearchEnter()"></div>
-          <button class="b-cam" onclick="openCam()" title="مسح بالكاميرا (F8)">📷</button>
+          <button class="b-cam" onclick="openCam('cart')" title="مسح بالكاميرا (F8)">📷</button>
         </div>
         <div class="cats" id="cats"></div>
         <div class="pgrid" id="pgrid"></div>
@@ -484,17 +500,6 @@ tbody tr.low-row{background:#FFFBF0}
   </div>
 </div></div>
 
-<!-- الكاميرا -->
-<div class="modal" id="scanModal"><div class="m-box">
-  <div class="m-head"><h3>📷 مسح بالكاميرا</h3><button class="m-x" onclick="closeCam()">✕</button></div>
-  <div class="cam-wrap">
-    <div id="camReader"></div>
-    <div class="cam-flash" id="camFlash"></div>
-  </div>
-  <p class="scan-hint">وجّه الكاميرا نحو الباركود — كل باركود بيتقرأ <b>مرة واحدة</b> بس</p>
-  <div class="c-actions"><button class="btn b-ghost" style="flex:1" onclick="closeCam()">إغلاق</button></div>
-</div></div>
-
 <!-- طباعة ملصقات -->
 <div class="modal" id="lblModal"><div class="m-box">
   <div class="m-head"><h3>🏷 توليد وطباعة باركود</h3><button class="m-x" onclick="closeM('#lblModal')">✕</button></div>
@@ -529,8 +534,10 @@ tbody tr.low-row{background:#FFFBF0}
   <div class="f2">
     <div class="fld" style="grid-column:span 2"><label>اسم المنتج</label><input id="pf_name"></div>
     <div class="fld"><label>إيموجي</label><input id="pf_emoji" value="🛒"></div>
-    <div class="fld"><label>الباركود</label><input id="pf_barcode" inputmode="numeric"></div>
     <div class="fld"><label>الفئة</label><input id="pf_cat" list="catList"><datalist id="catList"></datalist></div>
+    <div class="fld" style="grid-column:span 2"><label>الباركود — امسحه بالكاميرا أو اكتبه أو بالسكانر</label>
+      <div class="bc-row"><input id="pf_barcode" inputmode="numeric" placeholder="مثال: 6220001"><button class="b-gen" onclick="scanForForm()">📷 مسح</button></div>
+    </div>
     <div class="fld"><label>سعر البيع</label><input id="pf_price" type="number" inputmode="numeric"></div>
     <div class="fld"><label>التكلفة</label><input id="pf_cost" type="number" inputmode="numeric"></div>
     <div class="fld"><label>الكمية</label><input id="pf_stock" type="number" inputmode="numeric"></div>
@@ -541,13 +548,40 @@ tbody tr.low-row{background:#FFFBF0}
   </div>
 </div></div>
 
+<!-- الكاميرا (دايمًا فوق كل المودالات) -->
+<div class="modal" id="scanModal"><div class="m-box">
+  <div class="m-head"><h3>📷 مسح بالكاميرا</h3><button class="m-x" onclick="closeCam()">✕</button></div>
+  <div class="cam-wrap">
+    <div id="camReader"></div>
+    <div class="cam-flash" id="camFlash"></div>
+  </div>
+  <p class="scan-hint" id="camHint">وجّه الكاميرا نحو الباركود — كل باركود بيتقرأ مرة واحدة بس</p>
+  <div class="c-actions"><button class="btn b-ghost" style="flex:1" onclick="closeCam()">إغلاق</button></div>
+</div></div>
+
+<!-- المساعدة -->
+<div class="modal" id="helpModal"><div class="m-box">
+  <div class="m-head"><h3>❓ دليل الاستخدام السريع</h3><button class="m-x" onclick="closeM('#helpModal')">✕</button></div>
+  <div class="help-g">
+    <div class="help-it"><span class="h-ic">📷</span><div><b>البيع بالباركود</b><small>امسح أي باركود في خانة البحث، أو بزرار الكاميرا، أو بالسكانر الخارجي — المنتج بينزل السلة فورًا والخانة بتفضى جاهزة للي بعده.</small></div></div>
+    <div class="help-it"><span class="h-ic">➕</span><div><b>إضافة منتج جديد</b><small>من المخزون → "＋ منتج جديد" → دوس "📷 مسح" جنب خانة الباركود عشان تسجله بالكاميرا، أو اكتب الكود بإيدك.</small></div></div>
+    <div class="help-it"><span class="h-ic">🏷</span><div><b>طباعة باركود</b><small>من المخزون — لمنتج موجود، أو "ملصق مخصص" تكتب فيه الاسم والسعر والصنف وتولّد كود بزرار 🎲.</small></div></div>
+    <div class="help-it"><span class="h-ic">💳</span><div><b>الدفع</b><small>كاش / بطاقة / محفظة — مع حساب الباقي تلقائيًا، وإيصال قابل للطباعة.</small></div></div>
+    <div class="help-it"><span class="h-ic">⏸</span><div><b>تعليق طلب</b><div><small>علّق طلب العميل الحالي وكمّل مع عميل تاني، واسترجعه في أي وقت من زرار ⏸ فوق السلة.</small></div></div></div>
+    <div class="help-it"><span class="h-ic">☁️</span><div><b>المزامنة التلقائية</b><small>لو النت وقع، كمّل شغل عادي — الفواتير بتتحفظ محليًا وبتتزامن مع قاعدة البيانات تلقائيًا أول ما يرجع.</small></div></div>
+  </div>
+  <div class="keys">
+    <span><kbd>F2</kbd> بحث</span><span><kbd>F8</kbd> كاميرا</span><span><kbd>F9</kbd> دفع</span><span><kbd>Esc</kbd> إغلاق</span>
+  </div>
+</div></div>
+
 <div id="toasts"></div>
 <div id="printHost"></div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const TAX=.14, GOAL=8000;
-let S={user:null,view:'pos',products:[],cart:[],held:[],orders:[],discount:0,taxOn:true,cat:'الكل',q:'',method:'cash',tendered:0,demo:false,oFilter:'today',editId:null,lblMode:'prod'};
+let S={user:null,view:'pos',products:[],cart:[],held:[],orders:[],discount:0,taxOn:true,cat:'الكل',q:'',method:'cash',tendered:0,demo:false,oFilter:'today',editId:null,lblMode:'prod',scanTarget:'cart'};
 const DEMO_USERS=[{pin:'1234',name:'أحمد',role:'مدير'},{pin:'1111',name:'منى',role:'كاشير'}];
 const SEED=[
  ['إسبريسو','6220001',45,20,40,'مشروبات ساخنة','☕'],['كابتشينو','6220002',55,25,35,'مشروبات ساخنة','☕'],['لاتيه','6220003',60,28,30,'مشروبات ساخنة','🥛'],['شاي بالنعناع','6220004',25,8,50,'مشروبات ساخنة','🍵'],['سحلب','6220005',35,14,25,'مشروبات ساخنة','🥣'],
@@ -636,6 +670,7 @@ const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
 const fmt=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';
 const show=m=>$(m).classList.add('open'), closeM=m=>$(m).classList.remove('open');
 function toast(msg,err){const t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=(err?'⚠️ ':'✅ ')+msg;$('#toasts').appendChild(t);setTimeout(()=>{t.style.opacity=0;t.style.transition='.4s';setTimeout(()=>t.remove(),400)},2600);}
+function openHelp(){show('#helpModal');}
 const subtotal=()=>S.cart.reduce((s,i)=>s+i.price*i.qty,0);
 const discVal=()=>subtotal()*S.discount/100;
 const taxVal=()=>S.taxOn?(subtotal()-discVal())*TAX:0;
@@ -663,19 +698,25 @@ function enterApp(){
   $('#login').classList.add('off');$('#app').classList.add('on');
   $('#uAvatar').textContent=S.user.name[0];$('#uRole').textContent=S.user.role;
   loadAll();ping();updQ();
+  if(!localStorage.getItem('pos_tip')){localStorage.setItem('pos_tip','1');
+    setTimeout(()=>toast('💡 امسح باركود للبدء — ودوس "؟" في أي وقت للمساعدة'),900);}
 }
 function logout(){location.reload();}
 async function loadAll(){await loadProducts();await loadOrders();renderPOS();$('#cNum').textContent='#'+(1001+S.orders.length);}
 
-/* ===== البيع ===== */
+/* ===== البيع (شبكة بدون وميض) ===== */
 function renderPOS(){renderCats();renderProducts();renderCart();}
 function renderCats(){
   const cats=['الكل',...new Set(S.products.map(p=>p.category))];
   $('#cats').innerHTML=cats.map(c=>`<button class="cat ${S.cat===c?'on':''}" onclick="S.cat='${c}';renderCats();renderProducts()">${c}</button>`).join('');
 }
+let _gridKey='__init__';
 function renderProducts(){
+  const key=S.cat+'|'+S.q;
+  const anim=key!==_gridKey;   /* أنيميشن بس لما الفلترة تتغير */
+  _gridKey=key;
   const list=S.products.filter(p=>(S.cat==='الكل'||p.category===S.cat)&&(p.name.includes(S.q)||String(p.barcode).includes(S.q)));
-  $('#pgrid').innerHTML=list.map((p,i)=>`<div class="pcard ${p.stock<=0?'out':''}" data-id="${p._id}" style="animation-delay:${i*20}ms" onclick="addCart('${p._id}')">
+  $('#pgrid').innerHTML=list.map((p,i)=>`<div class="pcard ${anim?'anim':''} ${p.stock<=0?'out':''}" data-id="${p._id}" ${anim?`style="animation-delay:${i*20}ms"`:''} onclick="addCart('${p._id}')">
     <span class="pemoji">${p.emoji}</span><b>${p.name}</b>
     <span class="pprice">${fmt(p.price)}</span>
     <span class="pstock ${p.stock<=5?'low':''}">${p.stock>0?p.stock+' متبقي':'نفد'}</span></div>`).join('')
@@ -738,15 +779,24 @@ _hdl.addEventListener('touchend',e=>{if(!_swiped)return;const dy=e.changedTouche
   if(dy<0)$('.cart').classList.add('open');else $('.cart').classList.remove('open');},{passive:true});
 function toggleCart(){if(window.innerWidth<768){if(_swiped){_swiped=false;return;}$('.cart').classList.toggle('open');}}
 
-/* ===== الباركود: قراءة مرة واحدة + كاميرا ===== */
+/* ===== الباركود: قراءة مرة واحدة + كاميرا بوضعين ===== */
 let _lastScan={code:'',t:0};
 function handleScan(code){
   code=String(code||'').trim();if(code.length<4)return;
   const now=Date.now();
   const cam=$('#scanModal').classList.contains('open');
-  const gap=cam?2500:350; /* كاميرا: تهدئة طويلة — سكانر USB: قصيرة */
+  const gap=cam?2500:350;
   if(code===_lastScan.code&&now-_lastScan.t<gap)return;
   _lastScan={code,t:now};
+  /* وضع تسجيل باركود في نموذج المنتج */
+  if(S.scanTarget==='form'){
+    $('#pf_barcode').value=code;
+    const dup=S.products.find(p=>String(p.barcode)===code&&String(p._id)!==String(S.editId||''));
+    closeCam();beep(920);vib(30);
+    toast(dup?'⚠️ الباركود ده مستخدم في: '+dup.name:'📷 باركود اتسجل: '+code,!!dup);
+    return;
+  }
+  /* وضع البيع */
   const p=S.products.find(x=>String(x.barcode)===code);
   if(p){scanHit(p);camFlash('ok',p.name);if(!cam)toast('📷 '+p.name);}
   else{
@@ -777,8 +827,13 @@ document.addEventListener('keydown',e=>{
   else if(e.key.length===1)_b+=e.key;
 });
 let scanner=null;
-function openCam(){
+function scanForForm(){openCam('form');}
+function openCam(target){
+  S.scanTarget=target||'cart';
   if(typeof Html5Qrcode==='undefined')return toast('مكتبة الكاميرا لم تُحمّل',1);
+  $('#camHint').innerHTML=S.scanTarget==='form'
+    ?'امسح باركود المنتج — <b>هيتسجل في الخانة تلقائيًا</b> ويقفل'
+    :'وجّه الكاميرا نحو الباركود — كل باركود بيتقرأ <b>مرة واحدة</b> بس';
   show('#scanModal');
   scanner=new Html5Qrcode('camReader');
   scanner.start({facingMode:'environment'},
@@ -787,7 +842,7 @@ function openCam(){
     txt=>handleScan(String(txt)),()=>{})
   .catch(()=>{toast('تعذر فتح الكاميرا — تأكد من الإذن',1);closeM('#scanModal');});
 }
-function closeCam(){if(scanner){try{scanner.stop();}catch(e){}scanner=null;}closeM('#scanModal');}
+function closeCam(){if(scanner){try{scanner.stop();}catch(e){}scanner=null;}closeM('#scanModal');S.scanTarget='cart';}
 
 /* ===== توليد وطباعة الباركود ===== */
 function labelHTML(d){
@@ -1023,7 +1078,7 @@ $$('.navbtn').forEach(b=>b.onclick=()=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='F2'){e.preventDefault();$('#search').focus();}
-  if(e.key==='F8'){e.preventDefault();openCam();}
+  if(e.key==='F8'){e.preventDefault();openCam('cart');}
   if(e.key==='F9'){e.preventDefault();openPay();}
   if(e.key==='Escape'){if($('#scanModal').classList.contains('open'))closeCam();else $$('.modal.open').forEach(m=>m.classList.remove('open'));}
 });
