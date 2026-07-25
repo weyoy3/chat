@@ -3,21 +3,32 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-<title>شات مصر</title>
+    <title>شات مصر</title>
 
-<link rel="stylesheet" href="css/chat.css">
+    <link
+        rel="stylesheet"
+        href="css/chat.css">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com">
 
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+        rel="stylesheet">
 
-<script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 
 </head>
 
@@ -25,20 +36,29 @@
 
 <div class="mainContainer">
 
-    <!-- القائمة اليمنى -->
+    <!-- ==========================
+         Users Panel
+    ========================== -->
 
     <aside class="usersPanel">
 
         <div class="panelHeader">
 
-            <h2>المتواجدون</h2>
+            <h2>
+
+                👥 المتواجدون
+
+            </h2>
 
         </div>
 
         <input
+
             type="text"
+
             id="searchUser"
-            placeholder="بحث عن مستخدم">
+
+            placeholder="بحث عن مستخدم...">
 
         <div id="usersList">
 
@@ -46,7 +66,9 @@
 
     </aside>
 
-    <!-- منتصف الصفحة -->
+    <!-- ==========================
+         Chat Panel
+    ========================== -->
 
     <section class="chatPanel">
 
@@ -86,7 +108,9 @@
 
         </div>
 
-        <div id="typingStatus">
+        <!-- مؤشر الكتابة -->
+
+        <div id="typingBox">
 
         </div>
 
@@ -99,9 +123,12 @@
             </button>
 
             <input
+
                 id="messageInput"
+
                 type="text"
-                placeholder="اكتب هنا...">
+
+                placeholder="اكتب رسالة...">
 
             <button id="sendBtn">
 
@@ -115,7 +142,7 @@
 
 </div>
 <!-- ==========================
-رسائل النظام
+     System Messages
 ========================== -->
 
 <div id="systemMessages" class="systemMessages">
@@ -123,7 +150,7 @@
 </div>
 
 <!-- ==========================
-نافذة معلومات المستخدم
+     User Menu
 ========================== -->
 
 <div id="userMenu" class="userMenu">
@@ -133,9 +160,12 @@
         <div class="userAvatar">
 
             <img
-            id="menuAvatar"
-            src="avatars/default.png"
-            alt="Avatar">
+
+                id="menuAvatar"
+
+                src="avatars/default.png"
+
+                alt="Avatar">
 
         </div>
 
@@ -159,7 +189,7 @@
 
         <button id="closeUserMenu">
 
-            إغلاق
+            ✖ إغلاق
 
         </button>
 
@@ -168,7 +198,7 @@
 </div>
 
 <!-- ==========================
-نافذة الملف الشخصي
+     Profile Modal
 ========================== -->
 
 <div id="profileModal" class="profileModal">
@@ -182,8 +212,12 @@
         </span>
 
         <img
-        id="profileAvatar"
-        src="avatars/default.png">
+
+            id="profileAvatar"
+
+            src="avatars/default.png"
+
+            alt="Avatar">
 
         <h2 id="profileUsername">
 
@@ -194,7 +228,10 @@
         <p>
 
             العمر :
+
             <span id="profileAge">
+
+                -
 
             </span>
 
@@ -203,7 +240,10 @@
         <p>
 
             النوع :
+
             <span id="profileGender">
+
+                -
 
             </span>
 
@@ -211,8 +251,11 @@
 
         <p>
 
-            الحالة :
+            نوع العضوية :
+
             <span id="profileType">
+
+                عضو
 
             </span>
 
@@ -223,7 +266,7 @@
 </div>
 
 <!-- ==========================
-نافذة المحادثة الخاصة
+     Private Chat
 ========================== -->
 
 <div id="privateChatWindow" class="privateChat">
@@ -231,8 +274,12 @@
     <div class="privateHeader">
 
         <img
-        id="privateAvatar"
-        src="avatars/default.png">
+
+            id="privateAvatar"
+
+            src="avatars/default.png"
+
+            alt="Avatar">
 
         <span id="privateUsername">
 
@@ -251,8 +298,7 @@
     </div>
 
     <div class="privateSendBox">
-
-        <button id="privateEmoji">
+                <button id="privateEmoji">
 
             😊
 
@@ -277,9 +323,12 @@
         </button>
 
         <input
-        id="privateInput"
-        type="text"
-        placeholder="اكتب رسالة...">
+
+            id="privateInput"
+
+            type="text"
+
+            placeholder="اكتب رسالة خاصة...">
 
         <button id="privateSend">
 
@@ -290,6 +339,44 @@
     </div>
 
 </div>
+
+<!-- ==========================
+     Hidden File Inputs
+========================== -->
+
+<input
+
+    type="file"
+
+    id="imageInput"
+
+    accept="image/*"
+
+    hidden>
+
+<input
+
+    type="file"
+
+    id="videoInput"
+
+    accept="video/*"
+
+    hidden>
+
+<input
+
+    type="file"
+
+    id="voiceInput"
+
+    accept="audio/*"
+
+    hidden>
+    <!-- ==========================
+     Scripts
+========================== -->
+
 <script src="js/chat.js"></script>
 
 </body>
