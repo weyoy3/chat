@@ -1,10 +1,6 @@
 /* ==========================================================
-   Chat Masr v3
-   chat.js
-========================================================== */
-
-/* ==========================================================
-   Socket.IO
+   Chat Masr
+   chat.js v4
 ========================================================== */
 
 const socket = io();
@@ -16,13 +12,13 @@ const socket = io();
 const currentUser = {
 
     userId:
-        localStorage.getItem("userId"),
+        localStorage.getItem("userId") || "",
 
     username:
-        localStorage.getItem("username"),
+        localStorage.getItem("username") || "زائر",
 
     memberType:
-        localStorage.getItem("memberType") || "زائر",
+        localStorage.getItem("memberType") || "عضو",
 
     avatar:
         localStorage.getItem("avatar") ||
@@ -37,23 +33,49 @@ const currentUser = {
 };
 
 /* ==========================================================
-   Check Login
+   Variables
 ========================================================== */
 
-if (!currentUser.username) {
+let selectedUser = null;
 
-    window.location.href = "index.html";
+let typingTimeout = null;
 
-}
+/* ==========================================================
+   Elements
+========================================================== */
+
+const usersList =
+    document.getElementById("usersList");
+
+const messagesBox =
+    document.getElementById("messages");
+
+const messageInput =
+    document.getElementById("messageInput");
+
+const sendBtn =
+    document.getElementById("sendBtn");
+
+const typingBox =
+    document.getElementById("typingBox");
+
+const privateWindow =
+    document.getElementById("privateChatWindow");
+
+const privateMessages =
+    document.getElementById("privateMessages");
+
+const privateInput =
+    document.getElementById("privateInput");
+
+const privateSend =
+    document.getElementById("privateSend");
 
 /* ==========================================================
    Join Room
 ========================================================== */
 
 socket.emit("joinRoom", {
-
-    userId:
-        currentUser.userId,
 
     username:
         currentUser.username,
@@ -73,105 +95,23 @@ socket.emit("joinRoom", {
 });
 
 /* ==========================================================
-   DOM Elements
-========================================================== */
-
-const usersList =
-    document.getElementById("usersList");
-
-const messagesBox =
-    document.getElementById("messages");
-
-const messageInput =
-    document.getElementById("messageInput");
-
-const sendBtn =
-    document.getElementById("sendBtn");
-
-const privateWindow =
-    document.getElementById("privateChatWindow");
-
-const privateMessages =
-    document.getElementById("privateMessages");
-
-const privateInput =
-    document.getElementById("privateInput");
-
-const privateSend =
-    document.getElementById("privateSend");
-
-/* ==========================================================
-   Current Selected User
-========================================================== */
-
-let selectedUser = null;
-
-let typingTimeout = null;
-
-/* ==========================================================
    Connected
 ========================================================== */
 
-socket.on(
+socket.on("joinedSuccessfully", (user) => {
 
-    "connect",
+    console.log(
 
-    () => {
+        "Welcome",
 
-        console.log(
+        user.username
 
-            "Socket Connected:",
+    );
 
-            socket.id
-
-        );
-
-    }
-
-);
-
-/* ==========================================================
-   Joined Successfully
-========================================================== */
-
-socket.on(
-
-    "joinedSuccessfully",
-
-    (user) => {
-
-        console.log(
-
-            "Welcome",
-
-            user.username
-
-        );
-
-        socket.emit(
-
-            "loadMessages"
-
-        );
-
-    }
-
-);
+});
 /* ==========================================================
    Send Public Message
 ========================================================== */
-
-sendBtn.onclick = sendPublicMessage;
-
-messageInput.addEventListener("keydown", (e) => {
-
-    if (e.key === "Enter") {
-
-        sendPublicMessage();
-
-    }
-
-});
 
 function sendPublicMessage() {
 
@@ -186,6 +126,18 @@ function sendPublicMessage() {
     socket.emit("stopTyping");
 
 }
+
+sendBtn.onclick = sendPublicMessage;
+
+messageInput.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter") {
+
+        sendPublicMessage();
+
+    }
+
+});
 
 /* ==========================================================
    Typing
@@ -207,22 +159,15 @@ messageInput.addEventListener("input", () => {
 
 socket.on("typing", (data) => {
 
-    const typingBox = document.getElementById("typingBox");
+    typingBox.innerHTML =
 
-    if (!typingBox) return;
-
-    typingBox.innerText =
         `${data.username} يكتب...`;
 
 });
 
 socket.on("stopTyping", () => {
 
-    const typingBox = document.getElementById("typingBox");
-
-    if (!typingBox) return;
-
-    typingBox.innerText = "";
+    typingBox.innerHTML = "";
 
 });
 
@@ -234,13 +179,13 @@ socket.on("publicMessages", (list) => {
 
     messagesBox.innerHTML = "";
 
-    list.forEach(addPublicMessage);
+    list.forEach(drawPublicMessage);
 
 });
 
 socket.on("publicMessage", (message) => {
 
-    addPublicMessage(message);
+    drawPublicMessage(message);
 
 });
 
@@ -254,12 +199,11 @@ socket.on("systemMessage", (msg) => {
 
     div.className = "systemMessage";
 
-    div.textContent = msg.message;
+    div.innerHTML = msg.message;
 
     messagesBox.appendChild(div);
 
-    messagesBox.scrollTop =
-        messagesBox.scrollHeight;
+    scrollBottom(messagesBox);
 
 });
 
@@ -267,7 +211,7 @@ socket.on("systemMessage", (msg) => {
    Draw Public Message
 ========================================================== */
 
-function addPublicMessage(message) {
+function drawPublicMessage(message) {
 
     const div = document.createElement("div");
 
@@ -276,8 +220,12 @@ function addPublicMessage(message) {
     div.innerHTML = `
 
         <img
+
             src="${message.avatar}"
-            class="messageAvatar">
+
+            class="messageAvatar"
+
+            onclick="openUserMenuByName('${message.username}')">
 
         <div class="messageContent">
 
@@ -289,9 +237,9 @@ function addPublicMessage(message) {
 
                 </span>
 
-                <span class="memberType">
+                <span class="messageType">
 
-                    ${message.memberType || ""}
+                    ${message.memberType || "عضو"}
 
                 </span>
 
@@ -307,19 +255,9 @@ function addPublicMessage(message) {
 
     `;
 
-    div.querySelector(".messageAvatar")
-        .onclick = () => {
-
-        openUserMenuByName(
-            message.username
-        );
-
-    };
-
     messagesBox.appendChild(div);
 
-    messagesBox.scrollTop =
-        messagesBox.scrollHeight;
+    scrollBottom(messagesBox);
 
 }
 /* ==========================================================
@@ -354,7 +292,7 @@ socket.on("onlineUsers", (users) => {
 
                 <div class="userStatus">
 
-                    ${user.status || "online"}
+                    ${user.status || "متصل"}
 
                 </div>
 
@@ -369,6 +307,34 @@ socket.on("onlineUsers", (users) => {
         };
 
         usersList.appendChild(card);
+
+    });
+
+});
+
+/* ==========================================================
+   Search User
+========================================================== */
+
+document.getElementById("searchUser")
+.addEventListener("input", function () {
+
+    const value =
+        this.value.toLowerCase();
+
+    document
+    .querySelectorAll(".user")
+    .forEach((user) => {
+
+        const name = user
+            .querySelector(".userName")
+            .innerText
+            .toLowerCase();
+
+        user.style.display =
+            name.includes(value)
+            ? "flex"
+            : "none";
 
     });
 
@@ -401,7 +367,8 @@ function openUserMenuByName(name) {
     for (const user of users) {
 
         const username =
-            user.querySelector(".userName").innerText;
+            user.querySelector(".userName")
+            .innerText;
 
         if (username === name) {
 
@@ -424,7 +391,7 @@ document.getElementById("closeUserMenu")
 };
 
 /* ==========================================================
-   View Profile
+   Profile
 ========================================================== */
 
 document.getElementById("viewProfileBtn")
@@ -447,20 +414,20 @@ document.getElementById("viewProfileBtn")
     document.getElementById("profileType").innerText =
         selectedUser.memberType || "عضو";
 
-    document.getElementById("profileModal").style.display =
-        "flex";
+    document.getElementById("profileModal")
+        .style.display = "flex";
 
 };
 
 document.getElementById("closeProfile")
 .onclick = () => {
 
-    document.getElementById("profileModal").style.display =
-        "none";
+    document.getElementById("profileModal")
+        .style.display = "none";
 
 };
 /* ==========================================================
-   Private Chat
+   Open Private Chat
 ========================================================== */
 
 document.getElementById("privateChatBtn").onclick = () => {
@@ -482,6 +449,10 @@ document.getElementById("privateChatBtn").onclick = () => {
 
 };
 
+/* ==========================================================
+   Close Private Chat
+========================================================== */
+
 document.getElementById("closePrivate").onclick = () => {
 
     privateWindow.style.display = "none";
@@ -491,18 +462,6 @@ document.getElementById("closePrivate").onclick = () => {
 /* ==========================================================
    Send Private Message
 ========================================================== */
-
-privateSend.onclick = sendPrivateMessage;
-
-privateInput.addEventListener("keydown", (e) => {
-
-    if (e.key === "Enter") {
-
-        sendPrivateMessage();
-
-    }
-
-});
 
 function sendPrivateMessage() {
 
@@ -516,13 +475,25 @@ function sendPrivateMessage() {
 
         to: selectedUser.socketId,
 
-        text
+        text: text
 
     });
 
     privateInput.value = "";
 
 }
+
+privateSend.onclick = sendPrivateMessage;
+
+privateInput.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter") {
+
+        sendPrivateMessage();
+
+    }
+
+});
 
 /* ==========================================================
    Receive Private Message
@@ -566,7 +537,7 @@ function drawPrivateMessage(message) {
 
             <div class="privateText">
 
-                ${message.text || ""}
+                ${message.text}
 
             </div>
 
@@ -576,23 +547,13 @@ function drawPrivateMessage(message) {
 
     privateMessages.appendChild(div);
 
-    privateMessages.scrollTop =
-        privateMessages.scrollHeight;
+    scrollBottom(privateMessages);
 
-    if (
-
-        !mine &&
-
-        message._id
-
-    ) {
+    if (!mine) {
 
         socket.emit(
-
             "messageSeen",
-
-            message._id
-
+            message.id
         );
 
     }
@@ -600,14 +561,14 @@ function drawPrivateMessage(message) {
 }
 
 /* ==========================================================
-   Seen
+   Message Seen
 ========================================================== */
 
 socket.on("messageSeen", (messageId) => {
 
     console.log(
 
-        "Seen:",
+        "Message Seen:",
 
         messageId
 
@@ -618,19 +579,125 @@ socket.on("messageSeen", (messageId) => {
    Private Images
 ========================================================== */
 
+document.getElementById("sendImage").onclick = () => {
+
+    document.getElementById("imageInput").click();
+
+};
+
+document.getElementById("imageInput")
+.addEventListener("change", function () {
+
+    if (!selectedUser) return;
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+
+        socket.emit("privateImage", {
+
+            to: selectedUser.socketId,
+
+            image: reader.result
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+    this.value = "";
+
+});
+
 socket.on("privateImage", (message) => {
 
-    drawPrivateFile(message);
+    const div = document.createElement("div");
+
+    div.className = "privateMessage";
+
+    div.innerHTML = `
+
+        <img
+
+            src="${message.image}"
+
+            class="privateImage">
+
+    `;
+
+    privateMessages.appendChild(div);
+
+    scrollBottom(privateMessages);
 
 });
 
 /* ==========================================================
-   Private Videos
+   Private Video
 ========================================================== */
+
+document.getElementById("sendVideo").onclick = () => {
+
+    document.getElementById("videoInput").click();
+
+};
+
+document.getElementById("videoInput")
+.addEventListener("change", function () {
+
+    if (!selectedUser) return;
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+
+        socket.emit("privateVideo", {
+
+            to: selectedUser.socketId,
+
+            video: reader.result
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+    this.value = "";
+
+});
 
 socket.on("privateVideo", (message) => {
 
-    drawPrivateFile(message);
+    const div = document.createElement("div");
+
+    div.className = "privateMessage";
+
+    div.innerHTML = `
+
+        <video
+
+            class="privateVideo"
+
+            controls>
+
+            <source src="${message.video}">
+
+        </video>
+
+    `;
+
+    privateMessages.appendChild(div);
+
+    scrollBottom(privateMessages);
 
 });
 
@@ -638,270 +705,136 @@ socket.on("privateVideo", (message) => {
    Private Voice
 ========================================================== */
 
-socket.on("privateVoice", (message) => {
+document.getElementById("recordVoice").onclick = () => {
 
-    drawPrivateFile(message);
+    document.getElementById("voiceInput").click();
+
+};
+
+document.getElementById("voiceInput")
+.addEventListener("change", function () {
+
+    if (!selectedUser) return;
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+
+        socket.emit("privateVoice", {
+
+            to: selectedUser.socketId,
+
+            voice: reader.result,
+
+            duration: 0
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+    this.value = "";
 
 });
 
-/* ==========================================================
-   Draw Files
-========================================================== */
-
-function drawPrivateFile(message){
+socket.on("privateVoice", (message) => {
 
     const div = document.createElement("div");
 
-    const mine =
-        message.senderName === currentUser.username;
-
-    div.className =
-        mine ?
-        "privateMessage mine" :
-        "privateMessage";
-
-    let content = "";
-
-    if(message.type === "image"){
-
-        content = `
-
-            <img
-                src="${message.file || message.image}"
-                class="privateImage">
-
-        `;
-
-    }
-
-    if(message.type === "video"){
-
-        content = `
-
-            <video
-                controls
-                class="privateVideo">
-
-                <source
-                    src="${message.file || message.video}">
-
-            </video>
-
-        `;
-
-    }
-
-    if(message.type === "voice"){
-
-        content = `
-
-            <audio
-                controls>
-
-                <source
-                    src="${message.file || message.voice}">
-
-            </audio>
-
-        `;
-
-    }
+    div.className = "privateMessage";
 
     div.innerHTML = `
 
-        <div class="privateBubble">
+        <audio controls>
 
-            <div class="privateHeader">
+            <source src="${message.voice}">
 
-                <span class="privateName">
-
-                    ${message.senderName}
-
-                </span>
-
-            </div>
-
-            ${content}
-
-        </div>
+        </audio>
 
     `;
 
     privateMessages.appendChild(div);
 
-    privateMessages.scrollTop =
-        privateMessages.scrollHeight;
-
-}
-
-/* ==========================================================
-   Upload Buttons
-========================================================== */
-
-const imageInput =
-    document.getElementById("imageInput");
-
-const videoInput =
-    document.getElementById("videoInput");
-
-const voiceInput =
-    document.getElementById("voiceInput");
-
-/* ==========================================================
-   Image Upload
-========================================================== */
-
-imageInput?.addEventListener("change",(e)=>{
-
-    const file = e.target.files[0];
-
-    if(!file || !selectedUser) return;
-
-    const reader = new FileReader();
-
-    reader.onload = ()=>{
-
-        socket.emit("privateImage",{
-
-            to:selectedUser.socketId,
-
-            image:reader.result
-
-        });
-
-    };
-
-    reader.readAsDataURL(file);
-
-});
-
-/* ==========================================================
-   Video Upload
-========================================================== */
-
-videoInput?.addEventListener("change",(e)=>{
-
-    const file = e.target.files[0];
-
-    if(!file || !selectedUser) return;
-
-    const reader = new FileReader();
-
-    reader.onload = ()=>{
-
-        socket.emit("privateVideo",{
-
-            to:selectedUser.socketId,
-
-            video:reader.result
-
-        });
-
-    };
-
-    reader.readAsDataURL(file);
-
-});
-
-/* ==========================================================
-   Voice Upload
-========================================================== */
-
-voiceInput?.addEventListener("change",(e)=>{
-
-    const file = e.target.files[0];
-
-    if(!file || !selectedUser) return;
-
-    const reader = new FileReader();
-
-    reader.onload = ()=>{
-
-        socket.emit("privateVoice",{
-
-            to:selectedUser.socketId,
-
-            voice:reader.result,
-
-            duration:0
-
-        });
-
-    };
-
-    reader.readAsDataURL(file);
+    scrollBottom(privateMessages);
 
 });
 /* ==========================================================
-   Notifications
+   Header Buttons
 ========================================================== */
 
-socket.on("muted", (data) => {
+document.getElementById("logoutBtn").onclick = () => {
 
-    alert(
-
-        `تم كتمك لمدة ${data.minutes} دقيقة`
-
-    );
-
-});
-
-socket.on("kicked", () => {
-
-    alert("تم طردك من الغرفة");
-
-    window.location.href = "index.html";
-
-});
-
-socket.on("banned", () => {
-
-    alert("تم حظرك من الموقع");
+    if (!confirm("هل تريد تسجيل الخروج؟"))
+        return;
 
     localStorage.clear();
 
     window.location.href = "index.html";
 
-});
+};
+
+document.getElementById("profileBtn").onclick = () => {
+
+    document.getElementById("profileAvatar").src =
+        currentUser.avatar;
+
+    document.getElementById("profileUsername").innerText =
+        currentUser.username;
+
+    document.getElementById("profileAge").innerText =
+        currentUser.age || "-";
+
+    document.getElementById("profileGender").innerText =
+        currentUser.gender || "-";
+
+    document.getElementById("profileType").innerText =
+        currentUser.memberType;
+
+    document.getElementById("profileModal")
+        .style.display = "flex";
+
+};
+
+document.getElementById("settingsBtn").onclick = () => {
+
+    alert("سيتم إضافة الإعدادات قريبًا.");
+
+};
 
 /* ==========================================================
-   Statistics
-========================================================== */
-
-socket.on("statistics", (stats) => {
-
-    console.log("Statistics");
-
-    console.table(stats);
-
-});
-
-/* ==========================================================
-   Connection Status
+   Connection
 ========================================================== */
 
 socket.on("disconnect", () => {
 
-    console.log(
-
-        "Server Disconnected"
-
-    );
+    console.log("Disconnected");
 
 });
 
-socket.on("reconnect", () => {
+socket.on("connect", () => {
 
-    console.log(
+    console.log("Connected");
 
-        "Reconnected"
+});
 
-    );
+socket.on("connect_error", (err) => {
+
+    console.error(err);
+
+});
+
+/* ==========================================================
+   Reconnect
+========================================================== */
+
+socket.io.on("reconnect", () => {
 
     socket.emit("joinRoom", {
-
-        userId:
-            currentUser.userId,
 
         username:
             currentUser.username,
@@ -923,36 +856,67 @@ socket.on("reconnect", () => {
 });
 
 /* ==========================================================
-   Errors
+   Notifications
 ========================================================== */
 
-socket.on("connect_error", (err) => {
+socket.on("muted", (data) => {
 
-    console.error(
-
-        "Connection Error",
-
-        err
-
+    alert(
+        `تم كتمك لمدة ${data.minutes} دقيقة`
     );
 
 });
 
-window.addEventListener("error", (e) => {
+socket.on("kicked", () => {
 
-    console.error(
+    alert("تم طردك من الغرفة");
 
-        "Page Error",
+    localStorage.clear();
 
-        e.error
+    window.location.href = "index.html";
 
-    );
+});
+
+socket.on("banned", () => {
+
+    alert("تم حظرك من الموقع");
+
+    localStorage.clear();
+
+    window.location.href = "index.html";
 
 });
 
 /* ==========================================================
-   Before Close
+   Statistics
 ========================================================== */
+
+socket.on("statistics", (stats) => {
+
+    console.table(stats);
+
+});
+
+/* ==========================================================
+   Helpers
+========================================================== */
+
+function scrollBottom(element) {
+
+    if (!element) return;
+
+    element.scrollTop =
+        element.scrollHeight;
+
+}
+
+function clearInput(input) {
+
+    if (!input) return;
+
+    input.value = "";
+
+}
 
 window.addEventListener("beforeunload", () => {
 
@@ -960,61 +924,6 @@ window.addEventListener("beforeunload", () => {
 
 });
 
-/* ==========================================================
-   Helper Functions
-========================================================== */
-
-function scrollBottom(container){
-
-    container.scrollTop =
-        container.scrollHeight;
-
-}
-
-function clearInput(input){
-
-    input.value = "";
-
-}
-
-function createElement(tag,className){
-
-    const element =
-        document.createElement(tag);
-
-    if(className){
-
-        element.className =
-            className;
-
-    }
-
-    return element;
-
-}
-
-console.log(
-
-    "==================================="
-
-);
-
-console.log(
-
-    "Chat Masr v3 Loaded Successfully"
-
-);
-
-console.log(
-
-    "Socket:",
-
-    socket.id
-
-);
-
-console.log(
-
-    "==================================="
-
-);
+console.log("====================================");
+console.log("Chat Masr v4 Loaded");
+console.log("====================================");
