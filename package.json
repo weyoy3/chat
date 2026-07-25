@@ -1,6 +1,6 @@
 {
   "name": "chat-masr",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Chat Masr - Arabic Real Time Chat",
   "main": "server.js",
   "scripts": {
@@ -9,14 +9,17 @@
   },
   "keywords": [
     "chat",
+    "chat-masr",
+    "arabic-chat",
     "socket",
     "socket.io",
     "express",
     "mongodb",
-    "arabic",
-    "realtime"
+    "mongoose",
+    "realtime",
+    "nodejs"
   ],
-  "author": "ChatGPT",
+  "author": "Chat Masr",
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -29,9 +32,13 @@
     "mongoose": "^8.7.0",
     "multer": "^1.4.5-lts.1",
     "socket.io": "^4.8.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
