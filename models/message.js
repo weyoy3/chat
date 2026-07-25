@@ -1,123 +1,152 @@
-
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
 
-    senderId:{
+    senderId: {
 
-        type:mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
 
-        ref:"User",
+        ref: "User",
 
-        required:true
-
-    },
-
-    username:{
-
-        type:String,
-
-        required:true
+        default: null
 
     },
 
-    avatar:{
+    guestId: {
 
-        type:String,
+        type: String,
 
-        default:"avatars/default.png"
-
-    },
-
-    memberType:{
-
-        type:String,
-
-        default:"عضو"
+        default: null
 
     },
 
-    text:{
+    username: {
 
-        type:String,
+        type: String,
 
-        required:true,
+        required: true,
 
-        trim:true,
-
-        maxlength:5000
+        trim: true
 
     },
 
-    room:{
+    avatar: {
 
-        type:String,
+        type: String,
 
-        default:"general"
+        default: "avatars/default.png"
 
     },
 
-    messageType:{
+    memberType: {
 
-        type:String,
+        type: String,
 
-        enum:[
+        default: "عضو"
+
+    },
+
+    room: {
+
+        type: String,
+
+        default: "general"
+
+    },
+
+    messageType: {
+
+        type: String,
+
+        enum: [
 
             "text",
+
+            "image",
+
+            "video",
+
+            "voice",
 
             "system"
 
         ],
 
-        default:"text"
+        default: "text"
 
     },
 
-    isEdited:{
+    text: {
 
-        type:Boolean,
+        type: String,
 
-        default:false
+        trim: true,
 
-    },
-
-    editedAt:{
-
-        type:Date,
-
-        default:null
-
-    },
-      isDeleted:{
-
-        type:Boolean,
-
-        default:false
+        default: ""
 
     },
 
-    deletedBy:{
+    file: {
 
-        type:mongoose.Schema.Types.ObjectId,
+        type: String,
 
-        ref:"User",
-
-        default:null
+        default: ""
 
     },
 
-    deletedAt:{
+    duration: {
 
-        type:Date,
+        type: Number,
 
-        default:null
+        default: 0
+
+    },
+
+    isEdited: {
+
+        type: Boolean,
+
+        default: false
+
+    },
+
+    editedAt: {
+
+        type: Date,
+
+        default: null
+
+    },
+
+    isDeleted: {
+
+        type: Boolean,
+
+        default: false
+
+    },
+
+    deletedBy: {
+
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "User",
+
+        default: null
+
+    },
+
+    deletedAt: {
+
+        type: Date,
+
+        default: null
 
     }
 
-},
-{
+}, {
 
-    timestamps:true
+    timestamps: true
 
 });
 
