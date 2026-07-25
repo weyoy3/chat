@@ -444,3 +444,51 @@ nav{
 }
 
 }
+.modal-content input:focus,
+.modal-content select:focus{
+
+    outline:none;
+
+    border-color:#1565c0;
+
+    box-shadow:0 0 8px rgba(21,101,192,.25);
+
+}
+button{
+
+    transition:.25s;
+
+}
+
+button:active{
+
+    transform:scale(.97);
+
+}
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#1565c0;
+
+    border-radius:20px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#e9eef5;
+
+}
+.modal-content img{
+
+    max-width:100%;
+
+    border-radius:10px;
+
+}
