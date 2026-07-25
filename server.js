@@ -9,12 +9,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const h = fn => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
+
 /* ====== الموديلات ====== */
-const User = mongoose.model('User', new mongoose.Schema({
-  name: String, pin: String, role: String
-}));
+const User = mongoose.model('User', new mongoose.Schema({ name: String, pin: String, role: String }));
 const Product = mongoose.model('Product', new mongoose.Schema({
-  name: String, barcode: String, price: Number, cost: Number,
+  name: String, barcode: { type: String, index: true }, price: Number, cost: Number,
   stock: Number, category: String, emoji: String, active: { type: Boolean, default: true }
 }));
 const Order = mongoose.model('Order', new mongoose.Schema({
@@ -25,41 +25,59 @@ const Order = mongoose.model('Order', new mongoose.Schema({
 }, { timestamps: true }));
 
 /* ====== الدخول ====== */
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', h(async (req, res) => {
   const u = await User.findOne({ pin: req.body.pin });
   if (!u) return res.status(401).json({ error: 'bad pin' });
   res.json({ name: u.name, role: u.role });
-});
+}));
 
 /* ====== المنتجات ====== */
-app.get('/api/products', async (_, res) => res.json(await Product.find({ active: true })));
-app.post('/api/products', async (req, res) => res.json(await Product.create(req.body)));
-app.put('/api/products/:id', async (req, res) =>
-  res.json(await Product.findByIdAndUpdate(req.params.id, req.body, { new: true })));
-app.delete('/api/products/:id', async (req, res) =>
-  res.json(await Product.findByIdAndUpdate(req.params.id, { active: false })));
+app.get('/api/products', h(async (_, res) => res.json(await Product.find({ active: true }))));
+
+app.get('/api/products/by-barcode/:code', h(async (req, res) => {
+  const p = await Product.findOne({ barcode: req.params.code, active: true });
+  if (!p) return res.status(404).json({ error: 'not found' });
+  res.json(p);
+}));
+
+// إضافة/تحديث بالباركود — يمنع التكرار (upsert)
+app.post('/api/products', h(async (req, res) => {
+  const doc = {
+    name: req.body.name, barcode: req.body.barcode, emoji: req.body.emoji || '🛒',
+    category: req.body.category || 'عام',
+    price: +req.body.price || 0, cost: +req.body.cost || 0, stock: +req.body.stock || 0, active: true
+  };
+  const p = await Product.findOneAndUpdate({ barcode: doc.barcode }, { $set: doc }, { new: true, upsert: true });
+  res.json(p);
+}));
+
+app.put('/api/products/:id', h(async (req, res) =>
+  res.json(await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }))));
+
+app.delete('/api/products/:id', h(async (req, res) =>
+  res.json(await Product.findByIdAndUpdate(req.params.id, { active: false }))));
 
 /* ====== الفواتير ====== */
-app.get('/api/orders', async (_, res) =>
-  res.json(await Order.find().sort({ createdAt: -1 }).limit(200)));
+app.get('/api/orders', h(async (_, res) =>
+  res.json(await Order.find().sort({ createdAt: -1 }).limit(200))));
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', h(async (req, res) => {
   const { items, subtotal, discount, tax, total, paid, change, method, cashier } = req.body;
+  if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'no items' });
   const number = 1001 + await Order.countDocuments();
   const order = await Order.create({ number, items, subtotal, discount, tax, total, paid, change, method, cashier });
-  // خصم المخزون
+  // خصم المخزون بدون ما ينزل تحت الصفر
   for (const it of items)
-    await Product.findByIdAndUpdate(it.product, { $inc: { stock: -it.qty } }).catch(() => {});
+    await Product.updateOne({ _id: it.product, stock: { $gte: it.qty } }, { $inc: { stock: -it.qty } });
   res.json(order);
-});
+}));
 
-/* ====== الإحصائيات ====== */
-app.get('/api/stats', async (_, res) => {
+/* ====== إحصائيات + صحة ====== */
+app.get('/api/stats', h(async (_, res) => {
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const today = await Order.aggregate([
     { $match: { createdAt: { $gte: start } } },
-    { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 },
-      items: { $sum: { $sum: '$items.qty' } } } }
+    { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 }, items: { $sum: { $sum: '$items.qty' } } } }
   ]);
   const days = await Order.aggregate([
     { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, total: { $sum: '$total' } } },
@@ -71,9 +89,9 @@ app.get('/api/stats', async (_, res) => {
     { $sort: { qty: -1 } }, { $limit: 5 }
   ]);
   res.json({ today: today[0] || { total: 0, count: 0, items: 0 }, days, top });
-});
+}));
 
-app.get('/api/health', (_, res) => res.json({ ok: true, time: new Date() }));
+app.get('/api/health', (_, res) => res.json({ ok: true, db: mongoose.connection.readyState === 1, time: new Date() }));
 
 /* ====== زرع البيانات أول مرة ====== */
 async function seed() {
@@ -96,10 +114,9 @@ async function seed() {
   console.log('✅ Database seeded');
 }
 
-/* ====== تشغيل ====== */
 const PORT = process.env.PORT || 3000;
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pos')
   .then(async () => { console.log('✅ MongoDB connected'); await seed(); })
-  .catch(e => console.log('⚠️ MongoDB غير متصلة — الواجهة هتشتغل بالوضع التجريبي:', e.message));
+  .catch(e => console.log('⚠️ MongoDB unavailable:', e.message));
 
 app.listen(PORT, () => console.log(`🚀 POS running on port ${PORT}`));
