@@ -2,55 +2,59 @@ const mongoose = require("mongoose");
 
 const privateMessageSchema = new mongoose.Schema({
 
-    senderId:{
+    senderId: {
 
-        type:mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
 
-        ref:"User",
+        ref: "User",
 
-        required:true
-
-    },
-
-    receiverId:{
-
-        type:mongoose.Schema.Types.ObjectId,
-
-        ref:"User",
-
-        required:true
+        default: null
 
     },
 
-    senderUsername:{
+    receiverId: {
 
-        type:String,
+        type: mongoose.Schema.Types.ObjectId,
 
-        required:true
+        ref: "User",
 
-    },
-
-    receiverUsername:{
-
-        type:String,
-
-        required:true
+        default: null
 
     },
 
-    senderAvatar:{
+    senderUsername: {
 
-        type:String,
+        type: String,
 
-        default:"avatars/default.png"
+        required: true,
+
+        trim: true
 
     },
 
-    type:{
+    receiverUsername: {
 
-        type:String,
+        type: String,
 
-        enum:[
+        required: true,
+
+        trim: true
+
+    },
+
+    senderAvatar: {
+
+        type: String,
+
+        default: "avatars/default.png"
+
+    },
+
+    type: {
+
+        type: String,
+
+        enum: [
 
             "text",
 
@@ -62,88 +66,89 @@ const privateMessageSchema = new mongoose.Schema({
 
         ],
 
-        default:"text"
+        default: "text"
 
     },
 
-    text:{
+    text: {
 
-        type:String,
+        type: String,
 
-        default:""
+        default: "",
 
-    },
-
-    file:{
-
-        type:String,
-
-        default:""
+        trim: true
 
     },
 
-    duration:{
+    file: {
 
-        type:Number,
+        type: String,
 
-        default:0
-
-    },
-  
-    delivered:{
-
-        type:Boolean,
-
-        default:false
+        default: ""
 
     },
 
-    seen:{
+    duration: {
 
-        type:Boolean,
+        type: Number,
 
-        default:false
-
-    },
-
-    seenAt:{
-
-        type:Date,
-
-        default:null
+        default: 0
 
     },
 
-    isDeleted:{
+    delivered: {
 
-        type:Boolean,
+        type: Boolean,
 
-        default:false
-
-    },
-
-    deletedBy:{
-
-        type:mongoose.Schema.Types.ObjectId,
-
-        ref:"User",
-
-        default:null
+        default: false
 
     },
 
-    deletedAt:{
+    seen: {
 
-        type:Date,
+        type: Boolean,
 
-        default:null
+        default: false
+
+    },
+
+    seenAt: {
+
+        type: Date,
+
+        default: null
+
+    },
+
+    isDeleted: {
+
+        type: Boolean,
+
+        default: false
+
+    },
+
+    deletedBy: {
+
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "User",
+
+        default: null
+
+    },
+
+    deletedAt: {
+
+        type: Date,
+
+        default: null
 
     }
 
-},
-{
+}, {
 
-    timestamps:true
+    timestamps: true
 
 });
 
