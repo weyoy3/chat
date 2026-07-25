@@ -3,28 +3,27 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width,initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<title>شات مصر</title>
+    <title>شات مصر</title>
 
-<link rel="preconnect"
-href="https://fonts.googleapis.com">
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
 
-<link rel="preconnect"
-href="https://fonts.gstatic.com"
-crossorigin>
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
-rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+          rel="stylesheet">
 
-<link rel="stylesheet"
-href="css/style.css">
+    <link rel="stylesheet"
+          href="css/style.css">
 
-<script
-src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 
 </head>
 
@@ -34,199 +33,212 @@ src="/socket.io/socket.io.js"></script>
 
 <header>
 
-<div class="logo">
+    <div class="logo">
 
-💬 شات مصر
+        💬 شات مصر
 
-</div>
+    </div>
 
-<nav>
+    <nav>
 
-<button id="loginBtn">
+        <button id="loginBtn">
 
-تسجيل الدخول
+            تسجيل الدخول
 
-</button>
+        </button>
 
-<button id="registerBtn">
+        <button id="registerBtn">
 
-إنشاء حساب
+            إنشاء حساب
 
-</button>
+        </button>
 
-<button id="guestBtn">
+        <button id="guestBtn">
 
-الدخول كزائر
+            الدخول كزائر
 
-</button>
+        </button>
 
-</nav>
+    </nav>
 
 </header>
 
 <section class="hero">
 
-<h1>
+    <h1>
 
-مرحبًا بك في شات مصر
+        مرحبًا بك في شات مصر
 
-</h1>
+    </h1>
 
-<p>
+    <p>
 
-أكبر غرفة دردشة عربية للتعارف والدردشة
-والمحادثات الخاصة.
+        أكبر غرفة دردشة عربية للتعارف والمحادثات العامة والخاصة.
 
-</p>
+    </p>
 
-<div class="hero-buttons">
+    <div class="hero-buttons">
 
-<button id="startNow">
+        <button id="startNow">
 
-ابدأ الآن
+            ابدأ الآن
 
-</button>
+        </button>
 
-</div>
+    </div>
 
 </section>
 
 <section class="statistics">
 
-<div class="card">
+    <div class="card">
 
-<h2 id="onlineCount">
+        <h2 id="onlineCount">
 
-0
+            0
 
-</h2>
+        </h2>
 
-<span>
+        <span>
 
-المتواجدون الآن
+            المتواجدون الآن
 
-</span>
+        </span>
 
-</div>
+    </div>
 
-<div class="card">
+    <div class="card">
 
-<h2 id="membersCount">
+        <h2 id="membersCount">
 
-0
+            0
 
-</h2>
+        </h2>
 
-<span>
+        <span>
 
-الأعضاء
+            الأعضاء
 
-</span>
+        </span>
 
-</div>
+    </div>
 
-<div class="card">
+    <div class="card">
 
-<h2 id="guestsCount">
+        <h2 id="guestsCount">
 
-0
+            0
 
-</h2>
+        </h2>
 
-<span>
+        <span>
 
-الزوار
+            الزوار
 
-</span>
+        </span>
 
-</div>
+    </div>
 
 </section>
 
 <section class="features">
 
-<div class="feature">
+    <div class="feature">
 
-💬
+        💬
 
-<h3>
+        <h3>
 
-غرفة عامة
+            غرفة عامة
 
-</h3>
+        </h3>
 
-<p>
+        <p>
 
-غرفة دردشة واحدة تجمع الجميع.
+            دردشة مباشرة مع جميع الأعضاء.
 
-</p>
+        </p>
 
-</div>
+    </div>
 
-<div class="feature">
+    <div class="feature">
 
-🔒
+        🔒
 
-<h3>
+        <h3>
 
-محادثات خاصة
+            محادثات خاصة
 
-</h3>
+        </h3>
 
-<p>
+        <p>
 
-تواصل خاص وآمن بين المستخدمين.
+            رسائل خاصة بين المستخدمين.
 
-</p>
+        </p>
 
-</div>
+    </div>
 
-<div class="feature">
+    <div class="feature">
 
-📱
+        📱
 
-<h3>
+        <h3>
 
-يعمل على الهاتف
+            يعمل على الهاتف
 
-</h3>
+        </h3>
 
-<p>
+        <p>
 
-متوافق مع جميع الأجهزة.
+            متوافق مع جميع الأجهزة.
 
-</p>
+        </p>
 
-</div>
+    </div>
 
 </section>
-<!-- نافذة تسجيل الدخول -->
+    <!-- ==========================
+     Login Modal
+========================== -->
 
 <div id="loginModal" class="modal">
 
     <div class="modal-content">
 
-        <span class="close" id="closeLogin">&times;</span>
+        <span
+            id="closeLogin"
+            class="close">
 
-        <h2>تسجيل الدخول</h2>
+            &times;
+
+        </span>
+
+        <h2>
+
+            تسجيل الدخول
+
+        </h2>
 
         <form id="loginForm">
 
             <input
-                type="text"
                 id="loginUsername"
+                type="text"
                 placeholder="اسم المستخدم أو البريد الإلكتروني"
+                autocomplete="username"
                 required>
 
             <input
-                type="password"
                 id="loginPassword"
+                type="password"
                 placeholder="كلمة المرور"
+                autocomplete="current-password"
                 required>
 
             <button type="submit">
 
-                دخول
+                تسجيل الدخول
 
             </button>
 
@@ -236,40 +248,62 @@ src="/socket.io/socket.io.js"></script>
 
 </div>
 
-
-<!-- نافذة إنشاء حساب -->
+<!-- ==========================
+     Register Modal
+========================== -->
 
 <div id="registerModal" class="modal">
 
     <div class="modal-content">
 
-        <span class="close" id="closeRegister">&times;</span>
+        <span
+            id="closeRegister"
+            class="close">
 
-        <h2>إنشاء حساب</h2>
+            &times;
+
+        </span>
+
+        <h2>
+
+            إنشاء حساب
+
+        </h2>
 
         <form id="registerForm">
 
             <input
+                id="registerUsername"
                 type="text"
                 placeholder="اسم المستخدم"
+                minlength="3"
+                maxlength="25"
                 required>
 
             <input
+                id="registerEmail"
                 type="email"
                 placeholder="البريد الإلكتروني"
                 required>
 
             <input
+                id="registerPassword"
                 type="password"
                 placeholder="كلمة المرور"
+                minlength="6"
                 required>
 
             <input
+                id="registerAge"
                 type="number"
                 placeholder="العمر"
+                min="10"
+                max="100"
                 required>
 
-            <select required>
+            <select
+                id="registerGender"
+                required>
 
                 <option value="">
 
@@ -277,13 +311,13 @@ src="/socket.io/socket.io.js"></script>
 
                 </option>
 
-                <option>
+                <option value="ذكر">
 
                     ذكر
 
                 </option>
 
-                <option>
+                <option value="أنثى">
 
                     أنثى
 
@@ -302,31 +336,49 @@ src="/socket.io/socket.io.js"></script>
     </div>
 
 </div>
-
-
-<!-- نافذة الدخول كزائر -->
+    <!-- ==========================
+     Guest Modal
+========================== -->
 
 <div id="guestModal" class="modal">
 
     <div class="modal-content">
 
-        <span class="close" id="closeGuest">&times;</span>
+        <span
+            id="closeGuest"
+            class="close">
 
-        <h2>الدخول كزائر</h2>
+            &times;
+
+        </span>
+
+        <h2>
+
+            الدخول كزائر
+
+        </h2>
 
         <form id="guestForm">
 
             <input
+                id="guestUsername"
                 type="text"
                 placeholder="اسم المستخدم"
+                minlength="3"
+                maxlength="25"
                 required>
 
             <input
+                id="guestAge"
                 type="number"
                 placeholder="العمر"
+                min="10"
+                max="100"
                 required>
 
-            <select required>
+            <select
+                id="guestGender"
+                required>
 
                 <option value="">
 
@@ -334,13 +386,13 @@ src="/socket.io/socket.io.js"></script>
 
                 </option>
 
-                <option>
+                <option value="ذكر">
 
                     ذكر
 
                 </option>
 
-                <option>
+                <option value="أنثى">
 
                     أنثى
 
@@ -360,7 +412,6 @@ src="/socket.io/socket.io.js"></script>
 
 </div>
 
-
 <footer>
 
     <p>
@@ -376,3 +427,4 @@ src="/socket.io/socket.io.js"></script>
 </body>
 
 </html>
+    
