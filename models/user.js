@@ -26,7 +26,9 @@ const userSchema = new mongoose.Schema({
 
         unique: true,
 
-        lowercase: true
+        lowercase: true,
+
+        trim: true
 
     },
 
@@ -42,7 +44,11 @@ const userSchema = new mongoose.Schema({
 
         type: Number,
 
-        required: true
+        required: true,
+
+        min: 10,
+
+        max: 100
 
     },
 
@@ -69,19 +75,29 @@ const userSchema = new mongoose.Schema({
         default: "عضو"
 
     },
-
-    avatar: {
+        avatar: {
 
         type: String,
 
-        default:
-        "avatars/default.png"
+        default: "avatars/default.png"
 
     },
 
     status: {
 
         type: String,
+
+        enum: [
+
+            "online",
+
+            "offline",
+
+            "away",
+
+            "busy"
+
+        ],
 
         default: "offline"
 
@@ -91,17 +107,11 @@ const userSchema = new mongoose.Schema({
 
         type: String,
 
-        default: ""
+        default: "",
 
-    }
+        maxlength: 250
 
-},
-{
-
-    timestamps:true
-
-});
-    ,
+    },
 
     lastSeen: {
 
@@ -119,7 +129,22 @@ const userSchema = new mongoose.Schema({
 
     },
 
-    isMuted: {
+    loginType: {
+
+        type: String,
+
+        enum: [
+
+            "member",
+
+            "guest"
+
+        ],
+
+        default: "member"
+
+    },
+        isMuted: {
 
         type: Boolean,
 
@@ -151,27 +176,27 @@ const userSchema = new mongoose.Schema({
 
     },
 
-    loginType: {
-
-        type: String,
-
-        enum: [
-
-            "member",
-
-            "guest"
-
-        ],
-
-        default: "member"
-
-    },
-
     profileViews: {
 
         type: Number,
 
         default: 0
+
+    },
+
+    createdByIP: {
+
+        type: String,
+
+        default: ""
+
+    },
+
+    createdByDevice: {
+
+        type: String,
+
+        default: ""
 
     }
 
