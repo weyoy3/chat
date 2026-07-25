@@ -1,6 +1,10 @@
 /* ==========================================================
-   Chat Masr
+   Chat Masr v3
    chat.js
+========================================================== */
+
+/* ==========================================================
+   Socket.IO
 ========================================================== */
 
 const socket = io();
@@ -9,27 +13,20 @@ const socket = io();
    Current User
 ========================================================== */
 
-const username =
-    localStorage.getItem("username");
+const currentUser = {
 
-const memberType =
-    localStorage.getItem("memberType");
+    userId:
+        localStorage.getItem("userId"),
 
-const avatar =
-    localStorage.getItem("avatar") ||
-    "avatars/default.png";
+    username:
+        localStorage.getItem("username"),
 
-/* ==========================================================
-   Join Room
-========================================================== */
+    memberType:
+        localStorage.getItem("memberType") || "زائر",
 
-socket.emit("joinRoom", {
-
-    username,
-
-    memberType,
-
-    avatar,
+    avatar:
+        localStorage.getItem("avatar") ||
+        "avatars/default.png",
 
     age:
         localStorage.getItem("age") || "",
@@ -37,16 +34,52 @@ socket.emit("joinRoom", {
     gender:
         localStorage.getItem("gender") || ""
 
+};
+
+/* ==========================================================
+   Check Login
+========================================================== */
+
+if (!currentUser.username) {
+
+    window.location.href = "index.html";
+
+}
+
+/* ==========================================================
+   Join Room
+========================================================== */
+
+socket.emit("joinRoom", {
+
+    userId:
+        currentUser.userId,
+
+    username:
+        currentUser.username,
+
+    memberType:
+        currentUser.memberType,
+
+    avatar:
+        currentUser.avatar,
+
+    age:
+        currentUser.age,
+
+    gender:
+        currentUser.gender
+
 });
 
 /* ==========================================================
-   Elements
+   DOM Elements
 ========================================================== */
 
 const usersList =
     document.getElementById("usersList");
 
-const messages =
+const messagesBox =
     document.getElementById("messages");
 
 const messageInput =
@@ -55,55 +88,240 @@ const messageInput =
 const sendBtn =
     document.getElementById("sendBtn");
 
+const privateWindow =
+    document.getElementById("privateChatWindow");
+
+const privateMessages =
+    document.getElementById("privateMessages");
+
+const privateInput =
+    document.getElementById("privateInput");
+
+const privateSend =
+    document.getElementById("privateSend");
+
 /* ==========================================================
-   Send Public Message
+   Current Selected User
 ========================================================== */
 
-sendBtn.onclick = () => {
+let selectedUser = null;
 
-    const text =
-        messageInput.value.trim();
-
-    if(text.length === 0)
-        return;
-
-    socket.emit(
-        "publicMessage",
-        text
-    );
-
-    messageInput.value = "";
-
-};
-
-messageInput.addEventListener(
-"keydown",
-
-(e)=>{
-
-    if(e.key==="Enter")
-        sendBtn.click();
-
-});
+let typingTimeout = null;
 
 /* ==========================================================
    Connected
 ========================================================== */
 
 socket.on(
-"joinedSuccessfully",
 
-(user)=>{
+    "connect",
 
-    console.log(
+    () => {
 
-        "Welcome",
+        console.log(
 
-        user.username
+            "Socket Connected:",
 
-    );
+            socket.id
+
+        );
+
+    }
+
+);
+
+/* ==========================================================
+   Joined Successfully
+========================================================== */
+
+socket.on(
+
+    "joinedSuccessfully",
+
+    (user) => {
+
+        console.log(
+
+            "Welcome",
+
+            user.username
+
+        );
+
+        socket.emit(
+
+            "loadMessages"
+
+        );
+
+    }
+
+);
+/* ==========================================================
+   Send Public Message
+========================================================== */
+
+sendBtn.onclick = sendPublicMessage;
+
+messageInput.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter") {
+
+        sendPublicMessage();
+
+    }
 
 });
+
+function sendPublicMessage() {
+
+    const text = messageInput.value.trim();
+
+    if (!text) return;
+
+    socket.emit("publicMessage", text);
+
+    messageInput.value = "";
+
+    socket.emit("stopTyping");
+
+}
+
+/* ==========================================================
+   Typing
+========================================================== */
+
+messageInput.addEventListener("input", () => {
+
+    socket.emit("typing");
+
+    clearTimeout(typingTimeout);
+
+    typingTimeout = setTimeout(() => {
+
+        socket.emit("stopTyping");
+
+    }, 1000);
+
+});
+
+socket.on("typing", (data) => {
+
+    const typingBox = document.getElementById("typingBox");
+
+    if (!typingBox) return;
+
+    typingBox.innerText =
+        `${data.username} يكتب...`;
+
+});
+
+socket.on("stopTyping", () => {
+
+    const typingBox = document.getElementById("typingBox");
+
+    if (!typingBox) return;
+
+    typingBox.innerText = "";
+
+});
+
+/* ==========================================================
+   Public Messages
+========================================================== */
+
+socket.on("publicMessages", (list) => {
+
+    messagesBox.innerHTML = "";
+
+    list.forEach(addPublicMessage);
+
+});
+
+socket.on("publicMessage", (message) => {
+
+    addPublicMessage(message);
+
+});
+
+/* ==========================================================
+   System Messages
+========================================================== */
+
+socket.on("systemMessage", (msg) => {
+
+    const div = document.createElement("div");
+
+    div.className = "systemMessage";
+
+    div.textContent = msg.message;
+
+    messagesBox.appendChild(div);
+
+    messagesBox.scrollTop =
+        messagesBox.scrollHeight;
+
+});
+
+/* ==========================================================
+   Draw Public Message
+========================================================== */
+
+function addPublicMessage(message) {
+
+    const div = document.createElement("div");
+
+    div.className = "message";
+
+    div.innerHTML = `
+
+        <img
+            src="${message.avatar}"
+            class="messageAvatar">
+
+        <div class="messageContent">
+
+            <div class="messageHeader">
+
+                <span class="messageName">
+
+                    ${message.username}
+
+                </span>
+
+                <span class="memberType">
+
+                    ${message.memberType || ""}
+
+                </span>
+
+            </div>
+
+            <div class="messageText">
+
+                ${message.text}
+
+            </div>
+
+        </div>
+
+    `;
+
+    div.querySelector(".messageAvatar")
+        .onclick = () => {
+
+        openUserMenuByName(
+            message.username
+        );
+
+    };
+
+    messagesBox.appendChild(div);
+
+    messagesBox.scrollTop =
+        messagesBox.scrollHeight;
+
+}
 /* ==========================================================
    Online Users
 ========================================================== */
@@ -114,13 +332,13 @@ socket.on("onlineUsers", (users) => {
 
     users.forEach((user) => {
 
-        const div = document.createElement("div");
+        const card = document.createElement("div");
 
-        div.className = "user";
+        card.className = "user";
 
-        div.dataset.socket = user.socketId;
+        card.dataset.socket = user.socketId;
 
-        div.innerHTML = `
+        card.innerHTML = `
 
             <img
                 src="${user.avatar}"
@@ -136,7 +354,7 @@ socket.on("onlineUsers", (users) => {
 
                 <div class="userStatus">
 
-                    ${user.memberType}
+                    ${user.status || "online"}
 
                 </div>
 
@@ -144,112 +362,23 @@ socket.on("onlineUsers", (users) => {
 
         `;
 
-        div.onclick = () => {
+        card.onclick = () => {
 
             openUserMenu(user);
 
         };
 
-        usersList.appendChild(div);
+        usersList.appendChild(card);
 
     });
 
 });
 
 /* ==========================================================
-   Public Messages
-========================================================== */
-
-socket.on("publicMessage", (message) => {
-
-    addPublicMessage(message);
-
-});
-
-/* ==========================================================
-   Previous Messages
-========================================================== */
-
-socket.on("publicMessages", (list) => {
-
-    messages.innerHTML = "";
-
-    list.forEach(addPublicMessage);
-
-});
-
-/* ==========================================================
-   System Messages
-========================================================== */
-
-socket.on("systemMessage", (msg) => {
-
-    const div = document.createElement("div");
-
-    div.className = "systemMessage";
-
-    div.innerHTML = msg.message;
-
-    messages.appendChild(div);
-
-    messages.scrollTop = messages.scrollHeight;
-
-});
-
-/* ==========================================================
-   Draw Public Message
-========================================================== */
-
-function addPublicMessage(message){
-
-    const div = document.createElement("div");
-
-    div.className = "message";
-
-    div.innerHTML = `
-
-        <img
-
-            src="${message.avatar}"
-
-            class="messageAvatar"
-
-            onclick="openUserMenuByName('${message.username}')">
-
-        <div class="messageContent">
-
-            <div class="messageHeader">
-
-                <span class="messageName">
-
-                    ${message.username}
-
-                </span>
-
-            </div>
-
-            <div class="messageText">
-
-                ${message.text}
-
-            </div>
-
-        </div>
-
-    `;
-
-    messages.appendChild(div);
-
-    messages.scrollTop = messages.scrollHeight;
-
-}
-/* ==========================================================
    User Menu
 ========================================================== */
 
-let selectedUser = null;
-
-function openUserMenu(user){
+function openUserMenu(user) {
 
     selectedUser = user;
 
@@ -264,20 +393,19 @@ function openUserMenu(user){
 
 }
 
-function openUserMenuByName(name){
+function openUserMenuByName(name) {
 
-    const cards =
+    const users =
         document.querySelectorAll(".user");
 
-    for(const card of cards){
+    for (const user of users) {
 
-        const username = card.querySelector(
-            ".userName"
-        ).innerText;
+        const username =
+            user.querySelector(".userName").innerText;
 
-        if(username === name){
+        if (username === name) {
 
-            card.click();
+            user.click();
 
             break;
 
@@ -291,7 +419,7 @@ document.getElementById("closeUserMenu")
 .onclick = () => {
 
     document.getElementById("userMenu")
-    .style.display = "none";
+        .style.display = "none";
 
 };
 
@@ -302,71 +430,61 @@ document.getElementById("closeUserMenu")
 document.getElementById("viewProfileBtn")
 .onclick = () => {
 
-    if(!selectedUser) return;
+    if (!selectedUser) return;
 
     document.getElementById("profileAvatar").src =
         selectedUser.avatar;
 
-    document.getElementById("profileUsername")
-    .innerText = selectedUser.username;
+    document.getElementById("profileUsername").innerText =
+        selectedUser.username;
 
-    document.getElementById("profileAge")
-    .innerText =
+    document.getElementById("profileAge").innerText =
         selectedUser.age || "-";
 
-    document.getElementById("profileGender")
-    .innerText =
+    document.getElementById("profileGender").innerText =
         selectedUser.gender || "-";
 
-    document.getElementById("profileType")
-    .innerText =
-        selectedUser.memberType;
+    document.getElementById("profileType").innerText =
+        selectedUser.memberType || "عضو";
 
-    document.getElementById("profileModal")
-    .style.display = "flex";
+    document.getElementById("profileModal").style.display =
+        "flex";
 
 };
 
 document.getElementById("closeProfile")
 .onclick = () => {
 
-    document.getElementById("profileModal")
-    .style.display = "none";
+    document.getElementById("profileModal").style.display =
+        "none";
 
 };
-
 /* ==========================================================
    Private Chat
 ========================================================== */
 
-document.getElementById("privateChatBtn")
-.onclick = () => {
+document.getElementById("privateChatBtn").onclick = () => {
 
-    if(!selectedUser) return;
+    if (!selectedUser) return;
 
     document.getElementById("privateAvatar").src =
         selectedUser.avatar;
 
-    document.getElementById("privateUsername")
-    .innerText =
+    document.getElementById("privateUsername").innerText =
         selectedUser.username;
 
-    document.getElementById("privateMessages")
-    .innerHTML = "";
+    privateMessages.innerHTML = "";
 
-    document.getElementById("privateChatWindow")
-    .style.display = "flex";
+    privateWindow.style.display = "flex";
 
-    document.getElementById("userMenu")
-    .style.display = "none";
+    document.getElementById("userMenu").style.display =
+        "none";
 
 };
 
-document.getElementById("closePrivate")
-.onclick = () => {
+document.getElementById("closePrivate").onclick = () => {
 
-    document.getElementById("privateChatWindow")
-    .style.display = "none";
+    privateWindow.style.display = "none";
 
 };
 
@@ -374,53 +492,71 @@ document.getElementById("closePrivate")
    Send Private Message
 ========================================================== */
 
-document.getElementById("privateSend")
-.onclick = () => {
+privateSend.onclick = sendPrivateMessage;
 
-    const input =
-        document.getElementById("privateInput");
+privateInput.addEventListener("keydown", (e) => {
 
-    const text =
-        input.value.trim();
+    if (e.key === "Enter") {
 
-    if(text === "")
-        return;
+        sendPrivateMessage();
 
-    socket.emit("privateMessage",{
+    }
 
-        to:selectedUser.socketId,
+});
 
-        text:text
+function sendPrivateMessage() {
+
+    if (!selectedUser) return;
+
+    const text = privateInput.value.trim();
+
+    if (!text) return;
+
+    socket.emit("privateMessage", {
+
+        to: selectedUser.socketId,
+
+        text
 
     });
 
-    input.value = "";
+    privateInput.value = "";
 
-};
+}
 
 /* ==========================================================
    Receive Private Message
 ========================================================== */
 
-socket.on("privateMessage",(message)=>{
+socket.on("privateMessage", (message) => {
 
-    const box =
-        document.getElementById(
-            "privateMessages"
-        );
+    drawPrivateMessage(message);
 
-    const div =
-        document.createElement("div");
+});
 
-    div.className = "message";
+/* ==========================================================
+   Draw Private Message
+========================================================== */
+
+function drawPrivateMessage(message) {
+
+    const div = document.createElement("div");
+
+    const mine =
+        message.senderName === currentUser.username;
+
+    div.className =
+        mine ?
+        "privateMessage mine" :
+        "privateMessage";
 
     div.innerHTML = `
 
-        <div class="messageContent">
+        <div class="privateBubble">
 
-            <div class="messageHeader">
+            <div class="privateHeader">
 
-                <span class="messageName">
+                <span class="privateName">
 
                     ${message.senderName}
 
@@ -428,9 +564,9 @@ socket.on("privateMessage",(message)=>{
 
             </div>
 
-            <div class="messageText">
+            <div class="privateText">
 
-                ${message.text}
+                ${message.text || ""}
 
             </div>
 
@@ -438,8 +574,447 @@ socket.on("privateMessage",(message)=>{
 
     `;
 
-    box.appendChild(div);
+    privateMessages.appendChild(div);
 
-    box.scrollTop = box.scrollHeight;
+    privateMessages.scrollTop =
+        privateMessages.scrollHeight;
+
+    if (
+
+        !mine &&
+
+        message._id
+
+    ) {
+
+        socket.emit(
+
+            "messageSeen",
+
+            message._id
+
+        );
+
+    }
+
+}
+
+/* ==========================================================
+   Seen
+========================================================== */
+
+socket.on("messageSeen", (messageId) => {
+
+    console.log(
+
+        "Seen:",
+
+        messageId
+
+    );
 
 });
+/* ==========================================================
+   Private Images
+========================================================== */
+
+socket.on("privateImage", (message) => {
+
+    drawPrivateFile(message);
+
+});
+
+/* ==========================================================
+   Private Videos
+========================================================== */
+
+socket.on("privateVideo", (message) => {
+
+    drawPrivateFile(message);
+
+});
+
+/* ==========================================================
+   Private Voice
+========================================================== */
+
+socket.on("privateVoice", (message) => {
+
+    drawPrivateFile(message);
+
+});
+
+/* ==========================================================
+   Draw Files
+========================================================== */
+
+function drawPrivateFile(message){
+
+    const div = document.createElement("div");
+
+    const mine =
+        message.senderName === currentUser.username;
+
+    div.className =
+        mine ?
+        "privateMessage mine" :
+        "privateMessage";
+
+    let content = "";
+
+    if(message.type === "image"){
+
+        content = `
+
+            <img
+                src="${message.file || message.image}"
+                class="privateImage">
+
+        `;
+
+    }
+
+    if(message.type === "video"){
+
+        content = `
+
+            <video
+                controls
+                class="privateVideo">
+
+                <source
+                    src="${message.file || message.video}">
+
+            </video>
+
+        `;
+
+    }
+
+    if(message.type === "voice"){
+
+        content = `
+
+            <audio
+                controls>
+
+                <source
+                    src="${message.file || message.voice}">
+
+            </audio>
+
+        `;
+
+    }
+
+    div.innerHTML = `
+
+        <div class="privateBubble">
+
+            <div class="privateHeader">
+
+                <span class="privateName">
+
+                    ${message.senderName}
+
+                </span>
+
+            </div>
+
+            ${content}
+
+        </div>
+
+    `;
+
+    privateMessages.appendChild(div);
+
+    privateMessages.scrollTop =
+        privateMessages.scrollHeight;
+
+}
+
+/* ==========================================================
+   Upload Buttons
+========================================================== */
+
+const imageInput =
+    document.getElementById("imageInput");
+
+const videoInput =
+    document.getElementById("videoInput");
+
+const voiceInput =
+    document.getElementById("voiceInput");
+
+/* ==========================================================
+   Image Upload
+========================================================== */
+
+imageInput?.addEventListener("change",(e)=>{
+
+    const file = e.target.files[0];
+
+    if(!file || !selectedUser) return;
+
+    const reader = new FileReader();
+
+    reader.onload = ()=>{
+
+        socket.emit("privateImage",{
+
+            to:selectedUser.socketId,
+
+            image:reader.result
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+});
+
+/* ==========================================================
+   Video Upload
+========================================================== */
+
+videoInput?.addEventListener("change",(e)=>{
+
+    const file = e.target.files[0];
+
+    if(!file || !selectedUser) return;
+
+    const reader = new FileReader();
+
+    reader.onload = ()=>{
+
+        socket.emit("privateVideo",{
+
+            to:selectedUser.socketId,
+
+            video:reader.result
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+});
+
+/* ==========================================================
+   Voice Upload
+========================================================== */
+
+voiceInput?.addEventListener("change",(e)=>{
+
+    const file = e.target.files[0];
+
+    if(!file || !selectedUser) return;
+
+    const reader = new FileReader();
+
+    reader.onload = ()=>{
+
+        socket.emit("privateVoice",{
+
+            to:selectedUser.socketId,
+
+            voice:reader.result,
+
+            duration:0
+
+        });
+
+    };
+
+    reader.readAsDataURL(file);
+
+});
+/* ==========================================================
+   Notifications
+========================================================== */
+
+socket.on("muted", (data) => {
+
+    alert(
+
+        `تم كتمك لمدة ${data.minutes} دقيقة`
+
+    );
+
+});
+
+socket.on("kicked", () => {
+
+    alert("تم طردك من الغرفة");
+
+    window.location.href = "index.html";
+
+});
+
+socket.on("banned", () => {
+
+    alert("تم حظرك من الموقع");
+
+    localStorage.clear();
+
+    window.location.href = "index.html";
+
+});
+
+/* ==========================================================
+   Statistics
+========================================================== */
+
+socket.on("statistics", (stats) => {
+
+    console.log("Statistics");
+
+    console.table(stats);
+
+});
+
+/* ==========================================================
+   Connection Status
+========================================================== */
+
+socket.on("disconnect", () => {
+
+    console.log(
+
+        "Server Disconnected"
+
+    );
+
+});
+
+socket.on("reconnect", () => {
+
+    console.log(
+
+        "Reconnected"
+
+    );
+
+    socket.emit("joinRoom", {
+
+        userId:
+            currentUser.userId,
+
+        username:
+            currentUser.username,
+
+        memberType:
+            currentUser.memberType,
+
+        avatar:
+            currentUser.avatar,
+
+        age:
+            currentUser.age,
+
+        gender:
+            currentUser.gender
+
+    });
+
+});
+
+/* ==========================================================
+   Errors
+========================================================== */
+
+socket.on("connect_error", (err) => {
+
+    console.error(
+
+        "Connection Error",
+
+        err
+
+    );
+
+});
+
+window.addEventListener("error", (e) => {
+
+    console.error(
+
+        "Page Error",
+
+        e.error
+
+    );
+
+});
+
+/* ==========================================================
+   Before Close
+========================================================== */
+
+window.addEventListener("beforeunload", () => {
+
+    socket.disconnect();
+
+});
+
+/* ==========================================================
+   Helper Functions
+========================================================== */
+
+function scrollBottom(container){
+
+    container.scrollTop =
+        container.scrollHeight;
+
+}
+
+function clearInput(input){
+
+    input.value = "";
+
+}
+
+function createElement(tag,className){
+
+    const element =
+        document.createElement(tag);
+
+    if(className){
+
+        element.className =
+            className;
+
+    }
+
+    return element;
+
+}
+
+console.log(
+
+    "==================================="
+
+);
+
+console.log(
+
+    "Chat Masr v3 Loaded Successfully"
+
+);
+
+console.log(
+
+    "Socket:",
+
+    socket.id
+
+);
+
+console.log(
+
+    "==================================="
+
+);
