@@ -1,28 +1,63 @@
-// =====================================
-// Chat Masr App
-// =====================================
+/* ==========================================================
+   Chat Masr
+   app.js v2
+========================================================== */
 
 const socket = io();
 
-// ================================
-// Buttons
-// ================================
+/* ==========================================================
+   Elements
+========================================================== */
 
-const loginBtn = document.getElementById("loginBtn");
-const registerBtn = document.getElementById("registerBtn");
-const guestBtn = document.getElementById("guestBtn");
+const loginBtn =
+    document.getElementById("loginBtn");
 
-const loginModal = document.getElementById("loginModal");
-const registerModal = document.getElementById("registerModal");
-const guestModal = document.getElementById("guestModal");
+const registerBtn =
+    document.getElementById("registerBtn");
 
-const closeLogin = document.getElementById("closeLogin");
-const closeRegister = document.getElementById("closeRegister");
-const closeGuest = document.getElementById("closeGuest");
+const guestBtn =
+    document.getElementById("guestBtn");
 
-// ================================
-// Open Modals
-// ================================
+const startNow =
+    document.getElementById("startNow");
+
+const loginModal =
+    document.getElementById("loginModal");
+
+const registerModal =
+    document.getElementById("registerModal");
+
+const guestModal =
+    document.getElementById("guestModal");
+
+/* ==========================================================
+   Close Buttons
+========================================================== */
+
+document.getElementById("closeLogin")
+.onclick = () => {
+
+    loginModal.style.display = "none";
+
+};
+
+document.getElementById("closeRegister")
+.onclick = () => {
+
+    registerModal.style.display = "none";
+
+};
+
+document.getElementById("closeGuest")
+.onclick = () => {
+
+    guestModal.style.display = "none";
+
+};
+
+/* ==========================================================
+   Open Buttons
+========================================================== */
 
 loginBtn.onclick = () => {
 
@@ -42,104 +77,139 @@ guestBtn.onclick = () => {
 
 };
 
-// ================================
-// Close Modals
-// ================================
+startNow.onclick = () => {
 
-closeLogin.onclick = () => {
-
-    loginModal.style.display = "none";
+    guestModal.style.display = "flex";
 
 };
 
-closeRegister.onclick = () => {
-
-    registerModal.style.display = "none";
-
-};
-
-closeGuest.onclick = () => {
-
-    guestModal.style.display = "none";
-
-};
-
-// ================================
-// Close Outside
-// ================================
+/* ==========================================================
+   Close Outside
+========================================================== */
 
 window.onclick = (e) => {
 
-    if(e.target === loginModal)
+    if (e.target === loginModal)
         loginModal.style.display = "none";
 
-    if(e.target === registerModal)
+    if (e.target === registerModal)
         registerModal.style.display = "none";
 
-    if(e.target === guestModal)
+    if (e.target === guestModal)
         guestModal.style.display = "none";
 
 };
 
-// ================================
-// Online Users
-// ================================
+/* ==========================================================
+   Statistics
+========================================================== */
 
-socket.on("onlineUsers",(users)=>{
+socket.emit("getStatistics");
 
-    document.getElementById("onlineCount").innerText = users.length;
+socket.on("statistics", (stats) => {
 
-});
-
-// ================================
-// Guest Login
-// ================================
-
-document
-.getElementById("guestForm")
-.addEventListener("submit",(e)=>{
-
-    e.preventDefault();
-
-    const username =
-    e.target.querySelector("input").value;
-
-    localStorage.setItem("username",username);
-
-    localStorage.setItem("memberType","زائر");
-
-    window.location.href="chat.html";
+    document.getElementById("onlineCount").innerText =
+        stats.online;
 
 });
 
-// =====================================
-// Register Member
-// =====================================
+socket.on("onlineUsers", (users) => {
 
-document
-.getElementById("registerForm")
+    document.getElementById("onlineCount").innerText =
+        users.length;
+
+});
+/* ==========================================================
+   Guest Login
+========================================================== */
+
+document.getElementById("guestForm")
 .addEventListener("submit", (e) => {
 
     e.preventDefault();
 
-    const inputs = e.target.querySelectorAll("input");
-    const select = e.target.querySelector("select");
+    const username =
+        document.getElementById("guestUsername")
+        .value.trim();
+
+    const age =
+        document.getElementById("guestAge")
+        .value;
+
+    const gender =
+        document.getElementById("guestGender")
+        .value;
+
+    if (!username || !age || !gender) {
+
+        alert("يرجى ملء جميع البيانات.");
+
+        return;
+
+    }
+
+    localStorage.setItem("userId", "");
+
+    localStorage.setItem("username", username);
+
+    localStorage.setItem("age", age);
+
+    localStorage.setItem("gender", gender);
+
+    localStorage.setItem("memberType", "زائر");
+
+    localStorage.setItem(
+        "avatar",
+        "avatars/default.png"
+    );
+
+    window.location.href = "chat.html";
+
+});
+
+/* ==========================================================
+   Register
+========================================================== */
+
+document.getElementById("registerForm")
+.addEventListener("submit", (e) => {
+
+    e.preventDefault();
 
     const user = {
 
-        username: inputs[0].value,
+        username:
+            document.getElementById("registerUsername").value.trim(),
 
-        email: inputs[1].value,
+        email:
+            document.getElementById("registerEmail").value.trim(),
 
-        password: inputs[2].value,
+        password:
+            document.getElementById("registerPassword").value,
 
-        age: inputs[3].value,
+        age:
+            document.getElementById("registerAge").value,
 
-        gender: select.value,
+        gender:
+            document.getElementById("registerGender").value,
 
         memberType: "عضو"
 
     };
+
+    if (
+        !user.username ||
+        !user.email ||
+        !user.password ||
+        !user.age ||
+        !user.gender
+    ) {
+
+        alert("يرجى ملء جميع البيانات.");
+
+        return;
+
+    }
 
     socket.emit("registerUser", user);
 
@@ -147,50 +217,86 @@ document
 
 socket.on("registerSuccess", () => {
 
-    alert("تم إنشاء الحساب بنجاح");
+    alert("تم إنشاء الحساب بنجاح.");
 
     registerModal.style.display = "none";
 
 });
 
+socket.on("registerError", (msg) => {
 
-// =====================================
-// Login Member
-// =====================================
+    alert(msg);
 
-document
-.getElementById("loginForm")
+});
+/* ==========================================================
+   Login
+========================================================== */
+
+document.getElementById("loginForm")
 .addEventListener("submit", (e) => {
 
     e.preventDefault();
 
-    const inputs = e.target.querySelectorAll("input");
-
     const loginData = {
 
-        username: inputs[0].value,
+        username:
+            document.getElementById("loginUsername").value.trim(),
 
-        password: inputs[1].value
+        password:
+            document.getElementById("loginPassword").value
 
     };
+
+    if (
+        !loginData.username ||
+        !loginData.password
+    ) {
+
+        alert("يرجى إدخال اسم المستخدم وكلمة المرور.");
+
+        return;
+
+    }
 
     socket.emit("loginUser", loginData);
 
 });
 
-
 socket.on("loginSuccess", (user) => {
 
-    localStorage.setItem("username", user.username);
+    localStorage.setItem(
+        "userId",
+        user._id || ""
+    );
 
-    localStorage.setItem("memberType", "عضو");
+    localStorage.setItem(
+        "username",
+        user.username
+    );
 
-    localStorage.setItem("avatar", user.avatar || "");
+    localStorage.setItem(
+        "age",
+        user.age || ""
+    );
+
+    localStorage.setItem(
+        "gender",
+        user.gender || ""
+    );
+
+    localStorage.setItem(
+        "memberType",
+        user.memberType || "عضو"
+    );
+
+    localStorage.setItem(
+        "avatar",
+        user.avatar || "avatars/default.png"
+    );
 
     window.location.href = "chat.html";
 
 });
-
 
 socket.on("loginError", (msg) => {
 
@@ -198,40 +304,45 @@ socket.on("loginError", (msg) => {
 
 });
 
-
-// =====================================
-// Server Statistics
-// =====================================
-
-socket.emit("getStatistics");
-
-socket.on("statistics", (data) => {
-
-    document.getElementById("onlineCount").innerText =
-        data.online;
-
-});
-
-
-// =====================================
-// Welcome Message
-// =====================================
-
-console.log("Welcome To Chat Masr");
-
-
-// =====================================
-// Connection Status
-// =====================================
+/* ==========================================================
+   Connection
+========================================================== */
 
 socket.on("connect", () => {
 
-    console.log("Connected");
+    console.log("Socket Connected");
 
 });
 
 socket.on("disconnect", () => {
 
-    console.log("Disconnected");
+    console.log("Socket Disconnected");
 
 });
+
+socket.on("connect_error", (err) => {
+
+    console.error(err);
+
+});
+
+/* ==========================================================
+   Auto Login
+========================================================== */
+
+if (localStorage.getItem("username")) {
+
+    console.log(
+        "Saved User:",
+        localStorage.getItem("username")
+    );
+
+}
+
+/* ==========================================================
+   Ready
+========================================================== */
+
+console.log("====================================");
+console.log("Chat Masr App Loaded");
+console.log("====================================");
