@@ -47,7 +47,6 @@ input,select,textarea{font:inherit;color:inherit}
 @keyframes pulseDot{0%,100%{opacity:.3}50%{opacity:1;background:var(--amber);border-color:var(--amber)}}
 #app.cashier .mgr-only{display:none!important}
 
-/* ===== شاشة الدخول — قابلة للسكرول عشان اللوجو ما يتقصش ===== */
 #login{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(20px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));background:radial-gradient(720px 520px at 85% 6%,rgba(245,166,35,.18),transparent 60%),radial-gradient(620px 520px at 8% 94%,rgba(30,142,90,.26),transparent 60%),linear-gradient(160deg,#08201A,#0E2E25 55%,#0A2620);z-index:50;transition:.5s}
 #login.off{opacity:0;visibility:hidden;pointer-events:none}
 .lg-card{position:relative;margin:auto;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.13);border-radius:26px;padding:clamp(22px,5vw,38px) clamp(20px,5vw,40px);width:min(420px,94vw);text-align:center;color:#EAF4EE;box-shadow:0 40px 90px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);animation:rise .6s ease;backdrop-filter:blur(6px)}
@@ -57,7 +56,7 @@ input,select,textarea{font:inherit;color:inherit}
 .dots{display:flex;gap:14px;justify-content:center;margin-bottom:6px}
 .dots span{width:17px;height:17px;border-radius:50%;border:2px solid #4E7265;transition:.25s}
 .dots span.f{background:var(--amber);border-color:var(--amber);transform:scale(1.18);box-shadow:0 0 14px rgba(245,166,35,.7)}
-.lg-status{min-height:19px;font-size:12.5px;font-weight:700;margin:8px 0 18px;transition:.2s}
+.lg-status{min-height:19px;font-size:12.5px;font-weight:700;margin:8px 0 18px;transition:.2s;color:#A9C6B8}
 .lg-status.err{color:#FF9A9A}.lg-status.ok{color:#7FE0B0}.lg-status.wait{color:var(--amber)}
 .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
 .keypad button{padding:16px 0;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#EAF4EE;font-family:'Changa','Sora';font-size:22px;font-weight:700;transition:.15s}
@@ -491,7 +490,6 @@ tbody tr{transition:.15s}tbody tr:hover{background:var(--paper)}tbody tr.low-row
 }
 @media(max-width:640px){
   .search input,.toolbar input,#tendered,.fld input,.fld select,.fld textarea{font-size:16px}
-  /* تكبير شاشة الدخول على الموبايل عشان كل حاجة تبان من غير تقص */
   .lg-card{padding:22px 18px}
   .lg-logo{width:66px;height:66px;font-size:34px;margin-bottom:12px;border-radius:20px}
   .lg-card h1{font-size:24px}
@@ -539,16 +537,16 @@ tbody tr{transition:.15s}tbody tr:hover{background:var(--paper)}tbody tr.low-row
     <h1>كاشير POS</h1>
     <p class="lg-sub">نظام نقاط البيع — أدخل الرقم السري لبدء الوردية</p>
     <div class="dots" id="dots"><span></span><span></span><span></span><span></span></div>
-    <div class="lg-status" id="lgStatus">جاهز للدخول</div>
+    <div class="lg-status" id="lgStatus">جاري تحميل النظام…</div>
     <div class="keypad">
-      <button onclick="press('1')">1</button><button onclick="press('2')">2</button><button onclick="press('3')">3</button>
-      <button onclick="press('4')">4</button><button onclick="press('5')">5</button><button onclick="press('6')">6</button>
-      <button onclick="press('7')">7</button><button onclick="press('8')">8</button><button onclick="press('9')">9</button>
-      <button onclick="press('c')">⌫</button><button onclick="press('0')">0</button><button class="k-ok" onclick="press('ok')">✓</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button data-k="c">⌫</button><button data-k="0">0</button><button data-k="ok" class="k-ok">✓</button>
     </div>
     <div class="lg-quick">
-      <button class="qk-mgr" onclick="quickLogin('1234')"><span class="qk-ic">🛡️</span>دخول كمدير<span class="qk-pin">1234</span></button>
-      <button onclick="quickLogin('1111')"><span class="qk-ic">🧑‍💼</span>دخول ككاشير<span class="qk-pin">1111</span></button>
+      <button class="qk-mgr" data-pin="1234"><span class="qk-ic">🛡️</span>دخول كمدير<span class="qk-pin">1234</span></button>
+      <button data-pin="1111"><span class="qk-ic">🧑‍💼</span>دخول ككاشير<span class="qk-pin">1111</span></button>
     </div>
     <p class="lg-foot">💡 الدخول فوري حتى بدون نت • بعد الدخول جرّب <b>Ctrl+K</b> للبحث السريع</p>
   </div>
@@ -834,6 +832,9 @@ tbody tr{transition:.15s}tbody tr:hover{background:var(--paper)}tbody tr.low-row
 <div id="printHost"></div>
 
 <script>
+/* مؤشر مبكّر: لو السكربت بدأ يشتغل، غيّر الحالة فوراً */
+(function(){try{var e=document.getElementById('lgStatus');if(e){e.textContent='جاري التهيئة…';e.className='lg-status wait';}}catch(_){}})();
+
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const TAX=.14, GOAL=8000, MAX_BC=24, DISC_LIMIT=5;
 const LEVELS=[{n:'بلاتيني',min:5000,mult:3},{n:'ذهبي',min:2000,mult:2},{n:'فضي',min:500,mult:1.5},{n:'برونزي',min:0,mult:1}];
@@ -849,8 +850,8 @@ const isMgr=()=>S.user&&S.user.role==='مدير';
 let _pinBuf='',_pinCb=null;
 function gate(action,onOk){if(can(action))return onOk();_pinCb=onOk;_pinBuf='';renderPinDots();$('#pinAction').textContent=ACTION_LABELS[action]||action;show('#pinModal');}
 function pinPress(k){if(k==='c')_pinBuf=_pinBuf.slice(0,-1);else if(k==='ok'){submitPin();return;}else if(_pinBuf.length<4)_pinBuf+=k;renderPinDots();if(_pinBuf.length===4)setTimeout(submitPin,160);}
-function renderPinDots(){$$('#pinDots span').forEach((d,i)=>d.classList.toggle('f',i<_pinBuf.length));}
-async function submitPin(){const ok=await verifyManagerPin(_pinBuf);_pinBuf='';renderPinDots();if(ok){const cb=_pinCb;_pinCb=null;closeM('#pinModal');logAudit('mgr_override','عملية حساسة بإذن المدير');if(cb)cb();}else{$('#pinModal .m-box').classList.add('shake');setTimeout(()=>$('#pinModal .m-box').classList.remove('shake'),400);try{sfx.err();}catch(e){}toast('PIN المدير غير صحيح',1);}}
+function renderPinDots(){try{$$('#pinDots span').forEach((d,i)=>d.classList.toggle('f',i<_pinBuf.length));}catch(e){}}
+async function submitPin(){const ok=await verifyManagerPin(_pinBuf);_pinBuf='';renderPinDots();if(ok){const cb=_pinCb;_pinCb=null;closeM('#pinModal');logAudit('mgr_override','عملية حساسة بإذن المدير');if(cb)cb();}else{try{$('#pinModal .m-box').classList.add('shake');setTimeout(()=>{try{$('#pinModal .m-box').classList.remove('shake');}catch(e){}},400);}catch(e){}try{sfx.err();}catch(e){}toast('PIN المدير غير صحيح',1);}}
 async function verifyManagerPin(p){if(S.demo){const u=DEMO_USERS.find(x=>x.pin===p);return u&&u.role==='مدير';}try{const u=await api('/auth/login',{method:'POST',body:JSON.stringify({pin:p})});return u&&u.role==='مدير';}catch(e){return DEMO_USERS.find(x=>x.pin===p&&x.role==='مدير');}}
 
 const DEMO_USERS=[{pin:'1234',name:'أحمد',role:'مدير'},{pin:'1111',name:'منى',role:'كاشير'}];
@@ -888,6 +889,73 @@ function cleanBC(s){return String(s||'').replace(/[\s\x00-\x1f]/g,'').slice(0,MA
 function dedup(arr){const m=new Map(),out=[];for(const p of arr){const k=cleanBC(p.barcode);if(!k||m.has(k))continue;m.set(k,1);p.barcode=k;out.push(p);}return out;}
 const isRefund=o=>o.type==='refund'||o.total<0;
 
+/* ===== الدخول — محصّن بالكامل، مربوط بـ addEventListener، فوري ===== */
+let pin='';
+function setLgStatus(msg,type){try{const el=document.getElementById('lgStatus');if(el){el.textContent=msg;el.className='lg-status'+(type?' '+type:'');}}catch(e){}}
+function renderPin(){try{const ds=document.querySelectorAll('#dots span');for(let i=0;i<ds.length;i++){if(i<pin.length)ds[i].classList.add('f');else ds[i].classList.remove('f');}}catch(e){}}
+function press(k){
+  try{
+    const card=document.getElementById('lgCard');
+    if(card&&card.classList.contains('busy'))return;
+    if(k==='c'){pin=pin.slice(0,-1);}
+    else if(k==='ok'){renderPin();tryLogin();return;}
+    else if(pin.length<4){pin+=String(k);}
+    renderPin();
+    const st=document.getElementById('lgStatus');
+    if(st&&st.classList.contains('err'))setLgStatus('','');
+    if(pin.length===4)setTimeout(tryLogin,160);
+  }catch(e){setLgStatus('خطأ لوحة: '+(e&&e.message?e.message:e),'err');}
+}
+function quickLogin(p){try{pin=String(p);renderPin();setLgStatus('جاري الدخول…','wait');tryLogin();}catch(e){setLgStatus('خطأ: '+(e&&e.message?e.message:e),'err');}}
+async function tryLogin(){
+  const card=document.getElementById('lgCard');
+  try{if(card)card.classList.add('busy');}catch(e){}
+  setLgStatus('جاري التحقق…','wait');
+  let local=null;try{local=DEMO_USERS.find(x=>x.pin===pin);}catch(e){local=null;}
+  if(local){
+    S.user=local;S.demo=true;
+    setLgStatus('تم ✓ مرحبًا '+local.name,'ok');try{sfx.scan();}catch(e){}
+    setTimeout(enterApp,200);return;
+  }
+  let u=null;try{u=await fetchWithTimeout(api('/auth/login',{method:'POST',body:JSON.stringify({pin})}),2500);}catch(e){u=null;}
+  if(u){
+    S.user=u;S.demo=false;
+    setLgStatus('تم ✓ مرحبًا '+u.name,'ok');try{sfx.scan();}catch(e){}
+    setTimeout(enterApp,200);
+  }else{
+    try{if(card)card.classList.remove('busy');}catch(e){}
+    pin='';renderPin();
+    try{if(card){card.classList.add('shake');setTimeout(()=>{try{card.classList.remove('shake');}catch(e){}},450);}}catch(e){}
+    try{sfx.err();}catch(e){}
+    setLgStatus('رقم سري غير صحيح — جرّب 1234 أو 1111','err');
+  }
+}
+/* ربط الأزرار فعلياً (مش inline) + فحص ذاتي — بدري قدر الإمكان */
+(function bindLogin(){
+  try{
+    const kbs=document.querySelectorAll('#login .keypad button[data-k]');
+    kbs.forEach(function(b){if(b.getAttribute('data-bound'))return;b.setAttribute('data-bound','1');b.addEventListener('click',function(){press(b.getAttribute('data-k'));});});
+    const qks=document.querySelectorAll('#login .lg-quick button[data-pin]');
+    qks.forEach(function(b){if(b.getAttribute('data-bound'))return;b.setAttribute('data-bound','1');b.addEventListener('click',function(){quickLogin(b.getAttribute('data-pin'));});});
+    if(typeof press==='function'){setLgStatus('جاهز للدخول','');}
+  }catch(e){setLgStatus('خطأ ربط: '+(e&&e.message?e.message:e),'err');}
+})();
+
+function enterApp(){
+  try{$('#login').classList.add('off');}catch(e){}
+  try{$('#app').classList.add('on');}catch(e){}
+  try{$('#app').classList.toggle('cashier',!isMgr());}catch(e){}
+  try{S.theme=localStorage.getItem('pos_theme')||'light';applyTheme();}catch(e){S.theme='light';}
+  try{$('#uAvatar').textContent=S.user.name[0];$('#uRole').textContent=S.user.role;}catch(e){}
+  try{S.shifts=LS.sh;S.audit=LS.au;S.shift=LS.cur;}catch(e){}
+  try{loadAll();}catch(e){}
+  try{ping();}catch(e){}
+  try{updQ();updateShiftInd();}catch(e){}
+  try{if(!localStorage.getItem('pos_tip')){localStorage.setItem('pos_tip','1');setTimeout(()=>toast('💡 جرّب Ctrl+K للبحث السريع — واربط عميلًا من السلة'),900);}}catch(e){}
+}
+function logout(){try{logAudit('logout','تسجيل خروج');}catch(e){}location.reload();}
+async function loadAll(){await loadProducts();await loadOrders();await loadSuppliers();await loadPOs();await loadCustomers();renderPOS();$('#cNum').textContent='#'+(1001+S.orders.length);}
+
 async function loadProducts(){S.loading=true;renderGrid();const cached=LS.p;if(cached&&cached.length){S.products=dedup(cached);S.loading=false;renderGrid();}try{let list=await api('/products');list=dedup(list);S.products=list;LS.sp(list);S.demo=false;}catch(e){if(!cached||!cached.length){S.products=SEED;LS.sp(SEED);}S.demo=true;}S.loading=false;markDemo();renderPOS();}
 async function loadOrders(){const cached=LS.o;if(cached.length)S.orders=cached;try{S.orders=await api('/orders');S.orders.forEach(o=>o.synced=true);S.demo=false;}catch(e){S.demo=true;}markDemo();}
 async function loadSuppliers(){const cached=LS.sup;if(cached&&cached.length)S.suppliers=cached;try{S.suppliers=await api('/suppliers');LS.ssup(S.suppliers);S.demo=false;}catch(e){if(!cached||!cached.length){S.suppliers=SUP_SEED;LS.ssup(S.suppliers);}S.demo=true;}}
@@ -917,7 +985,7 @@ function logAudit(action,detail){S.audit.unshift({t:Date.now(),user:S.user?S.use
 
 function applyTheme(){
   try{document.documentElement.setAttribute('data-theme',S.theme);}catch(e){}
-  try{const b=$('#themeBtn');if(b)b.textContent=S.theme==='dark'?'☀️':'';}catch(e){}
+  try{const b=$('#themeBtn');if(b)b.textContent=S.theme==='dark'?'☀️':'🌙';}catch(e){}
   try{const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',S.theme==='dark'?'#06120e':'#0C332A');}catch(e){}
 }
 function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';try{localStorage.setItem('pos_theme',S.theme);}catch(e){}applyTheme();}
@@ -950,60 +1018,6 @@ const profitOfOrder=o=>o.items.reduce((s,i)=>{const c=i.cost!=null?+i.cost:costO
 const supName=id=>(S.suppliers.find(s=>String(s._id)===String(id))||{}).name||'—';
 function adjustStock(productId,delta){const p=S.products.find(x=>String(x._id)===String(productId));if(!p)return;p.stock=Math.max(0,p.stock+delta);patchCard(String(p._id));LS.sp(S.products);}
 const curCust=()=>S.customers.find(c=>String(c._id)===String(S.custId));
-
-/* ===== الدخول — فوري ومحلي، النقاط بتدي feedback لحظي ===== */
-let pin='';
-function setLgStatus(msg,type){const el=$('#lgStatus');if(!el)return;el.textContent=msg;el.className='lg-status'+(type?' '+type:'');}
-function quickLogin(p){pin=p;renderPin();setLgStatus('جاري الدخول…','wait');tryLogin();}
-function press(k){
-  const card=$('#lgCard');if(card&&card.classList.contains('busy'))return;
-  try{ac();}catch(e){} // فكّ الصوت من أول لمسة (موبايل)
-  if(k==='c')pin=pin.slice(0,-1);
-  else if(k==='ok'){tryLogin();return;}
-  else if(pin.length<4)pin+=k;
-  renderPin();
-  const st=$('#lgStatus');if(st&&st.classList.contains('err'))setLgStatus('','');
-  if(pin.length===4)setTimeout(tryLogin,180);
-}
-function renderPin(){$$('#dots span').forEach((d,i)=>d.classList.toggle('f',i<pin.length));}
-async function tryLogin(){
-  const card=$('#lgCard');if(card)card.classList.add('busy');setLgStatus('جاري التحقق…','wait');
-  // ١) PIN معروف محليًا → دخول فوري (صفر انتظار للشبكة)
-  const local=DEMO_USERS.find(x=>x.pin===pin);
-  if(local){
-    S.user=local;S.demo=true;
-    setLgStatus('تم ✓ مرحبًا '+local.name,'ok');try{sfx.scan();}catch(e){}
-    setTimeout(()=>enterApp(),220);return;
-  }
-  // ٢) مش معروف محليًا → جرّب السيرفر (PIN مخصص) مع مهلة قصيرة
-  let u=null;
-  try{u=await fetchWithTimeout(api('/auth/login',{method:'POST',body:JSON.stringify({pin})}),2500);}catch(e){u=null;}
-  if(u){
-    S.user=u;S.demo=false;
-    setLgStatus('تم ✓ مرحبًا '+u.name,'ok');try{sfx.scan();}catch(e){}
-    setTimeout(()=>enterApp(),220);
-  }else{
-    if(card)card.classList.remove('busy');pin='';renderPin();
-    if(card){card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),450);}
-    try{sfx.err();}catch(e){}
-    setLgStatus('رقم سري غير صحيح — جرّب 1234 أو 1111','err');
-    toast('رقم سري غير صحيح',1);
-  }
-}
-function enterApp(){
-  try{$('#login').classList.add('off');}catch(e){}
-  try{$('#app').classList.add('on');}catch(e){}
-  try{$('#app').classList.toggle('cashier',!isMgr());}catch(e){}
-  try{S.theme=localStorage.getItem('pos_theme')||'light';applyTheme();}catch(e){S.theme='light';}
-  try{$('#uAvatar').textContent=S.user.name[0];$('#uRole').textContent=S.user.role;}catch(e){}
-  try{S.shifts=LS.sh;S.audit=LS.au;S.shift=LS.cur;}catch(e){}
-  try{loadAll();}catch(e){}
-  try{ping();}catch(e){}
-  try{updQ();updateShiftInd();}catch(e){}
-  try{if(!localStorage.getItem('pos_tip')){localStorage.setItem('pos_tip','1');setTimeout(()=>toast('💡 جرّب Ctrl+K للبحث السريع — واربط عميلًا من السلة'),900);}}catch(e){}
-}
-function logout(){try{logAudit('logout','تسجيل خروج');}catch(e){}location.reload();}
-async function loadAll(){await loadProducts();await loadOrders();await loadSuppliers();await loadPOs();await loadCustomers();renderPOS();$('#cNum').textContent='#'+(1001+S.orders.length);}
 
 function renderPOS(){renderCats();renderGrid();renderCart();renderCustBar();}
 function renderCats(){const cats=['الكل',...new Set(S.products.map(p=>p.category))];$('#cats').innerHTML=cats.map(c=>`<button class="cat ${S.cat===c?'on':''}" onclick="S.cat='${c}';renderCats();renderGrid()">${c}</button>`).join('');}
@@ -1221,6 +1235,12 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){if($('#palModal').classList.contains('open'))closeM('#palModal');else if($('#scanModal').classList.contains('open'))closeCam();else $$('.modal.open').forEach(m=>m.classList.remove('open'));}
 });
 setInterval(()=>{$('#clock').textContent=new Date().toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'})+' • '+new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});},1000);
+
+/* ربط احتياطي أخير لأزرار الدخول (لو الـ IIFE الأولاني ما اشتغلش) */
+(function(){try{
+  document.querySelectorAll('#login .keypad button[data-k]').forEach(function(b){if(b.getAttribute('data-bound'))return;b.setAttribute('data-bound','1');b.addEventListener('click',function(){press(b.getAttribute('data-k'));});});
+  document.querySelectorAll('#login .lg-quick button[data-pin]').forEach(function(b){if(b.getAttribute('data-bound'))return;b.setAttribute('data-bound','1');b.addEventListener('click',function(){quickLogin(b.getAttribute('data-pin'));});});
+}catch(e){}})();
 </script>
 </body>
 </html>
