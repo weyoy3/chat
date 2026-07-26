@@ -29,8 +29,8 @@ const Patient = mongoose.model('Patient', new mongoose.Schema({
 
 const Appointment = mongoose.model('Appointment', new mongoose.Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  date:    { type: String, required: true },  // YYYY-MM-DD
-  time:    { type: String, required: true },  // HH:mm
+  date:    { type: String, required: true },
+  time:    { type: String, required: true },
   type:    { type: String, enum: ['كشف جديد', 'متابعة', 'استشارة'], default: 'كشف جديد' },
   status:  { type: String, enum: ['مجدول', 'قيد الانتظار', 'مكتمل', 'ملغي'], default: 'مجدول' },
   notes:   String,
@@ -40,12 +40,8 @@ const Appointment = mongoose.model('Appointment', new mongoose.Schema({
 const auth = (req, res, next) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return res.status(401).json({ msg: 'غير مصرح بالدخول' });
-  try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ msg: 'انتهت الجلسة — سجّل دخول من جديد' });
-  }
+  try { req.user = jwt.verify(token, process.env.JWT_SECRET); next(); }
+  catch { res.status(401).json({ msg: 'انتهت الجلسة — سجّل دخول من جديد' }); }
 };
 
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -58,8 +54,7 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(401).json({ msg: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
   const token = jwt.sign(
     { id: user._id, name: user.name, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    process.env.JWT_SECRET, { expiresIn: '7d' }
   );
   res.json({ token, user: { name: user.name, role: user.role } });
 });
@@ -128,29 +123,44 @@ app.get('/api/stats', auth, async (req, res) => {
   });
 });
 
-/* ============ تقديم الموقع (index.html فقط — بدون كشف السيرفر) ============ */
+/* ===================== تقديم الموقع ===================== */
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-/* معالج أخطاء عام */
 app.use((err, req, res, next) => {
   console.error(err);
   if (err.name === 'CastError') return res.status(400).json({ msg: 'معرف غير صالح' });
   res.status(500).json({ msg: 'حدث خطأ في الخادم' });
 });
 
-/* ===================== التشغيل ===================== */
-const PORT = process.env.PORT || 3000;
+/* ===================== التشغيل (المُصحَّح) ===================== */
+const PORT = process.env.PORT || 10000;
 
-mongoose.connect(process.env.MONGO_URI).then(async () => {
-  // إنشاء حساب الأدمن مرة واحدة فقط
-  if (!(await User.findOne({ username: 'admin' }))) {
-    await User.create({
-      name: 'مدير العيادة',
-      username: 'admin',
-      password: await bcrypt.hash('admin123', 10),
-      role: 'admin',
+// 1) نشغّل السيرفر فورًا → عشان Render ما يقولش deploy failed
+app.listen(PORT, () => console.log(`✅ نبض يعمل على المنفذ ${PORT}`));
+
+// 2) نتصل بقاعدة البيانات بعدها، مع إعادة محاولة لو فشل
+async function connectDB(retries = 5) {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 10000,
     });
-    console.log('👤 حساب افتراضي: admin / admin123');
+    console.log('🍃 متصل بـ MongoDB');
+    if (!(await User.findOne({ username: 'admin' }))) {
+      await User.create({
+        name: 'مدير العيادة', username: 'admin',
+        password: await bcrypt.hash('admin123', 10), role: 'admin',
+      });
+      console.log('👤 حساب افتراضي: admin / admin123');
+    }
+  } catch (err) {
+    console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message);
+    if (retries > 0) {
+      console.log(`🔁 إعادة محاولة خلال 5 ثوانٍ… (${retries} متبقية)`);
+      setTimeout(() => connectDB(retries - 1), 5000);
+    } else {
+      console.error('⛔ تأكد من MONGO_URI ومن Network Access = 0.0.0.0/0');
+    }
   }
-  app.listen(PORT, () => console.log(`✅ نبض يعمل على المنفذ ${PORT}`));
-}).catch(err => console.error('❌ فشل الاتصال بقاعدة البيانات', err));
+}
+connectDB();
