@@ -6,9 +6,18 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// لو JWT_SECRET مش متضاف في Render، نولّد سر مؤقت عشان السيرفر ما يقعش أبدًا
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = require('crypto').randomBytes(48).toString('hex');
+  console.warn('⚠️ JWT_SECRET مش موجود — تم توليد سر مؤقت (ستُبطل الجلسات عند كل إعادة تشغيل)');
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// لفّ أي route عشان الأخطاء توصل للمعالج بدل ما توقّع السيرفر
+const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 /* ===================== الموديلات ===================== */
 const User = mongoose.model('User', new mongoose.Schema({
@@ -46,7 +55,7 @@ const auth = (req, res, next) => {
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* ===================== الدخول ===================== */
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', wrap(async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username });
   if (!user || !(await bcrypt.compare(password, user.password)))
@@ -57,12 +66,12 @@ app.post('/api/auth/login', async (req, res) => {
     { expiresIn: '7d' }
   );
   res.json({ token, user: { name: user.name, role: user.role } });
-});
+}));
 
 app.get('/api/auth/me', auth, (req, res) => res.json(req.user));
 
 /* ===================== المرضى ===================== */
-app.get('/api/patients', auth, async (req, res) => {
+app.get('/api/patients', auth, wrap(async (req, res) => {
   const { q } = req.query;
   const filter = q ? { $or: [
     { name: new RegExp(escRe(q), 'i') },
@@ -70,44 +79,42 @@ app.get('/api/patients', auth, async (req, res) => {
     { diagnosis: new RegExp(escRe(q), 'i') },
   ]} : {};
   res.json(await Patient.find(filter).sort('-createdAt'));
-});
+}));
 
-app.post('/api/patients', auth, async (req, res) => {
-  try { res.status(201).json(await Patient.create(req.body)); }
-  catch { res.status(400).json({ msg: 'تأكد من إدخال الاسم ورقم الهاتف' }); }
-});
+app.post('/api/patients', auth, wrap(async (req, res) => {
+  res.status(201).json(await Patient.create(req.body));
+}));
 
-app.put('/api/patients/:id', auth, async (req, res) => {
+app.put('/api/patients/:id', auth, wrap(async (req, res) => {
   res.json(await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true }));
-});
+}));
 
-app.delete('/api/patients/:id', auth, async (req, res) => {
+app.delete('/api/patients/:id', auth, wrap(async (req, res) => {
   await Patient.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
-});
+}));
 
 /* ===================== المواعيد ===================== */
-app.get('/api/appointments', auth, async (req, res) => {
+app.get('/api/appointments', auth, wrap(async (req, res) => {
   const { date } = req.query;
   res.json(await Appointment.find(date ? { date } : {}).populate('patient', 'name phone').sort('time'));
-});
+}));
 
-app.post('/api/appointments', auth, async (req, res) => {
-  try { res.status(201).json(await Appointment.create(req.body)); }
-  catch { res.status(400).json({ msg: 'اختر مريضًا وحدد التاريخ والوقت' }); }
-});
+app.post('/api/appointments', auth, wrap(async (req, res) => {
+  res.status(201).json(await Appointment.create(req.body));
+}));
 
-app.patch('/api/appointments/:id/status', auth, async (req, res) => {
+app.patch('/api/appointments/:id/status', auth, wrap(async (req, res) => {
   res.json(await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true }));
-});
+}));
 
-app.delete('/api/appointments/:id', auth, async (req, res) => {
+app.delete('/api/appointments/:id', auth, wrap(async (req, res) => {
   await Appointment.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
-});
+}));
 
 /* ===================== الإحصائيات ===================== */
-app.get('/api/stats', auth, async (req, res) => {
+app.get('/api/stats', auth, wrap(async (req, res) => {
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const [patients, todayApps] = await Promise.all([
@@ -121,7 +128,7 @@ app.get('/api/stats', auth, async (req, res) => {
     waiting:   todayApps.filter(a => a.status === 'قيد الانتظار').length,
     cancelled: todayApps.filter(a => a.status === 'ملغي').length,
   });
-});
+}));
 
 /* ===================== تقديم الموقع ===================== */
 app.get('*', (req, res) => {
@@ -129,17 +136,18 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-/* معالج أخطاء عام */
+/* معالج أخطاء عام — يرد برسالة واضحة بدل ما يقع السيرفر */
 app.use((err, req, res, next) => {
-  console.error(err);
-  if (err.name === 'CastError') return res.status(400).json({ msg: 'معرف غير صالح' });
-  res.status(500).json({ msg: 'حدث خطأ في الخادم' });
+  console.error('⚠️ خطأ:', err && err.message);
+  if (err && err.name === 'CastError') return res.status(400).json({ msg: 'معرف غير صالح' });
+  if (err && /mongo|buffering|ECONNREFUSED|topology|getaddrinfo/i.test(err.message))
+    return res.status(503).json({ msg: 'قاعدة البيانات غير متصلة حاليًا — حاول بعد لحظات' });
+  res.status(500).json({ msg: (err && err.message) || 'حدث خطأ في الخادم' });
 });
 
 /* ===================== التشغيل ===================== */
 const PORT = process.env.PORT || 10000;
 
-// يقرأ الرابط بأي اسم حاططه بيه في Render (MONGO_URL أو MONGO_URI أو غيره)
 const MONGO_URI =
   process.env.MONGO_URI ||
   process.env.MONGODB_URI ||
@@ -148,40 +156,25 @@ const MONGO_URI =
   '';
 
 console.log('🔑 الرابط واصل؟', !!MONGO_URI, '| mongodb+srv؟', MONGO_URI.startsWith('mongodb+srv'));
+console.log('🔐 JWT_SECRET موجود؟', !!process.env.JWT_SECRET);
 
-// 1) نشغّل السيرفر فورًا (عشان Render ما يقولش deploy failed)
 app.listen(PORT, () => console.log(`✅ نبض يعمل على المنفذ ${PORT}`));
 
-// 2) نتصل بقاعدة البيانات بعدها (مع إعادة محاولة لو فشل)
 async function connectDB(retries = 5) {
-  if (!MONGO_URI) {
-    console.error('⛔ متغير قاعدة البيانات فاضي! راجع Environment في Render');
-    return;
-  }
+  if (!MONGO_URI) { console.error('⛔ متغير قاعدة البيانات فاضي!'); return; }
   try {
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 10000,
-    });
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 8000, connectTimeoutMS: 10000 });
     console.log('🍃 متصل بـ MongoDB');
-
     if (!(await User.findOne({ username: 'admin' }))) {
       await User.create({
-        name: 'مدير العيادة',
-        username: 'admin',
-        password: await bcrypt.hash('admin123', 10),
-        role: 'admin',
+        name: 'مدير العيادة', username: 'admin',
+        password: await bcrypt.hash('admin123', 10), role: 'admin',
       });
       console.log('👤 حساب افتراضي: admin / admin123');
     }
   } catch (err) {
     console.error('❌ فشل الاتصال:', err.message);
-    if (retries > 0) {
-      console.log(`🔁 إعادة محاولة خلال 5 ثوانٍ… (${retries} متبقية)`);
-      setTimeout(() => connectDB(retries - 1), 5000);
-    } else {
-      console.error('⛔ تأكد من Network Access = 0.0.0.0/0 في Atlas وصحة الرابط');
-    }
+    if (retries > 0) setTimeout(() => connectDB(retries - 1), 5000);
   }
 }
 connectDB();
