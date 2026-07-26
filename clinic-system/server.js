@@ -36,14 +36,13 @@ const Appointment = mongoose.model('Appointment', new mongoose.Schema({
   notes:   String,
 }, { timestamps: true }));
 
-/* ===================== حماية Routes ===================== */
+/* ===================== حماية ===================== */
 const auth = (req, res, next) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return res.status(401).json({ msg: 'غير مصرح بالدخول' });
   try { req.user = jwt.verify(token, process.env.JWT_SECRET); next(); }
   catch { res.status(401).json({ msg: 'انتهت الجلسة — سجّل دخول من جديد' }); }
 };
-
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* ===================== الدخول ===================== */
@@ -52,13 +51,10 @@ app.post('/api/auth/login', async (req, res) => {
   const user = await User.findOne({ username });
   if (!user || !(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ msg: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-  const token = jwt.sign(
-    { id: user._id, name: user.name, role: user.role },
-    process.env.JWT_SECRET, { expiresIn: '7d' }
-  );
+  const token = jwt.sign({ id: user._id, name: user.name, role: user.role },
+    process.env.JWT_SECRET, { expiresIn: '7d' });
   res.json({ token, user: { name: user.name, role: user.role } });
 });
-
 app.get('/api/auth/me', auth, (req, res) => res.json(req.user));
 
 /* ===================== المرضى ===================== */
@@ -71,16 +67,13 @@ app.get('/api/patients', auth, async (req, res) => {
   ]} : {};
   res.json(await Patient.find(filter).sort('-createdAt'));
 });
-
 app.post('/api/patients', auth, async (req, res) => {
   try { res.status(201).json(await Patient.create(req.body)); }
   catch { res.status(400).json({ msg: 'تأكد من إدخال الاسم ورقم الهاتف' }); }
 });
-
 app.put('/api/patients/:id', auth, async (req, res) => {
   res.json(await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 });
-
 app.delete('/api/patients/:id', auth, async (req, res) => {
   await Patient.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
@@ -91,16 +84,13 @@ app.get('/api/appointments', auth, async (req, res) => {
   const { date } = req.query;
   res.json(await Appointment.find(date ? { date } : {}).populate('patient', 'name phone').sort('time'));
 });
-
 app.post('/api/appointments', auth, async (req, res) => {
   try { res.status(201).json(await Appointment.create(req.body)); }
   catch { res.status(400).json({ msg: 'اختر مريضًا وحدد التاريخ والوقت' }); }
 });
-
 app.patch('/api/appointments/:id/status', auth, async (req, res) => {
   res.json(await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true }));
 });
-
 app.delete('/api/appointments/:id', auth, async (req, res) => {
   await Appointment.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
@@ -111,8 +101,7 @@ app.get('/api/stats', auth, async (req, res) => {
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const [patients, todayApps] = await Promise.all([
-    Patient.countDocuments(),
-    Appointment.find({ date: today }),
+    Patient.countDocuments(), Appointment.find({ date: today }),
   ]);
   res.json({
     patients,
@@ -132,35 +121,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ msg: 'حدث خطأ في الخادم' });
 });
 
-/* ===================== التشغيل (المُصحَّح) ===================== */
+/* ===================== التشغيل ===================== */
 const PORT = process.env.PORT || 10000;
 
-// 1) نشغّل السيرفر فورًا → عشان Render ما يقولش deploy failed
+// يقرأ الرابط بأي اسم حاططه بيه في Render (MONGO_URL أو MONGO_URI أو غيره)
+const MONGO_URI =
+  process.env.MONGO_URI || process.env.MONGODB_URI ||
+  process.env.MONGO_URL || process.env.DATABASE_URL || '';
+
+console.log('🔑 الرابط واصل؟', !!MONGO_URI, '| mongodb+srv؟', MONGO_URI.startsWith('mongodb+srv'));
+
 app.listen(PORT, () => console.log(`✅ نبض يعمل على المنفذ ${PORT}`));
 
-// 2) نتصل بقاعدة البيانات بعدها، مع إعادة محاولة لو فشل
 async function connectDB(retries = 5) {
+  if (!MONGO_URI) { console.error('⛔ متغير قاعدة البيانات فاضي!'); return; }
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 10000,
-    });
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 8000, connectTimeoutMS: 10000 });
     console.log('🍃 متصل بـ MongoDB');
     if (!(await User.findOne({ username: 'admin' }))) {
-      await User.create({
-        name: 'مدير العيادة', username: 'admin',
-        password: await bcrypt.hash('admin123', 10), role: 'admin',
-      });
+      await User.create({ name: 'مدير العيادة', username: 'admin',
+        password: await bcrypt.hash('admin123', 10), role: 'admin' });
       console.log('👤 حساب افتراضي: admin / admin123');
     }
   } catch (err) {
-    console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message);
-    if (retries > 0) {
-      console.log(`🔁 إعادة محاولة خلال 5 ثوانٍ… (${retries} متبقية)`);
-      setTimeout(() => connectDB(retries - 1), 5000);
-    } else {
-      console.error('⛔ تأكد من MONGO_URI ومن Network Access = 0.0.0.0/0');
-    }
+    console.error('❌ فشل الاتصال:', err.message);
+    if (retries > 0) setTimeout(() => connectDB(retries - 1), 5000);
   }
 }
 connectDB();
