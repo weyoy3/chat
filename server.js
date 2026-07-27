@@ -6,17 +6,15 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// لو JWT_SECRET مش متضاف في Render، نولّد سر مؤقت عشان السيرفر ما يقعش أبدًا
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = require('crypto').randomBytes(48).toString('hex');
-  console.warn('⚠️ JWT_SECRET مش موجود — تم توليد سر مؤقت (ستُبطل الجلسات عند كل إعادة تشغيل)');
+  console.warn('⚠️ JWT_SECRET مش موجود — تم توليد سر مؤقت');
 }
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// لفّ أي route عشان الأخطاء توصل للمعالج بدل ما توقّع السيرفر
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 /* ===================== الموديلات ===================== */
@@ -38,10 +36,12 @@ const Patient = mongoose.model('Patient', new mongoose.Schema({
 
 const Appointment = mongoose.model('Appointment', new mongoose.Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  date:    { type: String, required: true },
-  time:    { type: String, required: true },
+  date:    { type: String, required: true },   // YYYY-MM-DD
+  time:    { type: String, required: true },   // HH:mm
   type:    { type: String, enum: ['كشف جديد', 'متابعة', 'استشارة'], default: 'كشف جديد' },
   status:  { type: String, enum: ['مجدول', 'قيد الانتظار', 'مكتمل', 'ملغي'], default: 'مجدول' },
+  price:   { type: Number, default: 0 },       // سعر الزيارة
+  queue:   { type: Number, default: 0 },       // رقم الدور في اليوم
   notes:   String,
 }, { timestamps: true }));
 
@@ -60,14 +60,10 @@ app.post('/api/auth/login', wrap(async (req, res) => {
   const user = await User.findOne({ username });
   if (!user || !(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ msg: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-  const token = jwt.sign(
-    { id: user._id, name: user.name, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  const token = jwt.sign({ id: user._id, name: user.name, role: user.role },
+    process.env.JWT_SECRET, { expiresIn: '7d' });
   res.json({ token, user: { name: user.name, role: user.role } });
 }));
-
 app.get('/api/auth/me', auth, (req, res) => res.json(req.user));
 
 /* ===================== المرضى ===================== */
@@ -80,15 +76,12 @@ app.get('/api/patients', auth, wrap(async (req, res) => {
   ]} : {};
   res.json(await Patient.find(filter).sort('-createdAt'));
 }));
-
 app.post('/api/patients', auth, wrap(async (req, res) => {
   res.status(201).json(await Patient.create(req.body));
 }));
-
 app.put('/api/patients/:id', auth, wrap(async (req, res) => {
   res.json(await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true }));
 }));
-
 app.delete('/api/patients/:id', auth, wrap(async (req, res) => {
   await Patient.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
@@ -97,37 +90,80 @@ app.delete('/api/patients/:id', auth, wrap(async (req, res) => {
 /* ===================== المواعيد ===================== */
 app.get('/api/appointments', auth, wrap(async (req, res) => {
   const { date } = req.query;
-  res.json(await Appointment.find(date ? { date } : {}).populate('patient', 'name phone').sort('time'));
+  res.json(await Appointment.find(date ? { date } : {})
+    .populate('patient', 'name phone').sort('queue time'));
 }));
 
+// الحجز: يحسب رقم الدور تلقائيًا = آخر دور في اليوم + 1
 app.post('/api/appointments', auth, wrap(async (req, res) => {
-  res.status(201).json(await Appointment.create(req.body));
+  const data = { ...req.body, price: +req.body.price || 0 };
+  const last = await Appointment.findOne({ date: data.date }).sort('-queue').select('queue');
+  data.queue = (last?.queue || 0) + 1;
+  res.status(201).json(await Appointment.create(data));
 }));
 
 app.patch('/api/appointments/:id/status', auth, wrap(async (req, res) => {
   res.json(await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true }));
 }));
-
 app.delete('/api/appointments/:id', auth, wrap(async (req, res) => {
   await Appointment.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 }));
 
-/* ===================== الإحصائيات ===================== */
+/* ===================== لوحة التحكم ===================== */
 app.get('/api/stats', auth, wrap(async (req, res) => {
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const [patients, todayApps] = await Promise.all([
-    Patient.countDocuments(),
-    Appointment.find({ date: today }),
+    Patient.countDocuments(), Appointment.find({ date: today }),
   ]);
+  const sum = (arr) => arr.reduce((s, a) => s + (+a.price || 0), 0);
   res.json({
     patients,
     todayTotal: todayApps.length,
     done:      todayApps.filter(a => a.status === 'مكتمل').length,
     waiting:   todayApps.filter(a => a.status === 'قيد الانتظار').length,
     cancelled: todayApps.filter(a => a.status === 'ملغي').length,
+    todayRevenue: sum(todayApps.filter(a => a.status === 'مكتمل')),
+    todayPending: sum(todayApps.filter(a => a.status === 'مجدول' || a.status === 'قيد الانتظار')),
   });
+}));
+
+/* ===================== التقارير (يوم/أسبوع/شهر/سنة/مخصص) ===================== */
+app.get('/api/reports', auth, wrap(async (req, res) => {
+  const d = new Date();
+  const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  const from = req.query.from || fmt(d);
+  const to   = req.query.to   || fmt(d);
+  const type = req.query.type || '';
+
+  const match = { date: { $gte: from, $lte: to }, status: { $ne: 'ملغي' } };
+  if (type) match.type = type;
+
+  const paid   = { $cond: [{ $eq: ['$status', 'مكتمل'] }, '$price', 0] };
+  const pend   = { $cond: [{ $in: ['$status', ['مجدول', 'قيد الانتظار']] }, '$price', 0] };
+  const isDone = { $cond: [{ $eq: ['$status', 'مكتمل'] }, 1, 0] };
+
+  const [agg, list] = await Promise.all([
+    Appointment.aggregate([
+      { $match: match },
+      { $lookup: { from: 'patients', localField: 'patient', foreignField: '_id', as: 'p' } },
+      { $unwind: { path: '$p', preserveNullAndEmptyArrays: true } },
+      { $facet: {
+          totals: [{ $group: { _id: null,
+            visits: { $sum: 1 }, paid: { $sum: paid },
+            pending: { $sum: pend }, doneCount: { $sum: isDone } } }],
+          byType: [{ $group: { _id: '$type', visits: { $sum: 1 }, paid: { $sum: paid } } }],
+          byPatient: [
+            { $group: { _id: { name: '$p.name', phone: '$p.phone' }, visits: { $sum: 1 }, paid: { $sum: paid } } },
+            { $sort: { paid: -1 } },
+          ],
+      } },
+    ]),
+    Appointment.find(match).populate('patient', 'name phone').sort('date queue time'),
+  ]);
+
+  res.json({ from, to, agg: agg[0], list });
 }));
 
 /* ===================== تقديم الموقع ===================== */
@@ -136,7 +172,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-/* معالج أخطاء عام — يرد برسالة واضحة بدل ما يقع السيرفر */
 app.use((err, req, res, next) => {
   console.error('⚠️ خطأ:', err && err.message);
   if (err && err.name === 'CastError') return res.status(400).json({ msg: 'معرف غير صالح' });
@@ -147,17 +182,11 @@ app.use((err, req, res, next) => {
 
 /* ===================== التشغيل ===================== */
 const PORT = process.env.PORT || 10000;
-
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  process.env.MONGODB_URI ||
-  process.env.MONGO_URL ||
-  process.env.DATABASE_URL ||
-  '';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI ||
+  process.env.MONGO_URL || process.env.DATABASE_URL || '';
 
 console.log('🔑 الرابط واصل؟', !!MONGO_URI, '| mongodb+srv؟', MONGO_URI.startsWith('mongodb+srv'));
 console.log('🔐 JWT_SECRET موجود؟', !!process.env.JWT_SECRET);
-
 app.listen(PORT, () => console.log(`✅ نبض يعمل على المنفذ ${PORT}`));
 
 async function connectDB(retries = 5) {
@@ -166,10 +195,8 @@ async function connectDB(retries = 5) {
     await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 8000, connectTimeoutMS: 10000 });
     console.log('🍃 متصل بـ MongoDB');
     if (!(await User.findOne({ username: 'admin' }))) {
-      await User.create({
-        name: 'مدير العيادة', username: 'admin',
-        password: await bcrypt.hash('admin123', 10), role: 'admin',
-      });
+      await User.create({ name: 'مدير العيادة', username: 'admin',
+        password: await bcrypt.hash('admin123', 10), role: 'admin' });
       console.log('👤 حساب افتراضي: admin / admin123');
     }
   } catch (err) {
