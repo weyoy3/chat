@@ -109,6 +109,41 @@ input, select, textarea { font-family: inherit; }
 .btn-ghost { background: transparent; color: var(--teal); }
 .btn-ghost:hover { background: var(--teal-soft); }
 .btn-block { width: 100%; padding: .85rem; font-size: 1rem; }
+.link-btn { background: none; border: none; color: var(--teal); font-weight: 800; text-decoration: underline; cursor: pointer; font-size: inherit; padding: 0; }
+.link-btn:hover { color: var(--teal-deep); }
+
+/* autocomplete */
+.ac-wrap { position: relative; }
+.ac-list {
+  position: absolute; z-index: 30; inset-inline: 0; top: calc(100% + 5px);
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 16px 36px -14px rgba(12,40,36,.4);
+  max-height: 0; overflow: hidden; opacity: 0; transform: translateY(-4px);
+  transition: max-height .25s ease, opacity .2s ease, transform .2s ease;
+}
+.ac-list.open { max-height: 264px; overflow-y: auto; opacity: 1; transform: none; }
+.ac-item { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .6rem .9rem; cursor: pointer; transition: background .12s; border-bottom: 1px solid #f0f5f2; }
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: var(--teal-soft); }
+.ac-item strong { font-size: .9rem; }
+.ac-item small { color: var(--muted); font-size: .78rem; }
+.ac-item.empty { color: var(--muted); cursor: default; justify-content: center; }
+.ac-item.empty:hover { background: #fff; }
+
+.seg { display: inline-flex; background: #e3ece8; border-radius: 12px; padding: 4px; gap: 2px; }
+.seg button { border: none; background: transparent; padding: .5rem 1rem; border-radius: 9px; font-weight: 800; font-size: .85rem; color: var(--muted); transition: background .2s, color .2s, transform .12s; }
+.seg button:hover { color: var(--teal-deep); }
+.seg button.active { background: var(--teal); color: #fff; box-shadow: 0 4px 12px -4px rgba(14,107,96,.5); }
+.seg button:active { transform: scale(.95); }
+.pat-seg { width: 100%; }
+.pat-seg button { flex: 1; }
+
+.dup-warn {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  background: var(--amber-soft); color: #8a5408; border: 1px solid #f0d49a;
+  border-radius: 10px; padding: .6rem .8rem; font-size: .82rem; font-weight: 700;
+  animation: fadeUp .25s ease both;
+}
 
 .sidebar {
   position: fixed; inset-block: 0; inset-inline-start: 0; width: 250px; z-index: 40;
@@ -139,6 +174,7 @@ input, select, textarea { font-family: inherit; }
   display: grid; place-items: center; font-family: var(--display); font-weight: 700;
 }
 .avatar.sm { width: 30px; height: 30px; font-size: .9rem; }
+.avatar.lg { width: 54px; height: 54px; font-size: 1.4rem; }
 .user-box .info { display: flex; flex-direction: column; line-height: 1.3; }
 .user-box strong { font-size: .9rem; color: #fff; }
 .user-box small { font-size: .75rem; color: #9dc2b7; }
@@ -183,7 +219,6 @@ input, select, textarea { font-family: inherit; }
 .stat.hero .stat-sub { font-size: .82rem; color: #9cc9bb; }
 .stat.hero .hero-ecg { position: absolute; bottom: 4px; inset-inline: 0; width: 100%; height: 46px; opacity: .35; }
 
-/* صف الإيراد */
 .money-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.4rem; }
 .money {
   border-radius: var(--radius); padding: 1.2rem 1.4rem; color: #fff; position: relative;
@@ -264,17 +299,35 @@ tbody tr:last-child td { border-bottom: none; }
 .mini-patient small { color: var(--muted); font-size: .78rem; }
 .mini-date { font-size: .72rem; color: var(--muted); white-space: nowrap; }
 
-/* ====== التقارير ====== */
 .rep-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; padding: 1.1rem 1.3rem; }
-.seg { display: inline-flex; background: #e3ece8; border-radius: 12px; padding: 4px; gap: 2px; }
-.seg button { border: none; background: transparent; padding: .5rem 1rem; border-radius: 9px; font-weight: 800; font-size: .85rem; color: var(--muted); transition: background .2s, color .2s, transform .12s; }
-.seg button:hover { color: var(--teal-deep); }
-.seg button.active { background: var(--teal); color: #fff; box-shadow: 0 4px 12px -4px rgba(14,107,96,.5); }
-.seg button:active { transform: scale(.95); }
 .rep-controls .field { margin: 0; }
 .rep-controls .field.inline label { font-size: .76rem; margin-bottom: .25rem; }
+.rep-controls .grow { flex: 1; min-width: 220px; }
 .rep-range { display: flex; align-items: flex-end; gap: .6rem; }
 .rep-range .dash { padding-bottom: .7rem; color: var(--muted); font-weight: 800; }
+
+.patient-card {
+  position: relative; display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--teal-soft), #eef6f2);
+  border: 1px solid #c4ddd4; border-radius: var(--radius); padding: 1.1rem 1.3rem;
+  margin-bottom: 1.2rem; box-shadow: var(--shadow); animation: fadeUp .35s ease both;
+}
+.patient-card .avatar { background: var(--teal); color: #fff; }
+.patient-card .pc-main { display: flex; flex-direction: column; line-height: 1.3; }
+.patient-card .pc-main strong { font-family: var(--display); font-size: 1.2rem; font-weight: 700; }
+.patient-card .pc-main small { color: var(--muted); font-size: .82rem; }
+.patient-card .pc-stats { display: flex; gap: 1.4rem; margin-inline-start: auto; flex-wrap: wrap; }
+.patient-card .pc-stats > div { display: flex; flex-direction: column; text-align: center; }
+.patient-card .pc-n { font-family: var(--display); font-weight: 800; font-size: 1.25rem; line-height: 1.1; }
+.patient-card .pc-n.green { color: var(--green); }
+.patient-card .pc-l { font-size: .7rem; color: var(--muted); font-weight: 700; }
+.patient-card .pc-close {
+  position: absolute; top: .6rem; inset-inline-end: .7rem;
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid #c4ddd4;
+  background: #fff; color: var(--muted); font-size: 1rem; line-height: 1;
+  display: grid; place-items: center; transition: all .15s;
+}
+.patient-card .pc-close:hover { background: var(--coral); color: #fff; border-color: var(--coral); }
 
 .rep-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
 .rep-summary .stat { align-items: flex-start; }
@@ -374,6 +427,8 @@ tbody tr:last-child td { border-bottom: none; }
   .type-cards { grid-template-columns: 1fr; }
   .seg { width: 100%; }
   .seg button { flex: 1; padding: .5rem .3rem; }
+  .patient-card { flex-direction: column; align-items: flex-start; gap: .9rem; }
+  .patient-card .pc-stats { margin-inline-start: 0; width: 100%; justify-content: space-between; gap: .6rem; }
   .toast { bottom: 5.6rem; }
   table, thead, tbody, tr, td { display: block; width: 100%; }
   thead { display: none; }
@@ -413,7 +468,7 @@ tbody tr:last-child td { border-bottom: none; }
     <ul class="brand-points">
       <li><span>📅</span> جدولة المواعيد وترتيب الأدوار تلقائيًا</li>
       <li><span>💰</span> تحصيل الكشوفات وحساب إيراد اليوم لحظيًا</li>
-      <li><span>📊</span> تقارير يومية وأسبوعية وشهرية وسنوية</li>
+      <li><span>📊</span> تقارير وسجل مالي لكل مريض على حدة</li>
     </ul>
     <p class="brand-foot">© 2026 عيادة نبض — بياناتك محفوظة بأمان</p>
   </aside>
@@ -573,7 +628,7 @@ tbody tr:last-child td { border-bottom: none; }
       <article class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>الاسم</th><th>الهاتف</th><th>السن / النوع</th><th>التشخيص</th><th>أُضيف في</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الهاتف</th><th>السن / النوع</th><th>التشخيص</th><th>زيارات</th><th>إجمالي المدفوع</th><th>أُضيف في</th><th>إجراءات</th></tr></thead>
             <tbody id="patientsBody"></tbody>
           </table>
         </div>
@@ -600,8 +655,16 @@ tbody tr:last-child td { border-bottom: none; }
               <option value="">كل الأنواع</option><option>كشف جديد</option><option>متابعة</option><option>استشارة</option>
             </select>
           </div>
+          <div class="field inline grow"><label>سجل مريض (اختياري)</label>
+            <div class="ac-wrap">
+              <input id="repPatSearch" placeholder="ابحث بالاسم أو الرقم لعرض سجله…" autocomplete="off">
+              <div class="ac-list" id="repPatAc"></div>
+            </div>
+          </div>
         </div>
       </article>
+
+      <div id="repPatCard" class="patient-card hidden"></div>
 
       <div class="rep-summary">
         <article class="stat">
@@ -630,7 +693,7 @@ tbody tr:last-child td { border-bottom: none; }
 
       <div class="rep-grid">
         <article class="card">
-          <header class="card-head"><h3>إيراد كل مريض</h3></header>
+          <header class="card-head"><h3>إيراد كل مريض <span class="faint" style="font-weight:600;font-size:.78rem">(اضغط اسمًا لعرض سجله)</span></h3></header>
           <div class="table-wrap">
             <table>
               <thead><tr><th>المريض</th><th>زيارات</th><th>المدفوع</th></tr></thead>
@@ -699,11 +762,13 @@ const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate(
 const fmtEGP = n => (Number(n) || 0).toLocaleString('en-US') + ' ج.م';
 const typeClass = t => ({'كشف جديد':'new','متابعة':'follow','استشارة':'consult'}[t] || 'new');
 const PRICE_DEFAULT = { 'كشف جديد': 150, 'متابعة': 100, 'استشارة': 200 };
+const normPhone = s => String(s || '').replace(/\D/g, '');
 
 const API = '/api';
 let token = localStorage.getItem('nabd_token');
 let user  = JSON.parse(localStorage.getItem('nabd_user') || 'null');
 let allPatients = [], currentAppts = [], currentView = 'dashboard';
+let finMap = {}, repPatientId = '', modalMode = () => 'existing';
 let searchTimer, toastTimer, modalSubmit = null;
 
 async function api(path, { method = 'GET', body } = {}) {
@@ -743,7 +808,6 @@ $('#loginForm').addEventListener('submit', async e => {
   } catch (err) { errEl.textContent = err.message; }
   finally { btn.disabled = false; btn.textContent = 'تسجيل الدخول'; }
 });
-
 function enterApp() {
   $('#loginScreen').classList.add('hidden');
   $('#app').classList.remove('hidden');
@@ -872,23 +936,50 @@ async function setApptStatus(id, status) {
   try {
     await api(`/appointments/${id}/status`, { method: 'PATCH', body: { status } });
     toast('تم تحديث الحالة: ' + status);
-    currentView === 'dashboard' ? loadDashboard() : (currentView === 'reports' ? loadReports() : loadAppointments());
+    refreshCurrent();
   } catch (e) { toast(e.message, 'error'); }
 }
 async function delAppt(id) {
   if (!confirm('حذف هذا الموعد؟')) return;
-  try {
-    await api('/appointments/' + id, { method: 'DELETE' });
-    toast('تم حذف الموعد');
-    currentView === 'dashboard' ? loadDashboard() : (currentView === 'reports' ? loadReports() : loadAppointments());
-  } catch (e) { toast(e.message, 'error'); }
+  try { await api('/appointments/' + id, { method: 'DELETE' }); toast('تم حذف الموعد'); refreshCurrent(); }
+  catch (e) { toast(e.message, 'error'); }
 }
+function refreshCurrent() {
+  if (currentView === 'dashboard') loadDashboard();
+  else if (currentView === 'reports') loadReports();
+  else loadAppointments();
+}
+
+function acItemHtml(p) {
+  return `<div class="ac-item" data-id="${p._id}" data-name="${esc(p.name)}"><strong>${esc(p.name)}</strong><small dir="ltr">${esc(p.phone)}</small></div>`;
+}
+
 function openApptModal() {
-  if (!allPatients.length) { toast('أضف مريضًا أولًا ثم احجز له موعدًا', 'error'); return switchView('patients'); }
-  const opts = allPatients.map(p => `<option value="${p._id}">${esc(p.name)} — ${esc(p.phone)}</option>`).join('');
   openModal('حجز موعد جديد', `
-    <div class="field"><label>المريض *</label>
-      <select name="patient" required><option value="">اختر المريض…</option>${opts}</select></div>
+    <div class="field">
+      <label>المريض</label>
+      <div class="seg pat-seg" id="patSeg" style="margin-bottom:.7rem">
+        <button type="button" data-mode="existing" class="active">مريض موجود</button>
+        <button type="button" data-mode="new">+ مريض جديد</button>
+      </div>
+      <div id="patExisting">
+        <div class="ac-wrap">
+          <input id="patSearch" placeholder="اكتب اسمًا أو رقم تليفون…" autocomplete="off">
+          <input type="hidden" name="patient" id="patId">
+          <div class="ac-list" id="patAc"></div>
+        </div>
+        <p class="note">اكتب للبحث، أو اضغط الحقل لعرض أحدث المرضى</p>
+      </div>
+      <div id="patNew" class="hidden">
+        <div class="field"><label>الاسم *</label><input name="newName" id="newName" placeholder="اسم المريض بالكامل"></div>
+        <div class="row2">
+          <div class="field"><label>رقم التليفون *</label><input name="newPhone" id="newPhone" placeholder="01xxxxxxxxx"></div>
+          <div class="field"><label>السن</label><input name="newAge" id="newAge" type="number" min="0"></div>
+        </div>
+        <div class="field"><label>النوع</label><select name="newGender" id="newGender"><option value="">—</option><option>ذكر</option><option>أنثى</option></select></div>
+        <div id="dupWarn" class="dup-warn hidden"></div>
+      </div>
+    </div>
     <div class="row2">
       <div class="field"><label>التاريخ *</label><input name="date" type="date" value="${todayStr()}" required></div>
       <div class="field"><label>الوقت *</label><input name="time" type="time" required></div>
@@ -900,14 +991,100 @@ function openApptModal() {
         <p class="note">يُعبّأ تلقائيًا حسب النوع — عدّله لو لزم</p></div>
     </div>
     <div class="field"><label>ملاحظات</label><textarea name="notes" rows="2"></textarea></div>
-  `, async () => {
-    await api('/appointments', { method: 'POST', body: Object.fromEntries(new FormData($('#modalForm')).entries()) });
-    toast('تم حجز الموعد وترتيبه تلقائيًا ✅');
-    currentView === 'dashboard' ? loadDashboard() : loadAppointments();
+  `, submitAppt);
+
+  let mode = 'existing';
+  modalMode = () => mode;
+  const setMode = m => {
+    mode = m;
+    $$('#patSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+    $('#patExisting').classList.toggle('hidden', m !== 'existing');
+    $('#patNew').classList.toggle('hidden', m !== 'new');
+    $('#newName').required = (m === 'new');
+    $('#newPhone').required = (m === 'new');
+  };
+  $$('#patSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  setMode('existing');
+
+  // بحث مريض موجود
+  let acTimer;
+  const showAc = list => {
+    $('#patAc').innerHTML = list.length ? list.slice(0, 8).map(acItemHtml).join('') : '<div class="ac-item empty">لا نتائج</div>';
+    $('#patAc').classList.toggle('open', list.length > 0);
+  };
+  $('#patSearch').addEventListener('input', e => {
+    const q = e.target.value.trim();
+    $('#patId').value = '';
+    clearTimeout(acTimer);
+    if (!q) { $('#patAc').classList.remove('open'); return; }
+    acTimer = setTimeout(async () => { try { showAc(await api('/patients?q=' + encodeURIComponent(q))); } catch {} }, 250);
   });
+  $('#patSearch').addEventListener('focus', async () => {
+    if (!$('#patId').value && !$('#patSearch').value.trim()) { try { showAc(await api('/patients')); } catch {} }
+  });
+  $('#patAc').addEventListener('click', e => {
+    const it = e.target.closest('.ac-item[data-id]'); if (!it) return;
+    $('#patId').value = it.dataset.id;
+    $('#patSearch').value = it.dataset.name + ' — ' + it.querySelector('small').textContent;
+    $('#patAc').classList.remove('open');
+  });
+
+  // منع التليفون المكرر
+  let dupTimer;
+  $('#newPhone').addEventListener('input', e => {
+    const ph = normPhone(e.target.value);
+    const warn = $('#dupWarn');
+    clearTimeout(dupTimer);
+    if (ph.length < 6) { warn.classList.add('hidden'); return; }
+    dupTimer = setTimeout(async () => {
+      try {
+        const list = await api('/patients?q=' + encodeURIComponent(ph));
+        const exact = list.find(p => normPhone(p.phone) === ph);
+        if (exact) {
+          warn.classList.remove('hidden');
+          warn.innerHTML = `⚠️ الرقم مسجل باسم «<strong>${esc(exact.name)}</strong>» — <button type="button" class="link-btn" id="useExisting">حجز له مباشرة</button>`;
+          $('#useExisting').onclick = () => {
+            setMode('existing');
+            $('#patId').value = exact._id;
+            $('#patSearch').value = exact.name + ' — ' + exact.phone;
+          };
+        } else warn.classList.add('hidden');
+      } catch {}
+    }, 400);
+  });
+
+  // سعر تلقائي
   const syncPrice = () => { $('#apptPrice').value = PRICE_DEFAULT[$('#apptType').value] ?? 0; };
-  $('#apptType').addEventListener('change', syncPrice);
-  syncPrice();
+  $('#apptType').addEventListener('change', syncPrice); syncPrice();
+}
+
+async function submitAppt() {
+  const fd = new FormData($('#modalForm'));
+  const mode = modalMode();
+  let patientId;
+  if (mode === 'new') {
+    const name = (fd.get('newName') || '').trim();
+    const phone = (fd.get('newPhone') || '').trim();
+    if (!name || !phone) throw new Error('اكتب اسم ورقم تليفون المريض الجديد');
+    const body = { name, phone };
+    const age = fd.get('newAge'); if (age) body.age = +age;
+    const g = fd.get('newGender'); if (g) body.gender = g;
+    const created = await api('/patients', { method: 'POST', body });
+    patientId = created._id;
+  } else {
+    patientId = fd.get('patient');
+    if (!patientId) throw new Error('اختار مريضًا من نتائج البحث');
+  }
+  const appt = {
+    patient: patientId,
+    date: fd.get('date'), time: fd.get('time'), type: fd.get('type'),
+    price: +fd.get('price') || 0, notes: fd.get('notes') || '',
+  };
+  if (!appt.date || !appt.time) throw new Error('حدّد التاريخ والوقت');
+  await api('/appointments', { method: 'POST', body: appt });
+  toast(mode === 'new' ? 'تم إضافة المريض وحجز الموعد وترتيبه ✅' : 'تم حجز الموعد وترتيبه تلقائيًا ✅');
+  if (mode === 'new') { try { allPatients = await api('/patients'); } catch {} }
+  refreshCurrent();
 }
 $('#addApptBtn').addEventListener('click', openApptModal);
 $('#apptDate').addEventListener('change', loadAppointments);
@@ -917,24 +1094,33 @@ $('#apptStatusFilter').addEventListener('change', renderAppts);
 async function loadPatients() {
   const q = $('#patientSearch').value.trim();
   try {
-    allPatients = await api('/patients' + (q ? '?q=' + encodeURIComponent(q) : ''));
+    const [patients, fin] = await Promise.all([
+      api('/patients' + (q ? '?q=' + encodeURIComponent(q) : '')),
+      api('/patients/finance'),
+    ]);
+    allPatients = patients;
+    finMap = Object.fromEntries(fin.map(r => [r._id, r]));
     renderPatients();
   } catch (e) { toast(e.message, 'error'); }
 }
 function renderPatients() {
-  $('#patientsBody').innerHTML = allPatients.length ? allPatients.map(p => `
-    <tr>
+  $('#patientsBody').innerHTML = allPatients.length ? allPatients.map(p => {
+    const f = finMap[p._id] || { visits: 0, paid: 0 };
+    return `<tr>
       <td data-label="الاسم"><div class="cell-main"><span class="avatar sm">${esc((p.name||'؟').trim()[0])}</span><strong>${esc(p.name)}</strong></div></td>
       <td data-label="الهاتف"><span dir="ltr">${esc(p.phone)}</span></td>
       <td data-label="السن / النوع">${p.age ?? '—'} ${p.gender ? '· ' + esc(p.gender) : ''}</td>
       <td data-label="التشخيص">${esc(p.diagnosis) || '<span class="faint">—</span>'}</td>
+      <td data-label="زيارات"><strong>${f.visits}</strong></td>
+      <td data-label="إجمالي المدفوع"><span class="price">${(f.paid||0).toLocaleString('en-US')} <small>ج.م</small></span></td>
       <td data-label="أُضيف في"><small>${new Date(p.createdAt).toLocaleDateString('ar-EG')}</small></td>
       <td data-label="إجراءات" class="cell-actions">
         <button class="icon-btn info" title="تعديل" onclick="openPatientModal('${p._id}')">${I.edit}</button>
         <button class="icon-btn danger" title="حذف" onclick="delPatient('${p._id}')">${I.trash}</button>
       </td>
-    </tr>`).join('')
-    : '<tr><td colspan="6" class="cell-empty">لا يوجد مرضى — ابدأ بإضافة أول مريض 🩺</td></tr>';
+    </tr>`;
+  }).join('')
+  : '<tr><td colspan="8" class="cell-empty">لا يوجد مرضى — ابدأ بإضافة أول مريض 🩺</td></tr>';
 }
 function openPatientModal(id) {
   const p = id ? allPatients.find(x => x._id === id) || {} : {};
@@ -976,7 +1162,7 @@ $('#patientSearch').addEventListener('input', () => { clearTimeout(searchTimer);
 function periodRange(p) {
   const d = new Date();
   let from = new Date(d);
-  if (p === 'week')  from.setDate(d.getDate() - ((d.getDay() + 1) % 7)); // من السبت
+  if (p === 'week')  from.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // من السبت
   if (p === 'month') from = new Date(d.getFullYear(), d.getMonth(), 1);
   if (p === 'year')  from = new Date(d.getFullYear(), 0, 1);
   return { from: fmtDate(from), to: fmtDate(d) };
@@ -984,17 +1170,17 @@ function periodRange(p) {
 function setActivePeriod(p) {
   $$('#periodSeg button').forEach(b => b.classList.toggle('active', b.dataset.period === p));
 }
-$$('.nav-item[data-view]').length; // noop guard
-function bindReports() {
-  $$('#periodSeg button').forEach(b => b.addEventListener('click', () => {
-    const r = periodRange(b.dataset.period);
-    $('#repFrom').value = r.from; $('#repTo').value = r.to;
-    setActivePeriod(b.dataset.period);
-    loadReports();
-  }));
-  $('#repFrom').addEventListener('change', () => { setActivePeriod(null); loadReports(); });
-  $('#repTo').addEventListener('change', () => { setActivePeriod(null); loadReports(); });
-  $('#repType').addEventListener('change', loadReports);
+function focusReportPatient(id, name) {
+  repPatientId = id;
+  $('#repPatSearch').value = name || '';
+  $('#repPatAc').classList.remove('open');
+  loadReports();
+}
+function clearReportPatient() {
+  repPatientId = '';
+  $('#repPatSearch').value = '';
+  $('#repPatCard').classList.add('hidden');
+  loadReports();
 }
 async function loadReports() {
   const from = $('#repFrom').value || todayStr();
@@ -1002,6 +1188,7 @@ async function loadReports() {
   const type = $('#repType').value;
   const params = new URLSearchParams({ from, to });
   if (type) params.set('type', type);
+  if (repPatientId) params.set('patient', repPatientId);
   try {
     const res = await api('/reports?' + params.toString());
     const t = (res.agg.totals && res.agg.totals[0]) || { visits: 0, paid: 0, pending: 0, doneCount: 0 };
@@ -1009,6 +1196,26 @@ async function loadReports() {
     animateCount($('#rpDone'), t.doneCount);
     animateCount($('#rpPaid'), t.paid);
     animateCount($('#rpPending'), t.pending);
+
+    // كارت ملخص المريض
+    if (repPatientId && res.patientInfo) {
+      const info = res.patientInfo, all = res.patientAll || { visits: 0, paid: 0 };
+      const card = $('#repPatCard');
+      card.classList.remove('hidden');
+      card.innerHTML = `
+        <button type="button" class="pc-close" id="pcClose" aria-label="مسح الفلتر">✕</button>
+        <span class="avatar lg">${esc((info.name||'؟').trim()[0])}</span>
+        <div class="pc-main"><strong>${esc(info.name)}</strong><small dir="ltr">${esc(info.phone||'')}</small></div>
+        <div class="pc-stats">
+          <div><span class="pc-n">${t.visits}</span><span class="pc-l">زيارة في الفترة</span></div>
+          <div><span class="pc-n green">${(t.paid||0).toLocaleString('en-US')}</span><span class="pc-l">ج.م في الفترة</span></div>
+          <div><span class="pc-n">${all.visits}</span><span class="pc-l">إجمالي الزيارات</span></div>
+          <div><span class="pc-n green">${(all.paid||0).toLocaleString('en-US')}</span><span class="pc-l">إجمالي المدفوع</span></div>
+        </div>`;
+      $('#pcClose').onclick = clearReportPatient;
+    } else {
+      $('#repPatCard').classList.add('hidden');
+    }
 
     // شريط التوزيع + بطاقات الأنواع
     const byMap = Object.fromEntries((res.agg.byType || []).map(x => [x._id, x]));
@@ -1021,8 +1228,10 @@ async function loadReports() {
       if (pct > 0) anyBar = true;
       return `<span class="dist-seg s-${typeClass(tp)}" style="width:${pct}%" title="${tp}: ${fmtEGP(paid)} (${pct.toFixed(0)}%)"></span>`;
     }).join('');
-    $('#distBar').innerHTML = anyBar ? barHtml : '';
-    if (!anyBar) $('#distBar').outerHTML = '<div class="dist-bar" id="distBar"></div><p class="dist-empty">لا إيراد متحصل في هذه الفترة بعد</p>';
+    const bar = $('#distBar');
+    bar.outerHTML = anyBar
+      ? `<div class="dist-bar" id="distBar">${barHtml}</div>`
+      : `<div class="dist-bar" id="distBar" style="display:none"></div><p class="dist-empty">لا إيراد متحصل في هذه الفترة بعد</p>`;
 
     $('#typeCards').innerHTML = types.map(tp => {
       const v = byMap[tp] || { visits: 0, paid: 0 };
@@ -1033,10 +1242,10 @@ async function loadReports() {
       </div>`;
     }).join('');
 
-    // إيراد كل مريض
+    // إيراد كل مريض (الاسم زر → يعرض سجله)
     $('#rpPatientBody').innerHTML = (res.agg.byPatient || []).length
       ? res.agg.byPatient.map(r => `<tr>
-          <td data-label="المريض"><strong>${esc(r._id?.name || 'مريض محذوف')}</strong>${r._id?.phone ? `<br><small class="faint" dir="ltr">${esc(r._id.phone)}</small>` : ''}</td>
+          <td data-label="المريض"><button type="button" class="link-btn" data-pid="${esc(r._id?.id||'')}" data-pname="${esc(r._id?.name||'')}"><strong>${esc(r._id?.name || 'مريض محذوف')}</strong></button>${r._id?.phone ? `<br><small class="faint" dir="ltr">${esc(r._id.phone)}</small>` : ''}</td>
           <td data-label="زيارات">${r.visits}</td>
           <td data-label="المدفوع"><span class="price">${(r.paid||0).toLocaleString('en-US')} <small>ج.م</small></span></td>
         </tr>`).join('')
@@ -1054,12 +1263,50 @@ async function loadReports() {
       : '<tr><td colspan="5" class="cell-empty">لا توجد زيارات في هذه الفترة</td></tr>';
   } catch (e) { toast(e.message, 'error'); }
 }
+function bindReports() {
+  $$('#periodSeg button').forEach(b => b.addEventListener('click', () => {
+    const r = periodRange(b.dataset.period);
+    $('#repFrom').value = r.from; $('#repTo').value = r.to;
+    setActivePeriod(b.dataset.period);
+    loadReports();
+  }));
+  $('#repFrom').addEventListener('change', () => { setActivePeriod(null); loadReports(); });
+  $('#repTo').addEventListener('change', () => { setActivePeriod(null); loadReports(); });
+  $('#repType').addEventListener('change', loadReports);
+
+  // بحث مريض في التقارير
+  let t;
+  const fillAc = list => {
+    $('#repPatAc').innerHTML = list.length ? list.slice(0, 8).map(acItemHtml).join('') : '<div class="ac-item empty">لا نتائج</div>';
+    $('#repPatAc').classList.add('open');
+  };
+  $('#repPatSearch').addEventListener('input', e => {
+    const q = e.target.value.trim();
+    clearTimeout(t);
+    if (!q) return;
+    t = setTimeout(async () => { try { fillAc(await api('/patients?q=' + encodeURIComponent(q))); } catch {} }, 250);
+  });
+  $('#repPatSearch').addEventListener('focus', async () => {
+    if (!repPatientId && !$('#repPatSearch').value.trim()) { try { fillAc(await api('/patients')); } catch {} }
+  });
+  $('#repPatAc').addEventListener('click', e => {
+    const it = e.target.closest('.ac-item[data-id]'); if (!it) return;
+    focusReportPatient(it.dataset.id, it.dataset.name);
+  });
+
+  // ربط جدول «إيراد كل مريض» بحقل البحث
+  $('#rpPatientBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-pid]'); if (!b || !b.dataset.pid) return;
+    focusReportPatient(b.dataset.pid, b.dataset.pname);
+  });
+}
 
 /* ================= النافذة المنبثقة ================= */
 function openModal(title, html, onSubmit) {
   $('#modalTitle').textContent = title;
   $('#modalBody').innerHTML = html;
   modalSubmit = onSubmit;
+  modalMode = () => 'existing';
   $('#modal').classList.remove('hidden');
   setTimeout(() => $('#modalBody input, #modalBody select')?.focus(), 60);
 }
@@ -1077,6 +1324,11 @@ $('#closeModalBtn').addEventListener('click', closeModal);
 $('#cancelModalBtn').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// إغلاق أي قائمة اقتراحات عند الضغط خارجها
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ac-wrap')) $$('.ac-list').forEach(l => l.classList.remove('open'));
+});
 
 /* ================= التنبيهات ================= */
 function toast(msg, type = 'success') {
