@@ -16,6 +16,8 @@ app.use(cors());
 app.use(express.json());
 
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const OID = id => new mongoose.Types.ObjectId(id);
+const isDoneExpr = { $cond: [{ $eq: ['$status', 'مكتمل'] }, '$price', 0] };
 
 /* ===================== الموديلات ===================== */
 const User = mongoose.model('User', new mongoose.Schema({
@@ -36,12 +38,12 @@ const Patient = mongoose.model('Patient', new mongoose.Schema({
 
 const Appointment = mongoose.model('Appointment', new mongoose.Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  date:    { type: String, required: true },   // YYYY-MM-DD
-  time:    { type: String, required: true },   // HH:mm
+  date:    { type: String, required: true },
+  time:    { type: String, required: true },
   type:    { type: String, enum: ['كشف جديد', 'متابعة', 'استشارة'], default: 'كشف جديد' },
   status:  { type: String, enum: ['مجدول', 'قيد الانتظار', 'مكتمل', 'ملغي'], default: 'مجدول' },
-  price:   { type: Number, default: 0 },       // سعر الزيارة
-  queue:   { type: Number, default: 0 },       // رقم الدور في اليوم
+  price:   { type: Number, default: 0 },
+  queue:   { type: Number, default: 0 },
   notes:   String,
 }, { timestamps: true }));
 
@@ -76,6 +78,15 @@ app.get('/api/patients', auth, wrap(async (req, res) => {
   ]} : {};
   res.json(await Patient.find(filter).sort('-createdAt'));
 }));
+
+// ملخص مالي لكل مريض (يُدمج في جدول المرضى)
+app.get('/api/patients/finance', auth, wrap(async (req, res) => {
+  res.json(await Appointment.aggregate([
+    { $match: { status: { $ne: 'ملغي' } } },
+    { $group: { _id: '$patient', visits: { $sum: 1 }, paid: { $sum: isDoneExpr } } },
+  ]));
+}));
+
 app.post('/api/patients', auth, wrap(async (req, res) => {
   res.status(201).json(await Patient.create(req.body));
 }));
@@ -93,15 +104,12 @@ app.get('/api/appointments', auth, wrap(async (req, res) => {
   res.json(await Appointment.find(date ? { date } : {})
     .populate('patient', 'name phone').sort('queue time'));
 }));
-
-// الحجز: يحسب رقم الدور تلقائيًا = آخر دور في اليوم + 1
 app.post('/api/appointments', auth, wrap(async (req, res) => {
   const data = { ...req.body, price: +req.body.price || 0 };
   const last = await Appointment.findOne({ date: data.date }).sort('-queue').select('queue');
   data.queue = (last?.queue || 0) + 1;
   res.status(201).json(await Appointment.create(data));
 }));
-
 app.patch('/api/appointments/:id/status', auth, wrap(async (req, res) => {
   res.json(await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true }));
 }));
@@ -117,7 +125,7 @@ app.get('/api/stats', auth, wrap(async (req, res) => {
   const [patients, todayApps] = await Promise.all([
     Patient.countDocuments(), Appointment.find({ date: today }),
   ]);
-  const sum = (arr) => arr.reduce((s, a) => s + (+a.price || 0), 0);
+  const sum = arr => arr.reduce((s, a) => s + (+a.price || 0), 0);
   res.json({
     patients,
     todayTotal: todayApps.length,
@@ -129,20 +137,21 @@ app.get('/api/stats', auth, wrap(async (req, res) => {
   });
 }));
 
-/* ===================== التقارير (يوم/أسبوع/شهر/سنة/مخصص) ===================== */
+/* ===================== التقارير ===================== */
 app.get('/api/reports', auth, wrap(async (req, res) => {
   const d = new Date();
   const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
   const from = req.query.from || fmt(d);
   const to   = req.query.to   || fmt(d);
   const type = req.query.type || '';
+  const pid  = req.query.patient || '';
 
   const match = { date: { $gte: from, $lte: to }, status: { $ne: 'ملغي' } };
   if (type) match.type = type;
+  if (pid)  match.patient = OID(pid);
 
-  const paid   = { $cond: [{ $eq: ['$status', 'مكتمل'] }, '$price', 0] };
-  const pend   = { $cond: [{ $in: ['$status', ['مجدول', 'قيد الانتظار']] }, '$price', 0] };
-  const isDone = { $cond: [{ $eq: ['$status', 'مكتمل'] }, 1, 0] };
+  const pendExpr = { $cond: [{ $in: ['$status', ['مجدول', 'قيد الانتظار']] }, '$price', 0] };
+  const doneExpr = { $cond: [{ $eq: ['$status', 'مكتمل'] }, 1, 0] };
 
   const [agg, list] = await Promise.all([
     Appointment.aggregate([
@@ -151,11 +160,11 @@ app.get('/api/reports', auth, wrap(async (req, res) => {
       { $unwind: { path: '$p', preserveNullAndEmptyArrays: true } },
       { $facet: {
           totals: [{ $group: { _id: null,
-            visits: { $sum: 1 }, paid: { $sum: paid },
-            pending: { $sum: pend }, doneCount: { $sum: isDone } } }],
-          byType: [{ $group: { _id: '$type', visits: { $sum: 1 }, paid: { $sum: paid } } }],
+            visits: { $sum: 1 }, paid: { $sum: isDoneExpr },
+            pending: { $sum: pendExpr }, doneCount: { $sum: doneExpr } } }],
+          byType: [{ $group: { _id: '$type', visits: { $sum: 1 }, paid: { $sum: isDoneExpr } } }],
           byPatient: [
-            { $group: { _id: { name: '$p.name', phone: '$p.phone' }, visits: { $sum: 1 }, paid: { $sum: paid } } },
+            { $group: { _id: { id: '$patient', name: '$p.name', phone: '$p.phone' }, visits: { $sum: 1 }, paid: { $sum: isDoneExpr } } },
             { $sort: { paid: -1 } },
           ],
       } },
@@ -163,7 +172,18 @@ app.get('/api/reports', auth, wrap(async (req, res) => {
     Appointment.find(match).populate('patient', 'name phone').sort('date queue time'),
   ]);
 
-  res.json({ from, to, agg: agg[0], list });
+  // ملخص المريض لكل تاريخه (مش بس الفترة)
+  let patientInfo = null, patientAll = null;
+  if (pid) {
+    patientInfo = await Patient.findById(pid).select('name phone');
+    const allAgg = await Appointment.aggregate([
+      { $match: { patient: OID(pid), status: { $ne: 'ملغي' } } },
+      { $group: { _id: null, visits: { $sum: 1 }, paid: { $sum: isDoneExpr } } },
+    ]);
+    patientAll = allAgg[0] || { visits: 0, paid: 0 };
+  }
+
+  res.json({ from, to, agg: agg[0], list, patientInfo, patientAll });
 }));
 
 /* ===================== تقديم الموقع ===================== */
