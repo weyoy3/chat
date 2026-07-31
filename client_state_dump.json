@@ -1,0 +1,12 @@
+{
+  "url": "https://binveusdt.com/#/home",
+  "timestamp": "2026-07-31T21:15:30.986Z",
+  "localStorage": {
+    "USER": "{\"isLogin\":true,\"info\":{\"id\":2,\"token\":\"ffa22ff56ee16e02ff6d59a353c4874b\",\"username\":\"qqq226\",\"invitecode\":null,\"role\":1,\"vip\":\"VIP6\",\"type\":0,\"status\":1,\"admin_id\":\"123456\",\"phone\":\"13889562356\",\"email\":null,\"balance\":\"3212329.00\",\"daypay\":\"500000.00\",\"monpay\":\"15000000.00\",\"iswithdraw\":0,\"isbalance\":0,\"buttons\":null,\"bturl\":\"/user/recharge\",\"balanceRemark\":null,\"withdrawRemark\":null,\"statusRemark\":null,\"SecretAnswer\":null},\"loading\":false}",
+    "APP": "{\"lang\":\"\"}"
+  },
+  "sessionStorage": {
+    "APP": "{\"title\":\"Redwood Trus\"}"
+  },
+  "cookies": ""
+}
