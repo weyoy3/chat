@@ -1,7 +1,6 @@
 /* =====================================================================
-   شات عربي — المرحلة 2 (ملف واحد)
-   + اقتصاد نقاط/ترقيات  + رفع أفاتار GridFS  + إشعارات لحظية
-   + حماية (بصمة/متصفح معدّل/سلوك بوت)  + إشراف بالأوامر
+   شات عربي — المرحلة 2 (ملف واحد) — نسخة مُصلَّحة
+   إصلاح: nameCgrad → Schema.Types.Mixed  +  مرونة أسماء الـ env
    ===================================================================== */
 'use strict';
 require('dotenv').config();
@@ -17,11 +16,16 @@ const jwt = require('jsonwebtoken');
 /* ----------------------------- البيئة ----------------------------- */
 const ENV = {
   port: process.env.PORT || 10000,
-  mongoUri: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/arabicchat',
-  secret: process.env.SESSION_SECRET || 'dev_secret_change_me_please_1234567890',
+  // يقرأ MONGO_URI أو MONGODB_URI (تغطية للاسمين)
+  mongoUri: process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/arabicchat',
+  // يقرأ JWT_SECRET أو SESSION_SECRET (تغطية للاسمين)
+  secret: process.env.JWT_SECRET || process.env.SESSION_SECRET || 'dev_secret_change_me_please_1234567890',
   clientUrl: process.env.CLIENT_URL || '*',
   env: process.env.NODE_ENV || 'development',
 };
+if (ENV.env === 'production' && ENV.secret.startsWith('dev_secret_')) {
+  console.warn('⚠️ غيّر JWT_SECRET / SESSION_SECRET في الإنتاج.');
+}
 
 /* --------------------------- أدوات عامة --------------------------- */
 const MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -43,8 +47,7 @@ function buildCgrad(c0, c1, c2, type) {
   return `linear-gradient(to ${type === 'h' ? 'left' : 'top'}, ${c.join(',')})`;
 }
 
-/* --------------------- نظام الرتب (ثابت، قابل للترقية) --------------------- */
-// الرتب غير الإدارية تترقى بالنقاط تلقائياً؛ الإدارية (staff) يدوياً فقط.
+/* --------------------- نظام الرتب --------------------- */
 const RANKS = [
   { level: 0,  name: 'زائر',        icon: '',  color: '#8fa6b0', min: 0,    staff: false },
   { level: 1,  name: 'عضو',         icon: '•', color: '#59b300', min: 0,    staff: false },
@@ -57,8 +60,7 @@ const RANKS = [
   { level: 99, name: 'مدير',        icon: '👑', color: '#d4a017', min: 0,    staff: true  },
 ];
 const rankInfo = (lv) => RANKS.find((r) => r.level === lv) || RANKS[0];
-const AUTO_RANKS = RANKS.filter((r) => !r.staff); // القابلة للترقية بالنقاط
-// أعلى رتبة تلقائية يستحقها عدد النقاط ده
+const AUTO_RANKS = RANKS.filter((r) => !r.staff);
 function autoRankFor(points) {
   let lv = 1;
   for (const r of AUTO_RANKS) if (points >= r.min && r.level > lv && !r.staff) lv = r.level;
@@ -82,15 +84,16 @@ const userSchema = new Schema({
   nameColor: { type: Number, default: 14 },
   nameGrad: { type: Number, default: 0 },
   nameFont: { type: Number, default: 0 },
-  nameCgrad: { type: { c0: String, c1: String, c2: String, type: String }, default: null },
+  // ✅ الإصلاح: Mixed بدل nested object (الـ key الداخلية "type" كانت بتلخبط Mongoose)
+  nameCgrad: { type: Schema.Types.Mixed, default: null },
   mood: { type: String, default: '', maxlength: 80 },
   country: { type: String, default: '' },
   gender: { type: Number, default: 0 },
   age: { type: Number, default: 0 },
-  avatarId: { type: String, default: '' },     // GridFS id
+  avatarId: { type: String, default: '' },
   avatarMime: { type: String, default: 'image/png' },
   bio: { type: String, default: '', maxlength: 300 },
-  fingerprints: [{ type: String }],            // آخر بصمات الجهاز
+  fingerprints: [{ type: String }],
   priv: {
     points: { type: Number, default: 1 }, media: { type: Number, default: 1 },
     friends: { type: Number, default: 1 }, talk: { type: Number, default: 1 },
@@ -178,8 +181,8 @@ const Report = model('Report', reportSchema);
 
 /* --------------------------- Presence (ذاكرة) --------------------------- */
 const presence = (() => {
-  const people = new Map();   // sid -> obj
-  const rooms = new Map();    // slug -> Set(sid)
+  const people = new Map();
+  const rooms = new Map();
   return {
     join(p) { people.set(p.sid, p); if (!rooms.has(p.room)) rooms.set(p.room, new Set()); rooms.get(p.room).add(p.sid); },
     leave(sid) {
@@ -201,13 +204,11 @@ const presence = (() => {
       const set = rooms.get(room); if (!set) return null;
       for (const s of set) { const p = people.get(s); if (p && p.name === name) return s; } return null;
     },
-    // أول socket لعضو مسجل معيّن (للإشعارات اللحظية)
     sidForUser(uid) {
       if (!uid) return null;
       for (const [, p] of people) if (p.userId === String(uid)) return p.sid;
       return null;
     },
-    // هل البصمة دي مستخدمة دلوقتي بهوية تانية؟ (anti-multi-login)
     fingerprintConflict(fp, userId) {
       if (!fp) return null;
       for (const [, p] of people) {
@@ -219,7 +220,7 @@ const presence = (() => {
 })();
 
 /* ----------------------------- الحماية ----------------------------- */
-const WORDS = []; // ← كلمات الحظر للغرف العامة
+const WORDS = [];
 const hasBlocked = (t) => { const l = t.toLowerCase(); return WORDS.some((w) => l.includes(w.toLowerCase())); };
 
 const flood = new Map();
@@ -229,23 +230,20 @@ function checkFlood(sid, burst = 3, win = 4000, mute = 6000) {
   a.push(t); flood.set(sid, a); return { blocked: false };
 }
 
-// كشف المتصفح المعدّل (من getFuckedFlooders في الأصل) — الفرونت بيبعت flag
 const MOD_UA = /puffin|maxthon|seamonkey|lunascape|iron|slimjet/i;
 
-// تتبّع سلوك الخاص (prinfx2 مبسّط): هل فيه نشاط بشري حقيقي قبل الرسالة؟
 function behaviorScore(b) {
-  if (!b || typeof b !== 'object') return 100; // مفيش بيانات = مشبوه
+  if (!b || typeof b !== 'object') return 100;
   const moves = b.moves || 0, keys = b.keys || 0, clicks = b.clicks || 0, dt = b.dt || 0;
-  // بشر حقيقي عادة عنده حركة ماوس/كيبورد/كليك خلال الجلسة
   const human = moves + keys + clicks;
-  if (human < 3 && dt < 4000) return 90;  // بوت: رسائل من غير تفاعل
+  if (human < 3 && dt < 4000) return 90;
   if (human < 8) return 45;
   return 5;
 }
 
-/* --------------------- Mute/Ban cache متزامن مع DB --------------------- */
-const muteCache = new Map(); // `${name}::${room}` -> untilMs
-const banCache = new Set();  // `${name}::${room}` و `${name}::*`
+/* --------------------- Mute/Ban cache --------------------- */
+const muteCache = new Map();
+const banCache = new Set();
 const mk = (name, room) => `${(name || '').toLowerCase()}::${room || ''}`;
 async function loadModCache() {
   const now = new Date();
@@ -257,7 +255,7 @@ async function loadModCache() {
 function isMuted(name, room) {
   const u = muteCache.get(mk(name, room));
   if (u && u > Date.now()) return true;
-  if (u) muteCache.delete(mk(name, room)); // انتهى
+  if (u) muteCache.delete(mk(name, room));
   return false;
 }
 function isBanned(name, room) {
@@ -277,7 +275,6 @@ async function addBan(name, room, by) {
 async function removeBan(name, room) {
   await Ban.deleteMany({ name, room }); banCache.delete(mk(name, room)); banCache.delete(mk(name, '*'));
 }
-// تنظيف الكتم المنتهي دورياً
 setInterval(() => {
   const now = Date.now();
   for (const [k, u] of muteCache) if (u <= now) muteCache.delete(k);
@@ -290,7 +287,7 @@ function styleOf(u) {
     grad: u.nameGrad || u.grad || 0,
     font: u.nameFont || u.font || 0,
     cgrad: u.nameCgrad ? buildCgrad(u.nameCgrad.c0, u.nameCgrad.c1, u.nameCgrad.c2, u.nameCgrad.type) : (u.cgrad || ''),
-    rank: u.rank || 0, avatarId: u.avatarId || u.avatarId || '', mood: u.mood || '',
+    rank: u.rank || 0, avatarId: u.avatarId || '', mood: u.mood || '',
   };
 }
 const makeToken = (uid) => jwt.sign({ uid: String(uid) }, ENV.secret, { expiresIn: '30d' });
@@ -336,7 +333,7 @@ const io = new Server(server, {
   pingTimeout: 60000, pingInterval: 25000,
 });
 app.use(cors({ origin: ENV.clientUrl }));
-app.use(express.json({ limit: '6mb' })); // للسماح بـ base64 صورة الأفاتار
+app.use(express.json({ limit: '6mb' }));
 
 app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/health', (req, res) => res.json({ ok: true, t: Date.now(), online: presence.count('general') }));
@@ -480,7 +477,6 @@ function toClientMsg(m) {
     text: m.text, mentions: m.mentions || [], kind: m.kind, t: m.createdAt,
   };
 }
-// إشعار لحظي + حفظه لعضو مسجل
 async function pushNotify(userId, type, from, text) {
   if (!userId) return;
   const doc = await Notify.create({ userId: String(userId), type, from, text });
@@ -499,7 +495,6 @@ io.on('connection', (socket) => {
       const fp = String(payload.fp || '').slice(0, 64);
       const modBrowser = !!payload.modBrowser || MOD_UA.test(String(payload.ua || ''));
 
-      // منع الدخول لو محظور في الغرفة دي
       const guestName = safeName(payload.name) || 'ضيف';
       if (!u && isBanned(guestName, slug)) return socket.emit('error', { msg: 'أنت محظور من هذه الغرفة.' });
 
@@ -511,7 +506,6 @@ io.on('connection', (socket) => {
       const name = u ? u.username : guestName;
       if (room.locked && room.password && room.password !== String(payload.pass || '')) return socket.emit('error', { msg: 'الغرفة دي مقفولة بكلمة سر.' });
 
-      // بصمة: سجّلها للعضو، وحذّر لو نفس الجهاز بحساب تاني دلوقتي
       let fpWarn = null;
       if (u && fp) {
         const conflict = presence.fingerprintConflict(fp, u._id);
@@ -529,7 +523,6 @@ io.on('connection', (socket) => {
       if (modBrowser) socket.emit('chat:system', { text: '⚠️ متصفحك معدّل أو غير معتاد — بعض الوظائف قد تُقيّد لحماية الغرفة.', warn: true });
       if (fpWarn) socket.emit('chat:system', { text: '🛡️ ' + fpWarn, warn: true });
 
-      // عدّاد الإشعارات غير المقروءة للمسجل
       if (u) {
         const unread = await Notify.countDocuments({ userId: String(u._id), read: false });
         socket.emit('notify:count', unread);
@@ -548,11 +541,9 @@ io.on('connection', (socket) => {
     if (!me) return;
     const text = safeText(payload.text); if (!text) return;
 
-    // حظر / كتم
-    if (isBanned(me.name, me.room)) return socket.emit('chat:system', { text: ' أنت محظور من هذه الغرفة.', warn: true });
+    if (isBanned(me.name, me.room)) return socket.emit('chat:system', { text: '⛔ أنت محظور من هذه الغرفة.', warn: true });
     if (isMuted(me.name, me.room)) return socket.emit('chat:system', { text: '🔇 أنت مكتوم مؤقتاً في هذه الغرفة.', warn: true });
 
-    // أوامر الإشراف
     if (text.startsWith('/')) { const handled = await handleCommand(text, me, socket); if (handled) return typeof ack === 'function' && ack({ ok: true, cmd: true }); }
 
     const f = checkFlood(me.sid);
@@ -561,7 +552,6 @@ io.on('connection', (socket) => {
 
     const room = await Room.findOne({ slug: me.room }); if (!room) return;
 
-    // استخراج المنشنات
     const mentionNames = [...new Set((text.match(/@([\u0600-\u06FF\w_]{2,24})/g) || []).map((x) => x.slice(1)))];
 
     const doc = await Message.create({
@@ -572,7 +562,6 @@ io.on('connection', (socket) => {
     io.to(me.room).emit('chat:message', toClientMsg(doc));
     if (typeof ack === 'function') ack({ ok: true, id: String(doc._id) });
 
-    // اقتصاد النقاط + الترقية (للمسجلين فقط)
     if (me.userId) {
       const gain = rnd(2, 4) + (mentionNames.length ? 1 : 0);
       const u = await User.findById(me.userId);
@@ -592,7 +581,6 @@ io.on('connection', (socket) => {
       }
     }
 
-    // إشعارات المنشن
     for (const mn of mentionNames) {
       const target = await User.findOne({ usernameLower: mn.toLowerCase() }).select('_id username').lean();
       if (target && String(target._id) !== me.userId) {
@@ -610,12 +598,10 @@ io.on('connection', (socket) => {
     if (on) typingTimer = setTimeout(() => { presence.setTyping(me.sid, false); socket.to(me.room).emit('chat:typing', { sid: me.sid, name: me.name, on: false }); }, 2500);
   });
 
-  /* --------------------------- الخاص + سلوك البوت --------------------------- */
   socket.on('private:open', async ({ name } = {}) => {
     if (!me || !name) return;
     const conv = makeConv(me.name, name);
     const hist = await Priv.find({ conv }).sort({ createdAt: 1 }).limit(60).lean();
-    // تعليم رسائل الوارد كمقروءة
     await Priv.updateMany({ conv, to: me.name, read: false }, { read: true });
     socket.emit('private:history', { with: name, conv, msgs: hist.map((m) => ({ id: String(m._id), from: m.from, to: m.to, text: m.text, t: m.createdAt, mine: m.from === me.name })) });
   });
@@ -623,7 +609,6 @@ io.on('connection', (socket) => {
   socket.on('private:send', async ({ to, text, behavior } = {}, ack) => {
     if (!me || !to) return;
     const t = safeText(text); if (!t) return;
-    // فحص سلوك البوت: لو مشبوه جداً، اطلب تفاعل بشري (نرفض بلطف)
     const score = behaviorScore(behavior);
     if (score >= 90) { socket.emit('chat:system', { text: '🤖 للحماية: حرّك الماوس أو اكتب يدوياً قبل إرسال الخاص.', warn: true }); return typeof ack === 'function' && ack({ ok: false, reason: 'bot' }); }
     const f = checkFlood(me.sid, 4, 3000, 4000);
@@ -640,7 +625,6 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, id: String(doc._id) });
   });
 
-  /* --------------------------- تبديل غرفة --------------------------- */
   socket.on('room:switch', async ({ room, pass } = {}, ack) => {
     if (!me) return;
     const oldRoom = me.room; const r = await Room.findOne({ slug: room }); if (!r) return socket.emit('error', { msg: 'الغرفة مش موجودة.' });
@@ -674,7 +658,6 @@ io.on('connection', (socket) => {
     const staff = ri.staff || me.rank >= 12;
     const parts = text.trim().split(/\s+/); const cmd = parts[0].toLowerCase();
     const atName = (parts[1] || '').replace(/^@/, '');
-    const sys = (t, kind = 'mod') => { const d = { room: (async () => (await Room.findOne({ slug: me.room }))?._id)(), sid: me.sid, name: 'النظام', text: t, kind }; return d; };
     const emitSys = (t, kind = 'mod') => io.to(me.room).emit('chat:message', { id: 's' + Date.now(), sid: 'sys', name: 'النظام', color: 13, rank: 99, text: t, kind, t: new Date() });
 
     if (cmd === '/topic') {
@@ -728,7 +711,7 @@ io.on('connection', (socket) => {
       const rsid = presence.sidForUser(recv._id); if (rsid) io.to(rsid).emit('points:update', { points: recvNew.points, rank: recvRank, next: nextAutoThreshold(recvRank), gained: amt });
       return true;
     }
-    return false; // مش أمر معروف → رسالة عادية
+    return false;
   }
 });
 
