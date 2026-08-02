@@ -159,7 +159,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     await stopScanner();
   }, [stopScanner]);
 
-  // دالة فحص الصورة الفعلي عبر الـ Canvas والـ Html5Qrcode
+  // دالة فحص الصورة مع تحسين وتصغير الأبعاد لضمان دقة القراءة
   const executeImageScan = async () => {
     if (!imageFile || !imageRef.current) return;
     setLoading(true);
@@ -170,9 +170,23 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('No context');
 
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      ctx.drawImage(img, 0, 0);
+      // تصغير الأبعاد لتجنب مشاكل الذاكرة والدقة العالية في الهواتف
+      const MAX_SIZE = 1200;
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+      if (width > MAX_SIZE || height > MAX_SIZE) {
+        if (width > height) {
+          height = Math.round((height * MAX_SIZE) / width);
+          width = MAX_SIZE;
+        } else {
+          width = Math.round((width * MAX_SIZE) / height);
+          height = MAX_SIZE;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
 
       canvas.toBlob(async (blob) => {
         if (!blob) {
@@ -201,7 +215,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
           });
           setLoading(false);
         } catch {
-          // المحاولة مرة أخرى بالملف الأصلي مباشرة كخيار بديل
+          // محاولة ثانية بالملف الأصلي مباشرة
           try {
             const text2 = await Html5Qrcode.scanFile(imageFile, false);
             const detected2 = detectQRType(text2);
@@ -225,7 +239,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
             showToast(t('scanNoResult'));
           }
         }
-      }, 'image/png');
+      }, 'image/png', 0.9);
     } catch {
       setLoading(false);
       setError(t('scanNoResult'));
