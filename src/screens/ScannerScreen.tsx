@@ -25,6 +25,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>(settings.defaultCamera);
   const [zoom, setZoom] = useState(1);
   const [lastScanTime, setLastScanTime] = useState(0);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<DetectedQR | null>(null);
 
@@ -81,6 +82,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     setError(null);
     setLoading(true);
     setResult(null);
+    setSelectedImageSrc(null);
     try {
       const scanner = new Html5Qrcode(READER_ID, {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -142,9 +144,16 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     } catch { /* ignore */ }
   }, []);
 
-    const handleGalleryScan = useCallback(async (file: File) => {
+  const handleGalleryScan = useCallback(async (file: File) => {
     setError(null);
     setLoading(true);
+    setResult(null);
+
+    // عرض الصورة المختارة فوراً داخل إطار الماسح
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImageSrc(imageUrl);
+    await stopScanner();
+
     try {
       const text = await Html5Qrcode.scanFile(file, true);
       const detected = detectQRType(text);
@@ -166,8 +175,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       setLoading(false);
       setError(t('scanNoResult'));
     }
-  }, [settings, addHistory, t]);
-
+  }, [settings, addHistory, t, stopScanner]);
 
   const isFavorite = result ? history.find((h) => h.rawValue === result.rawValue && h.source === 'scan')?.isFavorite : false;
 
@@ -184,7 +192,24 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
         <div id={READER_ID} className="w-full h-full" />
 
-        {!scanning && !loading && (
+        {/* عرض الصورة المختارة من المعرض داخل الإطار */}
+        {selectedImageSrc && (
+          <div className="absolute inset-0 bg-surface-container flex flex-col items-center justify-center z-10">
+            <img src={selectedImageSrc} alt="Selected QR" className="w-full h-full object-contain p-2" />
+            <button
+              onClick={() => {
+                setSelectedImageSrc(null);
+                setError(null);
+                if (continuous) startScanner();
+              }}
+              className="absolute top-3 end-3 w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white z-20"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {!scanning && !loading && !selectedImageSrc && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
               <ScanLine className="w-10 h-10 text-on-primary" />
@@ -196,14 +221,14 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
           </div>
         )}
 
-        {loading && (
+        {loading && !selectedImageSrc && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container">
             <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
             <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
           </div>
         )}
 
-        {scanning && (
+        {scanning && !selectedImageSrc && (
           <>
             {/* Scan overlay frame */}
             <div className="absolute inset-0 pointer-events-none">
@@ -251,7 +276,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
           </>
         )}
 
-        {error && (
+        {error && !selectedImageSrc && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
             <CameraOff className="w-12 h-12 text-error" />
             <p className="text-error text-sm font-medium">{error}</p>
@@ -297,7 +322,11 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
               showToast(isFavorite ? t('removedFromFav') : t('addedToFav'));
             }
           }}
-          onClose={() => { setResult(null); if (continuous && !scanning) startScanner(); }}
+          onClose={() => { 
+            setResult(null); 
+            setSelectedImageSrc(null);
+            if (continuous && !scanning) startScanner(); 
+          }}
           t={t}
           onViewDetails={openProductDetails}
         />
