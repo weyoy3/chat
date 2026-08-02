@@ -146,7 +146,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     setError(null);
     try {
       const scanner = new Html5Qrcode(`gallery-reader-${Date.now()}`, { verbose: false });
-      const text = await scanner.scanFile(file, false);
+      const text = await scanner.scanFile(file, true);
       const detected = detectQRType(text);
       setResult(detected);
       if (settings.sound) playBeep();
