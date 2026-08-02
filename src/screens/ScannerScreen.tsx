@@ -27,7 +27,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [lastScanTime, setLastScanTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<DetectedQR | null>(null);
-
+  
   resultRef.current = result;
 
   const stopScanner = useCallback(async () => {
@@ -52,10 +52,8 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
 
       const detected = detectQRType(decodedText);
       setResult(detected);
-
       if (settings.sound) playBeep();
       if (settings.vibration) vibrate(80);
-
       addHistory({
         type: detected.type,
         title: getQRTitle(detected.type, detected.data, detected.rawValue),
@@ -81,6 +79,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     setError(null);
     setLoading(true);
     setResult(null);
+
     try {
       const scanner = new Html5Qrcode(READER_ID, {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -144,9 +143,38 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
 
   const handleGalleryScan = useCallback(async (file: File) => {
     setError(null);
+    setLoading(true);
+
+    // التحقق من نوع الملف
+    if (!file.type.startsWith('image/')) {
+      setError(t('invalidFileType') || 'ملف غير صالح');
+      setLoading(false);
+      return;
+    }
+
+    const scannerId = `gallery-reader-${Date.now()}`;
+
     try {
-      const scanner = new Html5Qrcode(`gallery-reader-${Date.now()}`, { verbose: false });
-      const text = await scanner.scanFile(file, true);
+      const scanner = new Html5Qrcode(scannerId, {
+        verbose: false,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      });
+
+      // إعدادات مهمة جداً لنجاح المسح من الصورة
+      const config = {
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        disableFlip: false, // السماح بالقلب التلقائي
+      };
+
+      const text = await scanner.scanFile(file, false, config);
+
+      if (!text || text.trim() === '') {
+        setError(t('scanNoResult'));
+        setLoading(false);
+        return;
+      }
+
       const detected = detectQRType(text);
       setResult(detected);
       if (settings.sound) playBeep();
@@ -157,11 +185,15 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
         rawValue: detected.rawValue,
         data: detected.data,
         productData: detected.productData,
-        source: 'scan',
+        source: 'gallery', // تمييز المصدر
       });
-      scanner.clear();
-    } catch {
+
+      await scanner.clear();
+      setLoading(false);
+    } catch (err) {
+      console.error('Gallery scan error:', err);
       setError(t('scanNoResult'));
+      setLoading(false);
     }
   }, [settings, addHistory, t]);
 
@@ -179,7 +211,6 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       {/* Scanner viewport */}
       <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
         <div id={READER_ID} className="w-full h-full" />
-
         {!scanning && !loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
@@ -191,14 +222,12 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
             </button>
           </div>
         )}
-
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container/90 rounded-3xl z-10">
             <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
             <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
           </div>
         )}
-
         {scanning && (
           <>
             {/* Scan overlay frame */}
@@ -206,7 +235,6 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
               <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
               <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
             </div>
-
             {/* Controls */}
             <div className="absolute top-3 start-3 flex gap-2">
               <button
@@ -246,7 +274,6 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
             </div>
           </>
         )}
-
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
             <CameraOff className="w-12 h-12 text-error" />
@@ -317,7 +344,7 @@ function ScanResult({
   const actionUrl = getActionUrl(result.type, result.data, result.rawValue);
   const iconName = TYPE_ICONS[result.type];
   const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[iconName] ?? Icons.QrCode;
-
+  
   const actionLabel = (() => {
     switch (result.type) {
       case 'url': return t('actionOpenUrl');
@@ -386,6 +413,7 @@ function ScanResult({
 
 function ProductPreview({ result, t, onViewDetails }: { result: DetectedQR; t: (k: string) => string; onViewDetails?: (productData: import('../types').ProductData, rawValue: string) => void }) {
   const p = result.productData!;
+  
   return (
     <div className="bg-tertiary-container rounded-2xl p-4 mb-4">
       <p className="font-bold text-on-tertiary-container mb-2">{p.productName}</p>
