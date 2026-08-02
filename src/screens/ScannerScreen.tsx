@@ -142,15 +142,17 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     } catch { /* ignore */ }
   }, []);
 
-  const handleGalleryScan = useCallback(async (file: File) => {
+    const handleGalleryScan = useCallback(async (file: File) => {
     setError(null);
+    setLoading(true);
     try {
-      const scanner = new Html5Qrcode(`gallery-reader-${Date.now()}`, { verbose: false });
-      const text = await scanner.scanFile(file, false);
+      const text = await Html5Qrcode.scanFile(file, true);
       const detected = detectQRType(text);
       setResult(detected);
+      
       if (settings.sound) playBeep();
       if (settings.vibration) vibrate(80);
+      
       addHistory({
         type: detected.type,
         title: getQRTitle(detected.type, detected.data, detected.rawValue),
@@ -159,11 +161,13 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
         productData: detected.productData,
         source: 'scan',
       });
-      scanner.clear();
+      setLoading(false);
     } catch {
+      setLoading(false);
       setError(t('scanNoResult'));
     }
   }, [settings, addHistory, t]);
+
 
   const isFavorite = result ? history.find((h) => h.rawValue === result.rawValue && h.source === 'scan')?.isFavorite : false;
 
