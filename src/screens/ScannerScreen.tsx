@@ -26,11 +26,11 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [zoom, setZoom] = useState(1);
   const [lastScanTime, setLastScanTime] = useState(0);
   
-  // States خاصة بالصورة المختارة والقص
+  // States للصورة المختارة
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<DetectedQR | null>(null);
 
@@ -150,7 +150,6 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     } catch { /* ignore */ }
   }, []);
 
-  // اختيار الصورة وعرضها فوراً بدون مسح تلقائي فاشل، بل إتاحة زر للمسح أو مسح تلقائي دقيق
   const handleGallerySelect = useCallback(async (file: File) => {
     setError(null);
     setResult(null);
@@ -160,32 +159,77 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     await stopScanner();
   }, [stopScanner]);
 
-  // دالة مسح الصورة الفعلية (سواء الصورة كاملة أو الجزء المقصود)
+  // دالة فحص الصورة الفعلي عبر الـ Canvas والـ Html5Qrcode
   const executeImageScan = async () => {
-    if (!imageFile) return;
+    if (!imageFile || !imageRef.current) return;
     setLoading(true);
     setError(null);
     try {
-      // محاولة المسح المباشر للصورة
-      const text = await Html5Qrcode.scanFile(imageFile, true);
-      const detected = detectQRType(text);
-      setResult(detected);
-      
-      if (settings.sound) playBeep();
-      if (settings.vibration) vibrate(80);
-      
-      addHistory({
-        type: detected.type,
-        title: getQRTitle(detected.type, detected.data, detected.rawValue),
-        rawValue: detected.rawValue,
-        data: detected.data,
-        productData: detected.productData,
-        source: 'scan',
-      });
-      setLoading(false);
+      const img = imageRef.current;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No context');
+
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setLoading(false);
+          setError(t('scanNoResult'));
+          showToast(t('scanNoResult'));
+          return;
+        }
+        const processedFile = new File([blob], "scan-img.png", { type: "image/png" });
+        
+        try {
+          const text = await Html5Qrcode.scanFile(processedFile, false);
+          const detected = detectQRType(text);
+          setResult(detected);
+          
+          if (settings.sound) playBeep();
+          if (settings.vibration) vibrate(80);
+          
+          addHistory({
+            type: detected.type,
+            title: getQRTitle(detected.type, detected.data, detected.rawValue),
+            rawValue: detected.rawValue,
+            data: detected.data,
+            productData: detected.productData,
+            source: 'scan',
+          });
+          setLoading(false);
+        } catch {
+          // المحاولة مرة أخرى بالملف الأصلي مباشرة كخيار بديل
+          try {
+            const text2 = await Html5Qrcode.scanFile(imageFile, false);
+            const detected2 = detectQRType(text2);
+            setResult(detected2);
+            
+            if (settings.sound) playBeep();
+            if (settings.vibration) vibrate(80);
+            
+            addHistory({
+              type: detected2.type,
+              title: getQRTitle(detected2.type, detected2.data, detected2.rawValue),
+              rawValue: detected2.rawValue,
+              data: detected2.data,
+              productData: detected2.productData,
+              source: 'scan',
+            });
+            setLoading(false);
+          } catch {
+            setLoading(false);
+            setError(t('scanNoResult'));
+            showToast(t('scanNoResult'));
+          }
+        }
+      }, 'image/png');
     } catch {
       setLoading(false);
       setError(t('scanNoResult'));
+      showToast(t('scanNoResult'));
     }
   };
 
@@ -204,24 +248,24 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
         <div id={READER_ID} className="w-full h-full" />
 
-        {/* عرض الصورة المختارة من المعرض داخل الإطار مع زر الفحص وزر الإغلاق */}
+        {/* عرض الصورة المختارة مع إطار التحديد وأزرار التحكم */}
         {selectedImageSrc && (
           <div className="absolute inset-0 bg-surface-container flex flex-col items-center justify-center z-10 p-2">
             <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black/10">
               <img ref={imageRef} src={selectedImageSrc} alt="Selected QR" className="max-w-full max-h-full object-contain" />
               
-              {/* إطار محاكاة لتحديد الqr */}
-              <div className="absolute inset-12 border-2 border-primary/80 border-dashed rounded-xl pointer-events-none flex items-center justify-center">
-                <span className="bg-black/60 text-white text-xs px-2 py-1 rounded-full">{t('scanAutoDetected') || 'ضع الـ QR داخل الإطار'}</span>
+              {/* إطار التحديد البصري */}
+              <div className="absolute inset-12 border-2 border-primary border-dashed rounded-xl pointer-events-none flex items-center justify-center">
+                <span className="bg-black/60 text-white text-xs px-3 py-1 rounded-full">ضع الـ QR داخل الإطار</span>
               </div>
             </div>
 
-            {/* أزرار التحكم بالصورة المختارة */}
+            {/* أزرار الفحص والإلغاء */}
             <div className="absolute bottom-3 inset-x-3 flex gap-2 z-20">
               <button
                 onClick={executeImageScan}
                 disabled={loading}
-                className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3"
+                className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3 shadow-lg"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -280,13 +324,11 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
 
         {scanning && !selectedImageSrc && (
           <>
-            {/* Scan overlay frame */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
               <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
             </div>
 
-            {/* Controls */}
             <div className="absolute top-3 start-3 flex gap-2">
               <button
                 onClick={() => setContinuous(!continuous)}
@@ -460,7 +502,6 @@ function ScanResult({
           {t('actionShare')}
         </button>
         <button onClick={onFavorite} className="md-tonal-btn flex items-center gap-2">
-
           <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-error' : ''}`} />
           {isFavorite ? t('actionRemoveFavorite') : t('actionSaveFavorite')}
         </button>
@@ -480,7 +521,7 @@ function ProductPreview({ result, t, onViewDetails }: { result: DetectedQR; t: (
       </div>
       {p.customFields.length > 0 && (
         <div className="space-y-1">
-          {p.customFields.slice(0, 4).map((f) =>(
+          {p.customFields.slice(0, 4).map((f) => (
             <div key={f.id} className="flex justify-between text-xs text-on-tertiary-container">
               <span className="opacity-70">{f.name}</span>
               <span className="font-medium">{f.value}</span>
