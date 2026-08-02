@@ -26,7 +26,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [zoom, setZoom] = useState(1);
   const [lastScanTime, setLastScanTime] = useState(0);
   
-  // States للصورة المختارة
+  // States للصورة المختارة من المعرض
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -159,65 +159,67 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     await stopScanner();
   }, [stopScanner]);
 
-  // دالة فحص الصورة مع تحسين وتصغير الأبعاد لضمان دقة القراءة
+  // دالة فحص الصورة بمرونة عالية (فحص مباشر ثم عبر Canvas كبديل)
   const executeImageScan = async () => {
-    if (!imageFile || !imageRef.current) return;
+    if (!imageFile) return;
     setLoading(true);
     setError(null);
     try {
-      const img = imageRef.current;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No context');
+      // محاولة الفحص المباشر للملف أولاً
+      const text = await Html5Qrcode.scanFile(imageFile, false);
+      const detected = detectQRType(text);
+      setResult(detected);
+      
+      if (settings.sound) playBeep();
+      if (settings.vibration) vibrate(80);
+      
+      addHistory({
+        type: detected.type,
+        title: getQRTitle(detected.type, detected.data, detected.rawValue),
+        rawValue: detected.rawValue,
+        data: detected.data,
+        productData: detected.productData,
+        source: 'scan',
+      });
+      setLoading(false);
+    } catch {
+      // المحاولة البديلة عبر معالجة الـ Canvas في حال فشل الفحص المباشر
+      try {
+        const img = imageRef.current;
+        if (!img) throw new Error('No image element');
 
-      // تصغير الأبعاد لتجنب مشاكل الذاكرة والدقة العالية في الهواتف
-      const MAX_SIZE = 1200;
-      let width = img.naturalWidth || img.width;
-      let height = img.naturalHeight || img.height;
-      if (width > MAX_SIZE || height > MAX_SIZE) {
-        if (width > height) {
-          height = Math.round((height * MAX_SIZE) / width);
-          width = MAX_SIZE;
-        } else {
-          width = Math.round((width * MAX_SIZE) / height);
-          height = MAX_SIZE;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('No context');
+
+        const MAX_SIZE = 1200;
+        let width = img.naturalWidth || img.width || 800;
+        let height = img.naturalHeight || img.height || 800;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
         }
-      }
 
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          setLoading(false);
-          setError(t('scanNoResult'));
-          showToast(t('scanNoResult'));
-          return;
-        }
-        const processedFile = new File([blob], "scan-img.png", { type: "image/png" });
-        
-        try {
-          const text = await Html5Qrcode.scanFile(processedFile, false);
-          const detected = detectQRType(text);
-          setResult(detected);
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            setLoading(false);
+            setError(t('scanNoResult'));
+            showToast(t('scanNoResult'));
+            return;
+          }
+          const processedFile = new File([blob], "scan-img.png", { type: "image/png" });
           
-          if (settings.sound) playBeep();
-          if (settings.vibration) vibrate(80);
-          
-          addHistory({
-            type: detected.type,
-            title: getQRTitle(detected.type, detected.data, detected.rawValue),
-            rawValue: detected.rawValue,
-            data: detected.data,
-            productData: detected.productData,
-            source: 'scan',
-          });
-          setLoading(false);
-        } catch {
-          // محاولة ثانية بالملف الأصلي مباشرة
           try {
-            const text2 = await Html5Qrcode.scanFile(imageFile, false);
+            const text2 = await Html5Qrcode.scanFile(processedFile, false);
             const detected2 = detectQRType(text2);
             setResult(detected2);
             
@@ -238,12 +240,12 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
             setError(t('scanNoResult'));
             showToast(t('scanNoResult'));
           }
-        }
-      }, 'image/png', 0.9);
-    } catch {
-      setLoading(false);
-      setError(t('scanNoResult'));
-      showToast(t('scanNoResult'));
+        }, 'image/png', 0.95);
+      } catch {
+        setLoading(false);
+        setError(t('scanNoResult'));
+        showToast(t('scanNoResult'));
+      }
     }
   };
 
@@ -258,51 +260,14 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
         <h1 className="text-xl font-bold text-on-surface">{t('scanTitle')}</h1>
       </div>
 
-      {/* Scanner viewport */}
-      <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
-        <div id={READER_ID} className="w-full h-full" />
-
-        {/* عرض الصورة المختارة مع إطار التحديد وأزرار التحكم */}
-        {selectedImageSrc && (
-          <div className="absolute inset-0 bg-surface-container flex flex-col items-center justify-center z-10 p-2">
-            <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black/10">
-              <img ref={imageRef} src={selectedImageSrc} alt="Selected QR" className="max-w-full max-h-full object-contain" />
-              
-              {/* إطار التحديد البصري */}
-              <div className="absolute inset-12 border-2 border-primary border-dashed rounded-xl pointer-events-none flex items-center justify-center">
-                <span className="bg-black/60 text-white text-xs px-3 py-1 rounded-full">ضع الـ QR داخل الإطار</span>
-              </div>
-            </div>
-
-            {/* أزرار الفحص والإلغاء */}
-            <div className="absolute bottom-3 inset-x-3 flex gap-2 z-20">
-              <button
-                onClick={executeImageScan}
-                disabled={loading}
-                className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3 shadow-lg"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Check className="w-5 h-5" />
-                    <span>فحص الرمز الآن</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedImageSrc(null);
-                  setImageFile(null);
-                  setError(null);
-                  if (continuous) startScanner();
-                }}
-                className="md-tonal-btn px-4 py-3 bg-error/10 text-error"
-              >
-                إلغاء
-              </button>
-            </div>
-
+      {/* عرض الصورة المختارة في بطاقة مستقلة تماماً عن الكاميرا عند اختيار صورة */}
+      {selectedImageSrc ? (
+        <div className="md-card md-elevated-2 p-5 mb-4 animate-fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-primary" />
+              {t('scanFromGallery')}
+            </h2>
             <button
               onClick={() => {
                 setSelectedImageSrc(null);
@@ -310,86 +275,134 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
                 setError(null);
                 if (continuous) startScanner();
               }}
-              className="absolute top-3 end-3 w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white z-20"
+              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface md-ripple"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-        )}
 
-        {!scanning && !loading && !selectedImageSrc && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
-              <ScanLine className="w-10 h-10 text-on-primary" />
+          <div className="relative w-full h-72 rounded-2xl bg-surface-container overflow-hidden flex items-center justify-center mb-4 border border-outline-variant p-2">
+            <img
+              ref={imageRef}
+              src={selectedImageSrc}
+              alt="Selected QR"
+              className="max-w-full max-h-full object-contain rounded-xl"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-error/10 text-error p-3 rounded-xl text-sm mb-4 text-center font-medium">
+              {error}
             </div>
-            <button onClick={startScanner} className="md-filled-btn flex items-center gap-2">
-              <Camera className="w-5 h-5" />
-              {t('scanStartCamera')}
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={executeImageScan}
+              disabled={loading}
+              className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3.5 shadow-lg"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>فحص الرمز الآن</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedImageSrc(null);
+                setImageFile(null);
+                setError(null);
+                if (continuous) startScanner();
+              }}
+              className="md-tonal-btn px-5 py-3.5 bg-error/10 text-error"
+            >
+              إلغاء
             </button>
           </div>
-        )}
+        </div>
+      ) : (
+        /* Scanner viewport للكاميرا المباشرة */
+        <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
+          <div id={READER_ID} className="w-full h-full" />
 
-        {loading && !selectedImageSrc && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container">
-            <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
-            <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
-          </div>
-        )}
-
-        {scanning && !selectedImageSrc && (
-          <>
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
-              <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
-            </div>
-
-            <div className="absolute top-3 start-3 flex gap-2">
-              <button
-                onClick={() => setContinuous(!continuous)}
-                className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-              >
-                {continuous ? <Repeat className="w-5 h-5" /> : <ScanLine className="w-5 h-5" />}
-              </button>
-            </div>
-            <div className="absolute top-3 end-3">
-              <button
-                onClick={stopScanner}
-                className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-              >
-                <CameraOff className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="absolute bottom-3 inset-x-3 flex items-center justify-center gap-2">
-              <button onClick={toggleFlash} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                {flashOn ? <Zap className="w-5 h-5" /> : <ZapOff className="w-5 h-5" />}
-              </button>
-              <button onClick={flipCamera} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                <SwitchCamera className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1.5">
-                <ZoomIn className="w-4 h-4 text-white" />
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  value={zoom}
-                  onChange={(e) => applyZoom(parseFloat(e.target.value))}
-                  className="w-20"
-                />
+          {!scanning && !loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
+                <ScanLine className="w-10 h-10 text-on-primary" />
               </div>
+              <button onClick={startScanner} className="md-filled-btn flex items-center gap-2">
+                <Camera className="w-5 h-5" />
+                {t('scanStartCamera')}
+              </button>
             </div>
-          </>
-        )}
+          )}
 
-        {error && !selectedImageSrc && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <CameraOff className="w-12 h-12 text-error" />
-            <p className="text-error text-sm font-medium">{error}</p>
-            <button onClick={startScanner} className="md-tonal-btn">{t('actionRetry')}</button>
-          </div>
-        )}
-      </div>
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container">
+              <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
+              <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
+            </div>
+          )}
+
+          {scanning && (
+            <>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
+                <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
+              </div>
+
+              <div className="absolute top-3 start-3 flex gap-2">
+                <button
+                  onClick={() => setContinuous(!continuous)}
+                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
+                >
+                  {continuous ? <Repeat className="w-5 h-5" /> : <ScanLine className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="absolute top-3 end-3">
+                <button
+                  onClick={stopScanner}
+                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
+                >
+                  <CameraOff className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="absolute bottom-3 inset-x-3 flex items-center justify-center gap-2">
+                <button onClick={toggleFlash} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
+                  {flashOn ? <Zap className="w-5 h-5" /> : <ZapOff className="w-5 h-5" />}
+                </button>
+                <button onClick={flipCamera} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
+                  <SwitchCamera className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1.5">
+                  <ZoomIn className="w-4 h-4 text-white" />
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(e) => applyZoom(parseFloat(e.target.value))}
+                    className="w-20"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <CameraOff className="w-12 h-12 text-error" />
+              <p className="text-error text-sm font-medium">{error}</p>
+              <button onClick={startScanner} className="md-tonal-btn">{t('actionRetry')}</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Gallery scan button */}
       <input
@@ -403,13 +416,15 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
           e.target.value = '';
         }}
       />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="md-outlined-btn w-full flex items-center justify-center gap-2 mb-4"
-      >
-        <ImageIcon className="w-5 h-5" />
-        {t('scanFromGallery')}
-      </button>
+      {!selectedImageSrc && (
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="md-outlined-btn w-full flex items-center justify-center gap-2 mb-4"
+        >
+          <ImageIcon className="w-5 h-5" />
+          {t('scanFromGallery')}
+        </button>
+      )}
 
       {/* Result */}
       {result && (
