@@ -1,32 +1,53 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ChevronLeft, Camera, ImageIcon, RotateCcw, Copy, ExternalLink, ScanLine,
-  AlertTriangle, CheckCircle2, Zap, Flashlight, ZoomIn, ClipboardPaste, Loader2,
+  AlertTriangle, CheckCircle2, Flashlight, ZoomIn, ClipboardPaste, Loader2,
 } from 'lucide-react';
-import jsQR from 'jsqr'; // fallback فقط — لو مش مركّب، المحرّك الأصلي بيكفي على أغلب أجهزة Android
 import { useApp } from '../store';
 import { showToast } from '../components/ui';
 
 type Phase = 'idle' | 'processing' | 'scanning' | 'success' | 'not-found' | 'error';
 
-/* ──────────────── محرّكات فكّ الرمز ──────────────── */
+/* ──────────────── المحرّك الأصلي (لا يحتاج أي باكيدج) ──────────────── */
 const hasNative = typeof window !== 'undefined' && 'BarcodeDetector' in window;
 const NativeDetector = hasNative
   ? new (window as any).BarcodeDetector({ formats: ['qr_code'] })
   : null;
 
-// صورة مرفوعة: المحرّك الأصلي ياخد الـ File مباشرة (مفيش canvas يتلوّث/يتقري بدري)، وإلا jsQR بعد onload بأبعاد صحيحة
+/* ──────────────── jsQR كـ fallback اختياري ────────────────
+   dynamic import + @vite-ignore ⇒ Rollup يتجاهله وقت الـ build (مفيش فشل)،
+   ولو الباكيدج مش موجود runtime الـ catch يمسكه ونكمل بدونه. */
+let jsQRPromise: Promise<any> | null = null;
+function loadJsQR() {
+  if (!jsQRPromise) {
+    jsQRPromise = import(/* @vite-ignore */ 'jsqr')
+      .then((m: any) => m?.default ?? m)
+      .catch(() => null); // الباكيدج مش مركّب → null بهدوء
+  }
+  return jsQRPromise;
+}
+
+/** محاولة فكّ بـ jsQR من ImageData (لو اتحمّل) */
+async function tryJsQR(data: ImageData): Promise<string | null> {
+  const jsQR = await loadJsQR();
+  if (typeof jsQR !== 'function') return null;
+  const code = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' });
+  return code ? code.data : null;
+}
+
+/** صورة مرفوعة: المحرّك الأصلي ياخد الـ File مباشرة (مفيش canvas يتلوّث/يتقري بدري) */
 async function decodeFile(file: File): Promise<string | null> {
   if (NativeDetector) {
     try {
       const codes = await NativeDetector.detect(file);
       if (codes?.[0]?.rawValue) return codes[0].rawValue;
-    } catch { /* fallthrough */ }
+    } catch { /* fallthrough لـ jsQR */ }
   }
+  // fallback: canvas بعد onload بأبعاد صحيحة
   return await new Promise<string | null>((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
+    img.onload = async () => {
       try {
         const MAX = 1800;
         let w = img.naturalWidth || img.width;
@@ -38,8 +59,7 @@ async function decodeFile(file: File): Promise<string | null> {
         if (!ctx) return resolve(null);
         ctx.drawImage(img, 0, 0, w, h);                 // بعد onload → مفيش كانفاس فاضي
         const d = ctx.getImageData(0, 0, w, h);          // أبعاد الرسم الفعلية
-        const code = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
-        resolve(code ? code.data : null);
+        resolve(await tryJsQR(d));
       } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image-load')); };
@@ -47,7 +67,7 @@ async function decodeFile(file: File): Promise<string | null> {
   });
 }
 
-// مصدر حيّ (الكاميرا): canvas واحد ثابت معاد استخدامه
+/** مصدر حيّ (الكاميرا): canvas واحد ثابت معاد استخدامه */
 const workCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : (null as any);
 async function decodeSource(src: CanvasImageSource, w: number, h: number): Promise<string | null> {
   if (NativeDetector) {
@@ -61,8 +81,7 @@ async function decodeSource(src: CanvasImageSource, w: number, h: number): Promi
   if (!ctx) return null;
   ctx.drawImage(src as any, 0, 0, w, h);
   const d = ctx.getImageData(0, 0, w, h);
-  const code = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
-  return code ? code.data : null;
+  return await tryJsQR(d);
 }
 
 function beep() {
@@ -87,7 +106,7 @@ const GRID_STYLE: React.CSSProperties = {
 };
 
 /* ──────────────── المكوّن ──────────────── */
-export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
+export function ScannerScreen({ navigate }: { navigate: (s: string) => void }) {
   const { t, settings, addHistory } = useApp();
 
   const [phase, setPhase] = useState<Phase>('idle');
@@ -109,7 +128,15 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
 
   const revokePreview = () => { if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); } };
 
-  /* ───── نتيجة موحّدة (تحترم الإعدادات الموجودة عندك) ───── */
+  /* ───── نتيجة موحّدة (تحترم الإعدادات) ───── */
+  const stopCamera = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null; busyRef.current = false;
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
+    streamRef.current = null; setCameraOn(false);
+    setTorch(false); setZoom(null); setZoomRange(null); setCanTorch(false);
+  }, []);
+
   const commitResult = useCallback((value: string) => {
     stopCamera();
     setResult(value);
@@ -126,7 +153,7 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
     if (settings.autoOpenLinks && /^https?:\/\//i.test(value)) {
       setTimeout(() => window.open(value, '_blank', 'noopener'), 350);
     }
-  }, [settings, addHistory]);
+  }, [settings, addHistory, stopCamera]);
 
   /* ───── مسح صورة (ملف / لصق / إفلات) ───── */
   const handleImageFile = useCallback(async (file: File) => {
@@ -192,14 +219,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
     }
   }, [settings.defaultCamera, tick, t]);
 
-  const stopCamera = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null; busyRef.current = false;
-    streamRef.current?.getTracks().forEach((tr) => tr.stop());
-    streamRef.current = null; setCameraOn(false);
-    setTorch(false); setZoom(null); setZoomRange(null); setCanTorch(false);
-  }, []);
-
   const toggleTorch = async () => {
     const tr = streamRef.current?.getVideoTracks()[0]; if (!tr) return;
     const next = !torch;
@@ -230,6 +249,7 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
   const copyValue = () => { if (result) { navigator.clipboard?.writeText(result); showToast(t('copied')); } };
 
   const live = phase === 'scanning' || phase === 'processing';
+  const engineLabel = hasNative ? t('scanEngineNative') : t('scanEngineJs');
 
   return (
     <div className="animate-fade-in px-4 pt-2 pb-28 max-w-2xl mx-auto">
@@ -240,7 +260,7 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
         </button>
         <h1 className="text-xl font-bold text-on-surface tracking-tight">{t('scanTitle')}</h1>
         <span className="ms-auto text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/70">
-          {hasNative ? t('scanEngineNative') : t('scanEngineJs')}
+          {engineLabel}
         </span>
       </div>
 
@@ -250,7 +270,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f?.type.startsWith('image/')) handleImageFile(f); }}
       >
-        {/* طبقة ambient نابضة + شبكة ثابتة (inline) */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-tertiary/5 animate-pulse" />
         <div className="pointer-events-none absolute inset-0 opacity-[0.06] text-on-surface" style={GRID_STYLE} />
 
@@ -264,7 +283,7 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
           </div>
         )}
 
-        {/* إطار المسح: زوايا نابضة + حلقة ping + خط bounce (كلها Tailwind core) */}
+        {/* إطار المسح: زوايا نابضة + حلقة ping + خط bounce (Tailwind core) */}
         {live && (
           <div className="absolute inset-0 grid place-items-center pointer-events-none">
             <div className="relative w-2/3 h-2/3">
@@ -278,7 +297,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
           </div>
         )}
 
-        {/* حالة المعالجة فوق المصغّر */}
         {phase === 'processing' && (
           <div className="absolute inset-0 grid place-items-center bg-black/35 backdrop-blur-[2px] animate-fade-in">
             <div className="flex items-center gap-2 text-white text-sm font-semibold">
@@ -287,7 +305,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
           </div>
         )}
 
-        {/* أدوات الكاميرا العائمة */}
         {cameraOn && canTorch && (
           <div className="absolute top-3 inset-x-0 flex justify-center gap-2 z-10">
             <button onClick={toggleTorch} aria-label="torch"
@@ -297,7 +314,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
           </div>
         )}
 
-        {/* النتيجة / الفشل — ثابتة، بدون تراكب */}
         {phase === 'not-found' && (
           <StateOverlay tone="error" icon={<AlertTriangle className="w-9 h-9" />}>
             <p className="text-error font-semibold text-center px-6">{t('scanNotFound')}</p>
@@ -320,7 +336,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
         )}
       </div>
 
-      {/* شريط التقريب */}
       {cameraOn && zoomRange && (
         <div className="flex items-center gap-3 mb-3 px-1 animate-slide-up">
           <ZoomIn className="w-4 h-4 text-on-surface-variant shrink-0" />
@@ -329,7 +344,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
         </div>
       )}
 
-      {/* أزرار التحكم */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <button onClick={() => (cameraOn ? stopCamera() : startCamera())}
           className="md-filled-btn flex items-center justify-center gap-2 py-3.5">
@@ -360,7 +374,6 @@ export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
 
 /* ─── مساعدات بصرية ─── */
 function Corner({ className }: { className: string }) {
-  // الزوايا نابضة → إحساس «يركّز» بدون أي keyframe مخصص
   return <span className={`absolute w-7 h-7 rounded-md border-primary animate-pulse ${className}`} />;
 }
 function StateOverlay({ tone, icon, children }: {
