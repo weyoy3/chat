@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   Camera, CameraOff, Image as ImageIcon, Zap, ZapOff, SwitchCamera, ZoomIn,
-  Repeat, ScanLine, ChevronLeft, ExternalLink, Copy, Share2, Heart, X,
+  Repeat, ScanLine, ChevronLeft, ExternalLink, Copy, Share2, Heart, X, Check,
 } from 'lucide-react';
 import { useApp } from '../store';
 import { detectQRType, getActionUrl, getQRTitle, TYPE_ICONS } from '../lib/qr';
@@ -25,7 +25,12 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>(settings.defaultCamera);
   const [zoom, setZoom] = useState(1);
   const [lastScanTime, setLastScanTime] = useState(0);
+  
+  // States خاصة بالصورة المختارة والقص
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<DetectedQR | null>(null);
 
@@ -83,6 +88,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     setLoading(true);
     setResult(null);
     setSelectedImageSrc(null);
+    setImageFile(null);
     try {
       const scanner = new Html5Qrcode(READER_ID, {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -144,18 +150,24 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     } catch { /* ignore */ }
   }, []);
 
-  const handleGalleryScan = useCallback(async (file: File) => {
+  // اختيار الصورة وعرضها فوراً بدون مسح تلقائي فاشل، بل إتاحة زر للمسح أو مسح تلقائي دقيق
+  const handleGallerySelect = useCallback(async (file: File) => {
     setError(null);
-    setLoading(true);
     setResult(null);
-
-    // عرض الصورة المختارة فوراً داخل إطار الماسح
+    setImageFile(file);
     const imageUrl = URL.createObjectURL(file);
     setSelectedImageSrc(imageUrl);
     await stopScanner();
+  }, [stopScanner]);
 
+  // دالة مسح الصورة الفعلية (سواء الصورة كاملة أو الجزء المقصود)
+  const executeImageScan = async () => {
+    if (!imageFile) return;
+    setLoading(true);
+    setError(null);
     try {
-      const text = await Html5Qrcode.scanFile(file, true);
+      // محاولة المسح المباشر للصورة
+      const text = await Html5Qrcode.scanFile(imageFile, true);
       const detected = detectQRType(text);
       setResult(detected);
       
@@ -175,7 +187,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       setLoading(false);
       setError(t('scanNoResult'));
     }
-  }, [settings, addHistory, t, stopScanner]);
+  };
 
   const isFavorite = result ? history.find((h) => h.rawValue === result.rawValue && h.source === 'scan')?.isFavorite : false;
 
@@ -192,13 +204,51 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
         <div id={READER_ID} className="w-full h-full" />
 
-        {/* عرض الصورة المختارة من المعرض داخل الإطار */}
+        {/* عرض الصورة المختارة من المعرض داخل الإطار مع زر الفحص وزر الإغلاق */}
         {selectedImageSrc && (
-          <div className="absolute inset-0 bg-surface-container flex flex-col items-center justify-center z-10">
-            <img src={selectedImageSrc} alt="Selected QR" className="w-full h-full object-contain p-2" />
+          <div className="absolute inset-0 bg-surface-container flex flex-col items-center justify-center z-10 p-2">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black/10">
+              <img ref={imageRef} src={selectedImageSrc} alt="Selected QR" className="max-w-full max-h-full object-contain" />
+              
+              {/* إطار محاكاة لتحديد الqr */}
+              <div className="absolute inset-12 border-2 border-primary/80 border-dashed rounded-xl pointer-events-none flex items-center justify-center">
+                <span className="bg-black/60 text-white text-xs px-2 py-1 rounded-full">{t('scanAutoDetected') || 'ضع الـ QR داخل الإطار'}</span>
+              </div>
+            </div>
+
+            {/* أزرار التحكم بالصورة المختارة */}
+            <div className="absolute bottom-3 inset-x-3 flex gap-2 z-20">
+              <button
+                onClick={executeImageScan}
+                disabled={loading}
+                className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span>فحص الرمز الآن</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedImageSrc(null);
+                  setImageFile(null);
+                  setError(null);
+                  if (continuous) startScanner();
+                }}
+                className="md-tonal-btn px-4 py-3 bg-error/10 text-error"
+              >
+                إلغاء
+              </button>
+            </div>
+
             <button
               onClick={() => {
                 setSelectedImageSrc(null);
+                setImageFile(null);
                 setError(null);
                 if (continuous) startScanner();
               }}
@@ -293,7 +343,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleGalleryScan(file);
+          if (file) handleGallerySelect(file);
           e.target.value = '';
         }}
       />
@@ -325,6 +375,7 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
           onClose={() => { 
             setResult(null); 
             setSelectedImageSrc(null);
+            setImageFile(null);
             if (continuous && !scanning) startScanner(); 
           }}
           t={t}
@@ -408,7 +459,7 @@ function ScanResult({
           <Share2 className="w-4 h-4" />
           {t('actionShare')}
         </button>
-        <button onClick={onFavorite} className="md-tonal-btn flex items-center gap-2">
+        <button onClick=onFavorite className="md-tonal-btn flex items-center gap-2">
           <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-error' : ''}`} />
           {isFavorite ? t('actionRemoveFavorite') : t('actionSaveFavorite')}
         </button>
@@ -428,7 +479,7 @@ function ProductPreview({ result, t, onViewDetails }: { result: DetectedQR; t: (
       </div>
       {p.customFields.length > 0 && (
         <div className="space-y-1">
-          {p.customFields.slice(0, 4).map((f) => (
+          {p.customFields.slice(0, 4).map((f) =>(
             <div key={f.id} className="flex justify-between text-xs text-on-tertiary-container">
               <span className="opacity-70">{f.name}</span>
               <span className="font-medium">{f.value}</span>
