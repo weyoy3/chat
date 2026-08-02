@@ -1,445 +1,379 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Camera, CameraOff, Image as ImageIcon, Zap, ZapOff, SwitchCamera, ZoomIn,
-  Repeat, ScanLine, ChevronLeft, ExternalLink, Copy, Share2, Heart, X,
+  ChevronLeft, Camera, ImageIcon, RotateCcw, Copy, ExternalLink, ScanLine,
+  AlertTriangle, CheckCircle2, Zap, Flashlight, ZoomIn, ClipboardPaste, Loader2,
 } from 'lucide-react';
+import jsQR from 'jsqr'; // fallback فقط — لو مش مركّب، المحرّك الأصلي بيكفي على أغلب أجهزة Android
 import { useApp } from '../store';
-import { detectQRType, getActionUrl, getQRTitle, TYPE_ICONS } from '../lib/qr';
-import { playBeep, vibrate, copyToClipboard, shareText } from '../lib/qrRender';
-import { EmptyState, showToast } from '../components/ui';
-import * as Icons from 'lucide-react';
-import type { DetectedQR } from '../lib/qr';
+import { showToast } from '../components/ui';
 
-const READER_ID = 'qr-reader';
+type Phase = 'idle' | 'processing' | 'scanning' | 'success' | 'not-found' | 'error';
 
-export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: string) => void; openProductDetails?: (productData: import('../types').ProductData, rawValue: string) => void }) {
-  const { t, settings, addHistory, toggleFavorite, history } = useApp();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<DetectedQR | null>(null);
-  const [continuous, setContinuous] = useState(true);
-  const [flashOn, setFlashOn] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>(settings.defaultCamera);
-  const [zoom, setZoom] = useState(1);
-  const [lastScanTime, setLastScanTime] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const resultRef = useRef<DetectedQR | null>(null);
-  
-  resultRef.current = result;
+/* ──────────────── محرّكات فكّ الرمز ──────────────── */
+const hasNative = typeof window !== 'undefined' && 'BarcodeDetector' in window;
+const NativeDetector = hasNative
+  ? new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+  : null;
 
-  const stopScanner = useCallback(async () => {
-    if (scannerRef.current) {
+// صورة مرفوعة: المحرّك الأصلي ياخد الـ File مباشرة (مفيش canvas يتلوّث/يتقري بدري)، وإلا jsQR بعد onload بأبعاد صحيحة
+async function decodeFile(file: File): Promise<string | null> {
+  if (NativeDetector) {
+    try {
+      const codes = await NativeDetector.detect(file);
+      if (codes?.[0]?.rawValue) return codes[0].rawValue;
+    } catch { /* fallthrough */ }
+  }
+  return await new Promise<string | null>((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
       try {
-        await scannerRef.current.stop();
-      } catch { /* ignore */ }
-      try {
-        await scannerRef.current.clear();
-      } catch { /* ignore */ }
-      scannerRef.current = null;
+        const MAX = 1800;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w > MAX || h > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return resolve(null);
+        ctx.drawImage(img, 0, 0, w, h);                 // بعد onload → مفيش كانفاس فاضي
+        const d = ctx.getImageData(0, 0, w, h);          // أبعاد الرسم الفعلية
+        const code = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+        resolve(code ? code.data : null);
+      } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image-load')); };
+    img.src = url;
+  });
+}
+
+// مصدر حيّ (الكاميرا): canvas واحد ثابت معاد استخدامه
+const workCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : (null as any);
+async function decodeSource(src: CanvasImageSource, w: number, h: number): Promise<string | null> {
+  if (NativeDetector) {
+    try {
+      const codes = await NativeDetector.detect(src as any);
+      if (codes?.[0]?.rawValue) return codes[0].rawValue;
+    } catch { /* fallthrough */ }
+  }
+  workCanvas.width = w; workCanvas.height = h;
+  const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(src as any, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h);
+  const code = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+  return code ? code.data : null;
+}
+
+function beep() {
+  try {
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 1200; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.13);
+  } catch { /* صامت */ }
+}
+
+// خلفية شبكية ثابتة (inline — مفيش keyframe، مفيش CSS مضاف)
+const GRID_STYLE: React.CSSProperties = {
+  backgroundImage:
+    'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)',
+  backgroundSize: '22px 22px',
+};
+
+/* ──────────────── المكوّن ──────────────── */
+export function ScanScreen({ navigate }: { navigate: (s: string) => void }) {
+  const { t, settings, addHistory } = useApp();
+
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [result, setResult] = useState<string | null>(null);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [torch, setTorch] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number } | null>(null);
+  const [canTorch, setCanTorch] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const busyRef = useRef(false);
+  const lastScanRef = useRef(0);
+  const lastDecodedRef = useRef('');
+
+  const revokePreview = () => { if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); } };
+
+  /* ───── نتيجة موحّدة (تحترم الإعدادات الموجودة عندك) ───── */
+  const commitResult = useCallback((value: string) => {
+    stopCamera();
+    setResult(value);
+    setPhase('success');
+    addHistory({
+      type: /^https?:\/\//i.test(value) ? 'url' : 'text',
+      title: value.length > 40 ? value.slice(0, 40) + '…' : value,
+      rawValue: value,
+      data: {},
+      source: 'scan',
+    });
+    if (settings.vibration && navigator.vibrate) navigator.vibrate(60);
+    if (settings.sound) beep();
+    if (settings.autoOpenLinks && /^https?:\/\//i.test(value)) {
+      setTimeout(() => window.open(value, '_blank', 'noopener'), 350);
     }
-    setScanning(false);
-    setLoading(false);
-  }, []);
+  }, [settings, addHistory]);
 
-  const onScanSuccess = useCallback(
-    (decodedText: string) => {
-      const now = Date.now();
-      if (now - lastScanTime < 1500) return;
-      setLastScanTime(now);
-
-      const detected = detectQRType(decodedText);
-      setResult(detected);
-      if (settings.sound) playBeep();
-      if (settings.vibration) vibrate(80);
-      addHistory({
-        type: detected.type,
-        title: getQRTitle(detected.type, detected.data, detected.rawValue),
-        rawValue: detected.rawValue,
-        data: detected.data,
-        productData: detected.productData,
-        source: 'scan',
-      });
-
-      if (!continuous) {
-        stopScanner();
-      } else if (settings.autoOpenLinks) {
-        const url = getActionUrl(detected.type, detected.data, detected.rawValue);
-        if (detected.type === 'url' && url) {
-          window.open(url, '_blank');
-        }
-      }
-    },
-    [lastScanTime, settings, continuous, addHistory, stopScanner],
-  );
-
-  const startScanner = useCallback(async () => {
-    setError(null);
-    setLoading(true);
+  /* ───── مسح صورة (ملف / لصق / إفلات) ───── */
+  const handleImageFile = useCallback(async (file: File) => {
+    revokePreview();
+    setPreviewUrl(URL.createObjectURL(file));
+    setPhase('processing');
     setResult(null);
-
     try {
-      const scanner = new Html5Qrcode(READER_ID, {
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-        verbose: false,
-      });
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: cameraFacing },
-        {
-          fps: 10,
-          qrbox: { width: 240, height: 240 },
-          aspectRatio: 1,
-        },
-        onScanSuccess,
-        () => { /* per-frame error, ignore */ },
-      );
-      setScanning(true);
-      setLoading(false);
-    } catch {
-      setError(t('scanCameraError'));
-      setLoading(false);
+      const data = await decodeFile(file);
+      if (data) commitResult(data);
+      else setPhase('not-found');
+    } catch (err) {
+      console.error('[scan] image failed', err);
+      setPhase('error');
+      showToast(t('error'));
     }
-  }, [cameraFacing, onScanSuccess, t]);
+  }, [commitResult, previewUrl, t]);
 
-  useEffect(() => {
-    return () => { stopScanner(); };
-  }, [stopScanner]);
-
-  const flipCamera = useCallback(async () => {
-    await stopScanner();
-    setCameraFacing((prev) => (prev === 'environment' ? 'user' : 'environment'));
-    setTimeout(() => startScanner(), 100);
-  }, [stopScanner, startScanner]);
-
-  const toggleFlash = useCallback(async () => {
-    if (!scannerRef.current) return;
-    try {
-      const settings2 = scannerRef.current.getRunningTrackCameraCapabilities();
-      if (!settings2) return;
-      const torch = settings2.torchFeature();
-      if (torch?.isSupported()) {
-        await torch.apply(!flashOn);
-        setFlashOn(!flashOn);
+  /* ───── الكاميرا ───── */
+  const tick = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2 || busyRef.current) {
+      rafRef.current = requestAnimationFrame(tick); return;
+    }
+    const now = performance.now();
+    if (now - lastScanRef.current > 140) {
+      const w = video.videoWidth, h = video.videoHeight;
+      if (w && h) {
+        busyRef.current = true; lastScanRef.current = now;
+        try {
+          const data = await decodeSource(video, w, h);
+          if (data && data !== lastDecodedRef.current) {
+            lastDecodedRef.current = data; busyRef.current = false;
+            commitResult(data); return;
+          }
+        } catch { /* تجاهل frame */ }
+        busyRef.current = false;
       }
-    } catch { /* ignore */ }
-  }, [flashOn]);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+  }, [commitResult]);
 
-  const applyZoom = useCallback(async (z: number) => {
-    setZoom(z);
-    if (!scannerRef.current) return;
+  const reflectTrackCaps = (track: MediaStreamTrack) => {
+    const caps = (track as any).getCapabilities?.() ?? {};
+    setCanTorch(!!caps.torch);
+    if (caps.zoom) { setZoomRange({ min: caps.zoom.min, max: caps.zoom.max }); setZoom(caps.zoom.min); }
+  };
+
+  const startCamera = useCallback(async () => {
+    setCameraOn(true); setPhase('scanning'); revokePreview();
     try {
-      const caps = scannerRef.current.getRunningTrackCameraCapabilities();
-      if (!caps) return;
-      const zoomFeat = caps.zoomFeature();
-      if (zoomFeat?.isSupported()) {
-        await zoomFeat.apply(z);
-      }
-    } catch { /* ignore */ }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: settings.defaultCamera === 'user' ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      streamRef.current = stream;
+      reflectTrackCaps(stream.getVideoTracks()[0]);
+      const video = videoRef.current!;
+      video.srcObject = stream; await video.play();
+      rafRef.current = requestAnimationFrame(tick);
+    } catch (err) {
+      console.error('[scan] camera failed', err);
+      setCameraOn(false); setPhase('error'); showToast(t('scanCameraDenied'));
+    }
+  }, [settings.defaultCamera, tick, t]);
+
+  const stopCamera = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null; busyRef.current = false;
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
+    streamRef.current = null; setCameraOn(false);
+    setTorch(false); setZoom(null); setZoomRange(null); setCanTorch(false);
   }, []);
 
-  const handleGalleryScan = useCallback(async (file: File) => {
-    setError(null);
-    setLoading(true);
+  const toggleTorch = async () => {
+    const tr = streamRef.current?.getVideoTracks()[0]; if (!tr) return;
+    const next = !torch;
+    try { await (tr as any).applyConstraints({ advanced: [{ torch: next }] }); setTorch(next); } catch { /* */ }
+  };
+  const applyZoom = async (v: number) => {
+    const tr = streamRef.current?.getVideoTracks()[0]; if (!tr) return;
+    setZoom(v);
+    try { await (tr as any).applyConstraints({ advanced: [{ zoom: v }] }); } catch { /* */ }
+  };
 
-    // التحقق من نوع الملف
-    if (!file.type.startsWith('image/')) {
-      setError(t('invalidFileType') || 'ملف غير صالح');
-      setLoading(false);
-      return;
-    }
+  useEffect(() => () => { stopCamera(); revokePreview(); }, [stopCamera]);
 
-    const scannerId = `gallery-reader-${Date.now()}`;
-
-    try {
-      const scanner = new Html5Qrcode(scannerId, {
-        verbose: false,
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      });
-
-      // إعدادات مهمة جداً لنجاح المسح من الصورة
-      const config = {
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        disableFlip: false, // السماح بالقلب التلقائي
-      };
-
-      const text = await scanner.scanFile(file, false, config);
-
-      if (!text || text.trim() === '') {
-        setError(t('scanNoResult'));
-        setLoading(false);
-        return;
+  /* ───── لصق من الحافظة ───── */
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items; if (!items) return;
+      for (const it of Array.from(items)) {
+        if (it.type.startsWith('image/')) { const f = it.getAsFile(); if (f) { e.preventDefault(); handleImageFile(f); return; } }
       }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [handleImageFile]);
 
-      const detected = detectQRType(text);
-      setResult(detected);
-      if (settings.sound) playBeep();
-      if (settings.vibration) vibrate(80);
-      addHistory({
-        type: detected.type,
-        title: getQRTitle(detected.type, detected.data, detected.rawValue),
-        rawValue: detected.rawValue,
-        data: detected.data,
-        productData: detected.productData,
-        source: 'gallery', // تمييز المصدر
-      });
+  const reset = () => { stopCamera(); setResult(null); revokePreview(); lastDecodedRef.current = ''; setPhase('idle'); };
+  const openLink = () => result && window.open(result, '_blank', 'noopener');
+  const copyValue = () => { if (result) { navigator.clipboard?.writeText(result); showToast(t('copied')); } };
 
-      await scanner.clear();
-      setLoading(false);
-    } catch (err) {
-      console.error('Gallery scan error:', err);
-      setError(t('scanNoResult'));
-      setLoading(false);
-    }
-  }, [settings, addHistory, t]);
-
-  const isFavorite = result ? history.find((h) => h.rawValue === result.rawValue && h.source === 'scan')?.isFavorite : false;
+  const live = phase === 'scanning' || phase === 'processing';
 
   return (
     <div className="animate-fade-in px-4 pt-2 pb-28 max-w-2xl mx-auto">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-4 mt-2">
         <button onClick={() => navigate('home')} className="text-on-surface p-1 md-ripple rounded-full">
-          <ChevronLeft className={`w-6 h-6 ${document.dir === 'rtl' ? 'rotate-180' : ''}`} />
+          <ChevronLeft className="w-6 h-6 rtl:rotate-180" />
         </button>
-        <h1 className="text-xl font-bold text-on-surface">{t('scanTitle')}</h1>
+        <h1 className="text-xl font-bold text-on-surface tracking-tight">{t('scanTitle')}</h1>
+        <span className="ms-auto text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/70">
+          {hasNative ? t('scanEngineNative') : t('scanEngineJs')}
+        </span>
       </div>
 
-      {/* Scanner viewport */}
-      <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
-        <div id={READER_ID} className="w-full h-full" />
-        {!scanning && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
-              <ScanLine className="w-10 h-10 text-on-primary" />
+      {/* Viewfinder */}
+      <div
+        className="md-card md-elevated-2 relative overflow-hidden mb-4 aspect-square select-none"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f?.type.startsWith('image/')) handleImageFile(f); }}
+      >
+        {/* طبقة ambient نابضة + شبكة ثابتة (inline) */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-tertiary/5 animate-pulse" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] text-on-surface" style={GRID_STYLE} />
+
+        {cameraOn ? (
+          <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+        ) : previewUrl ? (
+          <img src={previewUrl} alt="" className="absolute inset-0 w-full h-full object-contain bg-black/90" />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center bg-surface-container">
+            <ScanLine className="w-16 h-16 text-outline/30" />
+          </div>
+        )}
+
+        {/* إطار المسح: زوايا نابضة + حلقة ping + خط bounce (كلها Tailwind core) */}
+        {live && (
+          <div className="absolute inset-0 grid place-items-center pointer-events-none">
+            <div className="relative w-2/3 h-2/3">
+              <span className="absolute inset-0 rounded-2xl border-2 border-primary/25 animate-ping" />
+              <Corner className="top-0 start-0 border-t-4 border-s-4" />
+              <Corner className="top-0 end-0 border-t-4 border-e-4" />
+              <Corner className="bottom-0 start-0 border-b-4 border-s-4" />
+              <Corner className="bottom-0 end-0 border-b-4 border-e-4" />
+              <span className="absolute start-0 end-0 top-1/2 h-0.5 bg-primary shadow-[0_0_14px_var(--md-primary)] animate-bounce" />
             </div>
-            <button onClick={startScanner} className="md-filled-btn flex items-center gap-2">
-              <Camera className="w-5 h-5" />
-              {t('scanStartCamera')}
+          </div>
+        )}
+
+        {/* حالة المعالجة فوق المصغّر */}
+        {phase === 'processing' && (
+          <div className="absolute inset-0 grid place-items-center bg-black/35 backdrop-blur-[2px] animate-fade-in">
+            <div className="flex items-center gap-2 text-white text-sm font-semibold">
+              <Loader2 className="w-5 h-5 animate-spin" /> {t('scanProcessing')}
+            </div>
+          </div>
+        )}
+
+        {/* أدوات الكاميرا العائمة */}
+        {cameraOn && canTorch && (
+          <div className="absolute top-3 inset-x-0 flex justify-center gap-2 z-10">
+            <button onClick={toggleTorch} aria-label="torch"
+              className={`md-ripple grid place-items-center w-10 h-10 rounded-full transition-colors ${torch ? 'bg-primary text-on-primary' : 'bg-black/45 text-white backdrop-blur'}`}>
+              <Flashlight className="w-5 h-5" />
             </button>
           </div>
         )}
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container/90 rounded-3xl z-10">
-            <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
-            <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
-          </div>
+
+        {/* النتيجة / الفشل — ثابتة، بدون تراكب */}
+        {phase === 'not-found' && (
+          <StateOverlay tone="error" icon={<AlertTriangle className="w-9 h-9" />}>
+            <p className="text-error font-semibold text-center px-6">{t('scanNotFound')}</p>
+          </StateOverlay>
         )}
-        {scanning && (
-          <>
-            {/* Scan overlay frame */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
-              <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
-            </div>
-            {/* Controls */}
-            <div className="absolute top-3 start-3 flex gap-2">
-              <button
-                onClick={() => setContinuous(!continuous)}
-                className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-              >
-                {continuous ? <Repeat className="w-5 h-5" /> : <ScanLine className="w-5 h-5" />}
+        {phase === 'success' && result && (
+          <StateOverlay tone="success" icon={<CheckCircle2 className="w-9 h-9" />}>
+            <p className="text-on-surface font-semibold text-sm text-center break-all px-4 line-clamp-3">{result}</p>
+            <div className="flex flex-wrap gap-2 justify-center mt-3">
+              {/^https?:\/\//i.test(result) && (
+                <button onClick={openLink} className="md-filled-btn flex items-center gap-2 text-sm">
+                  <ExternalLink className="w-4 h-4" /> {t('scanOpen')}
+                </button>
+              )}
+              <button onClick={copyValue} className="md-tonal-btn flex items-center gap-2 text-sm">
+                <Copy className="w-4 h-4" /> {t('actionCopy')}
               </button>
             </div>
-            <div className="absolute top-3 end-3">
-              <button
-                onClick={stopScanner}
-                className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-              >
-                <CameraOff className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="absolute bottom-3 inset-x-3 flex items-center justify-center gap-2">
-              <button onClick={toggleFlash} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                {flashOn ? <Zap className="w-5 h-5" /> : <ZapOff className="w-5 h-5" />}
-              </button>
-              <button onClick={flipCamera} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                <SwitchCamera className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1.5">
-                <ZoomIn className="w-4 h-4 text-white" />
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  value={zoom}
-                  onChange={(e) => applyZoom(parseFloat(e.target.value))}
-                  className="w-20"
-                />
-              </div>
-            </div>
-          </>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <CameraOff className="w-12 h-12 text-error" />
-            <p className="text-error text-sm font-medium">{error}</p>
-            <button onClick={startScanner} className="md-tonal-btn">{t('actionRetry')}</button>
-          </div>
+          </StateOverlay>
         )}
       </div>
 
-      {/* Gallery scan button */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleGalleryScan(file);
-          e.target.value = '';
-        }}
-      />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="md-outlined-btn w-full flex items-center justify-center gap-2 mb-4"
-      >
-        <ImageIcon className="w-5 h-5" />
-        {t('scanFromGallery')}
-      </button>
-
-      {/* Result */}
-      {result && (
-        <ScanResult
-          result={result}
-          isFavorite={!!isFavorite}
-          onCopy={() => {
-            copyToClipboard(result.rawValue);
-            showToast(t('copied'));
-          }}
-          onShare={() => shareText(result.rawValue, t('actionShare'))}
-          onFavorite={() => {
-            const item = history.find((h) => h.rawValue === result.rawValue && h.source === 'scan');
-            if (item) {
-              toggleFavorite(item.id);
-              showToast(isFavorite ? t('removedFromFav') : t('addedToFav'));
-            }
-          }}
-          onClose={() => { setResult(null); if (continuous && !scanning) startScanner(); }}
-          t={t}
-          onViewDetails={openProductDetails}
-        />
+      {/* شريط التقريب */}
+      {cameraOn && zoomRange && (
+        <div className="flex items-center gap-3 mb-3 px-1 animate-slide-up">
+          <ZoomIn className="w-4 h-4 text-on-surface-variant shrink-0" />
+          <input type="range" min={zoomRange.min} max={zoomRange.max} step={(zoomRange.max - zoomRange.min) / 100 || 0.1}
+            value={zoom ?? zoomRange.min} onChange={(e) => applyZoom(parseFloat(e.target.value))} className="w-full accent-[var(--md-primary)]" />
+        </div>
       )}
+
+      {/* أزرار التحكم */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <button onClick={() => (cameraOn ? stopCamera() : startCamera())}
+          className="md-filled-btn flex items-center justify-center gap-2 py-3.5">
+          {cameraOn ? (<><span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" /> {t('scanStop')}</>)
+                    : (<><Camera className="w-5 h-5" /> {t('scanCamera')}</>)}
+        </button>
+        <button onClick={() => fileRef.current?.click()}
+          className="md-tonal-btn flex items-center justify-center gap-2 py-3.5">
+          <ImageIcon className="w-5 h-5" /> {t('scanFromImage')}
+        </button>
+      </div>
+
+      {(phase === 'not-found' || phase === 'error') && (
+        <button onClick={reset} className="md-outlined-btn w-full flex items-center justify-center gap-2 animate-slide-up">
+          <RotateCcw className="w-4 h-4" /> {t('scanRetry')}
+        </button>
+      )}
+
+      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = ''; }} />
+
+      <p className="text-center text-xs text-on-surface-variant mt-4 flex items-center justify-center gap-1.5">
+        <ClipboardPaste className="w-3.5 h-3.5" /> {t('scanPasteHint')}
+      </p>
     </div>
   );
 }
 
-function ScanResult({
-  result, isFavorite, onCopy, onShare, onFavorite, onClose, t, onViewDetails,
-}: {
-  result: DetectedQR;
-  isFavorite: boolean;
-  onCopy: () => void;
-  onShare: () => void;
-  onFavorite: () => void;
-  onClose: () => void;
-  t: (k: string) => string;
-  onViewDetails?: (productData: import('../types').ProductData, rawValue: string) => void;
+/* ─── مساعدات بصرية ─── */
+function Corner({ className }: { className: string }) {
+  // الزوايا نابضة → إحساس «يركّز» بدون أي keyframe مخصص
+  return <span className={`absolute w-7 h-7 rounded-md border-primary animate-pulse ${className}`} />;
+}
+function StateOverlay({ tone, icon, children }: {
+  tone: 'error' | 'success'; icon: React.ReactNode; children: React.ReactNode;
 }) {
-  const actionUrl = getActionUrl(result.type, result.data, result.rawValue);
-  const iconName = TYPE_ICONS[result.type];
-  const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[iconName] ?? Icons.QrCode;
-  
-  const actionLabel = (() => {
-    switch (result.type) {
-      case 'url': return t('actionOpenUrl');
-      case 'phone': return t('actionCall');
-      case 'email': return t('actionEmail');
-      case 'sms': return t('actionSms');
-      case 'location': return t('actionOpenMaps');
-      case 'whatsapp': return t('actionOpenWhatsapp');
-      case 'telegram': return t('actionOpenTelegram');
-      case 'facebook': return t('actionOpenFacebook');
-      case 'instagram': return t('actionOpenInstagram');
-      case 'twitter': return t('actionOpenTwitter');
-      case 'youtube': return t('actionOpenYoutube');
-      default: return null;
-    }
-  })();
-
+  const ring = tone === 'error' ? 'bg-error-container/30 text-error' : 'bg-success-container/30 text-success';
+  const motion = tone === 'error' ? 'animate-pulse' : 'animate-bounce';
   return (
-    <div className="animate-slide-up md-card md-elevated-2 p-5 mb-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary-container flex items-center justify-center">
-            <Icon className="w-6 h-6 text-on-primary-container" />
-          </div>
-          <div>
-            <p className="text-xs text-primary font-semibold uppercase tracking-wide">{t(`type${result.type.charAt(0).toUpperCase() + result.type.slice(1)}`)}</p>
-            <p className="text-sm text-on-surface-variant">{t('scanAutoDetected')}</p>
-          </div>
-        </div>
-        <button onClick={onClose} className="text-outline p-1 md-ripple rounded-full">
-          <X className="w-5 h-5" />
-        </button>
+    <div className="absolute inset-0 grid place-items-center bg-surface/80 backdrop-blur-sm animate-fade-in">
+      <div className="flex flex-col items-center gap-3 max-w-[85%]">
+        <div className={`w-20 h-20 rounded-full grid place-items-center ${ring} ${motion}`}>{icon}</div>
+        {children}
       </div>
-
-      <div className="bg-surface-container rounded-2xl p-4 mb-4">
-        <p className="text-on-surface text-sm font-medium break-all leading-relaxed">{result.rawValue}</p>
-      </div>
-
-      {result.productData && (
-        <ProductPreview result={result} t={t} onViewDetails={onViewDetails} />
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        {actionUrl && actionLabel && (
-          <a href={actionUrl} target="_blank" rel="noopener noreferrer" className="md-filled-btn flex items-center gap-2 no-underline">
-            <ExternalLink className="w-4 h-4" />
-            {actionLabel}
-          </a>
-        )}
-        <button onClick={onCopy} className="md-tonal-btn flex items-center gap-2">
-          <Copy className="w-4 h-4" />
-          {t('actionCopy')}
-        </button>
-        <button onClick={onShare} className="md-tonal-btn flex items-center gap-2">
-          <Share2 className="w-4 h-4" />
-          {t('actionShare')}
-        </button>
-        <button onClick={onFavorite} className="md-tonal-btn flex items-center gap-2">
-          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-error' : ''}`} />
-          {isFavorite ? t('actionRemoveFavorite') : t('actionSaveFavorite')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ProductPreview({ result, t, onViewDetails }: { result: DetectedQR; t: (k: string) => string; onViewDetails?: (productData: import('../types').ProductData, rawValue: string) => void }) {
-  const p = result.productData!;
-  
-  return (
-    <div className="bg-tertiary-container rounded-2xl p-4 mb-4">
-      <p className="font-bold text-on-tertiary-container mb-2">{p.productName}</p>
-      <div className="flex items-baseline gap-1 mb-3">
-        <span className="text-xl font-bold text-on-tertiary-container">{p.price}</span>
-        <span className="text-sm text-on-tertiary-container opacity-70">{p.currency}</span>
-      </div>
-      {p.customFields.length > 0 && (
-        <div className="space-y-1">
-          {p.customFields.slice(0, 4).map((f) => (
-            <div key={f.id} className="flex justify-between text-xs text-on-tertiary-container">
-              <span className="opacity-70">{f.name}</span>
-              <span className="font-medium">{f.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className="text-xs text-on-tertiary-container opacity-60 mt-2">{t('typeProduct')}</p>
-      {onViewDetails && (
-        <button
-          onClick={() => onViewDetails(p, result.rawValue)}
-          className="mt-3 w-full bg-on-tertiary-container text-tertiary-container rounded-full py-2.5 text-sm font-semibold md-ripple"
-        >
-          {t('productDetailsTitle')}
-        </button>
-      )}
     </div>
   );
 }
