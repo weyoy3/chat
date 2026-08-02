@@ -459,7 +459,8 @@ function ScanResult({
           <Share2 className="w-4 h-4" />
           {t('actionShare')}
         </button>
-        <button onClick=onFavorite className="md-tonal-btn flex items-center gap-2">
+        <button onClick={onFavorite} className="md-tonal-btn flex items-center gap-2">
+
           <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-error' : ''}`} />
           {isFavorite ? t('actionRemoveFavorite') : t('actionSaveFavorite')}
         </button>
