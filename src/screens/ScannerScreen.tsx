@@ -26,10 +26,11 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
   const [zoom, setZoom] = useState(1);
   const [lastScanTime, setLastScanTime] = useState(0);
   
-  // States للصورة المختارة من المعرض
+  // --- تعديل: إضافة حالات للصورة المختارة من المعرض ---
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  // --------------------------------------------------
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<DetectedQR | null>(null);
@@ -87,8 +88,10 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     setError(null);
     setLoading(true);
     setResult(null);
+    // --- تعديل: مسح الصورة عند بدء الكاميرا ---
     setSelectedImageSrc(null);
     setImageFile(null);
+    // -----------------------------------------
     try {
       const scanner = new Html5Qrcode(READER_ID, {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -150,22 +153,27 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
     } catch { /* ignore */ }
   }, []);
 
+  // --- تعديل: دالة جديدة لاختيار الصورة وعرضها فقط ---
   const handleGallerySelect = useCallback(async (file: File) => {
     setError(null);
     setResult(null);
+    // تخزين الملف للعرض والفحص لاحقاً
     setImageFile(file);
+    // إنشاء URL لعرض الصورة فوراً
     const imageUrl = URL.createObjectURL(file);
     setSelectedImageSrc(imageUrl);
+    // إيقاف الكاميرا الحية
     await stopScanner();
   }, [stopScanner]);
+  // --------------------------------------------------
 
-  // دالة فحص الصورة بمرونة عالية (فحص مباشر ثم عبر Canvas كبديل)
+  // --- تعديل: دالة جديدة لفحص الصورة المختارة فعلياً عند الضغط على الزر ---
   const executeImageScan = async () => {
-    if (!imageFile) return;
+    if (!imageFile || !imageRef.current) return;
     setLoading(true);
     setError(null);
     try {
-      // محاولة الفحص المباشر للملف أولاً
+      // استخدام الطريقة الساكنة للمكتبة لفحص الملف
       const text = await Html5Qrcode.scanFile(imageFile, false);
       const detected = detectQRType(text);
       setResult(detected);
@@ -183,71 +191,12 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
       });
       setLoading(false);
     } catch {
-      // المحاولة البديلة عبر معالجة الـ Canvas في حال فشل الفحص المباشر
-      try {
-        const img = imageRef.current;
-        if (!img) throw new Error('No image element');
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('No context');
-
-        const MAX_SIZE = 1200;
-        let width = img.naturalWidth || img.width || 800;
-        let height = img.naturalHeight || img.height || 800;
-        if (width > MAX_SIZE || height > MAX_SIZE) {
-          if (width > height) {
-            height = Math.round((height * MAX_SIZE) / width);
-            width = MAX_SIZE;
-          } else {
-            width = Math.round((width * MAX_SIZE) / height);
-            height = MAX_SIZE;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            setLoading(false);
-            setError(t('scanNoResult'));
-            showToast(t('scanNoResult'));
-            return;
-          }
-          const processedFile = new File([blob], "scan-img.png", { type: "image/png" });
-          
-          try {
-            const text2 = await Html5Qrcode.scanFile(processedFile, false);
-            const detected2 = detectQRType(text2);
-            setResult(detected2);
-            
-            if (settings.sound) playBeep();
-            if (settings.vibration) vibrate(80);
-            
-            addHistory({
-              type: detected2.type,
-              title: getQRTitle(detected2.type, detected2.data, detected2.rawValue),
-              rawValue: detected2.rawValue,
-              data: detected2.data,
-              productData: detected2.productData,
-              source: 'scan',
-            });
-            setLoading(false);
-          } catch {
-            setLoading(false);
-            setError(t('scanNoResult'));
-            showToast(t('scanNoResult'));
-          }
-        }, 'image/png', 0.95);
-      } catch {
-        setLoading(false);
-        setError(t('scanNoResult'));
-        showToast(t('scanNoResult'));
-      }
+      setLoading(false);
+      setError(t('scanNoResult'));
+      showToast(t('scanNoResult'));
     }
   };
+  // ---------------------------------------------------------------------
 
   const isFavorite = result ? history.find((h) => h.rawValue === result.rawValue && h.source === 'scan')?.isFavorite : false;
 
@@ -260,313 +209,10 @@ export function ScannerScreen({ navigate, openProductDetails }: { navigate: (s: 
         <h1 className="text-xl font-bold text-on-surface">{t('scanTitle')}</h1>
       </div>
 
-      {/* عرض الصورة المختارة في بطاقة مستقلة تماماً عن الكاميرا عند اختيار صورة */}
-      {selectedImageSrc ? (
-        <div className="md-card md-elevated-2 p-5 mb-4 animate-fade-in">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-on-surface flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-primary" />
-              {t('scanFromGallery')}
-            </h2>
-            <button
-              onClick={() => {
-                setSelectedImageSrc(null);
-                setImageFile(null);
-                setError(null);
-                if (continuous) startScanner();
-              }}
-              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface md-ripple"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+      {/* Scanner viewport */}
+      <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
+        <div id={READER_ID} className="w-full h-full" />
 
-          <div className="relative w-full h-72 rounded-2xl bg-surface-container overflow-hidden flex items-center justify-center mb-4 border border-outline-variant p-2">
-            <img
-              ref={imageRef}
-              src={selectedImageSrc}
-              alt="Selected QR"
-              className="max-w-full max-h-full object-contain rounded-xl"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-error/10 text-error p-3 rounded-xl text-sm mb-4 text-center font-medium">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={executeImageScan}
-              disabled={loading}
-              className="flex-1 md-filled-btn flex items-center justify-center gap-2 py-3.5 shadow-lg"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-5 h-5" />
-                  <span>فحص الرمز الآن</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setSelectedImageSrc(null);
-                setImageFile(null);
-                setError(null);
-                if (continuous) startScanner();
-              }}
-              className="md-tonal-btn px-5 py-3.5 bg-error/10 text-error"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* Scanner viewport للكاميرا المباشرة */
-        <div className="relative rounded-3xl overflow-hidden bg-surface-container md-elevated aspect-square mb-4">
-          <div id={READER_ID} className="w-full h-full" />
-
-          {!scanning && !loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-pulse-ring">
-                <ScanLine className="w-10 h-10 text-on-primary" />
-              </div>
-              <button onClick={startScanner} className="md-filled-btn flex items-center gap-2">
-                <Camera className="w-5 h-5" />
-                {t('scanStartCamera')}
-              </button>
-            </div>
-          )}
-
-          {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-container">
-              <div className="w-10 h-10 border-4 border-outline-variant border-t-primary rounded-full animate-spin-slow" />
-              <p className="text-on-surface-variant text-sm">{t('scanLoading')}</p>
-            </div>
-          )}
-
-          {scanning && (
-            <>
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-8 rounded-2xl border-2 border-white/70" />
-                <div className="absolute left-8 right-8 h-0.5 bg-primary scan-line-anim" style={{ boxShadow: '0 0 12px var(--md-primary)' }} />
-              </div>
-
-              <div className="absolute top-3 start-3 flex gap-2">
-                <button
-                  onClick={() => setContinuous(!continuous)}
-                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-                >
-                  {continuous ? <Repeat className="w-5 h-5" /> : <ScanLine className="w-5 h-5" />}
-                </button>
-              </div>
-              <div className="absolute top-3 end-3">
-                <button
-                  onClick={stopScanner}
-                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
-                >
-                  <CameraOff className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="absolute bottom-3 inset-x-3 flex items-center justify-center gap-2">
-                <button onClick={toggleFlash} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                  {flashOn ? <Zap className="w-5 h-5" /> : <ZapOff className="w-5 h-5" />}
-                </button>
-                <button onClick={flipCamera} className="w-11 h-11 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white">
-                  <SwitchCamera className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1.5">
-                  <ZoomIn className="w-4 h-4 text-white" />
-                  <input
-                    type="range"
-                    min={1}
-                    max={3}
-                    step={0.1}
-                    value={zoom}
-                    onChange={(e) => applyZoom(parseFloat(e.target.value))}
-                    className="w-20"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {error && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-              <CameraOff className="w-12 h-12 text-error" />
-              <p className="text-error text-sm font-medium">{error}</p>
-              <button onClick={startScanner} className="md-tonal-btn">{t('actionRetry')}</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Gallery scan button */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleGallerySelect(file);
-          e.target.value = '';
-        }}
-      />
-      {!selectedImageSrc && (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="md-outlined-btn w-full flex items-center justify-center gap-2 mb-4"
-        >
-          <ImageIcon className="w-5 h-5" />
-          {t('scanFromGallery')}
-        </button>
-      )}
-
-      {/* Result */}
-      {result && (
-        <ScanResult
-          result={result}
-          isFavorite={!!isFavorite}
-          onCopy={() => {
-            copyToClipboard(result.rawValue);
-            showToast(t('copied'));
-          }}
-          onShare={() => shareText(result.rawValue, t('actionShare'))}
-          onFavorite={() => {
-            const item = history.find((h) => h.rawValue === result.rawValue && h.source === 'scan');
-            if (item) {
-              toggleFavorite(item.id);
-              showToast(isFavorite ? t('removedFromFav') : t('addedToFav'));
-            }
-          }}
-          onClose={() => { 
-            setResult(null); 
-            setSelectedImageSrc(null);
-            setImageFile(null);
-            if (continuous && !scanning) startScanner(); 
-          }}
-          t={t}
-          onViewDetails={openProductDetails}
-        />
-      )}
-    </div>
-  );
-}
-
-function ScanResult({
-  result, isFavorite, onCopy, onShare, onFavorite, onClose, t, onViewDetails,
-}: {
-  result: DetectedQR;
-  isFavorite: boolean;
-  onCopy: () => void;
-  onShare: () => void;
-  onFavorite: () => void;
-  onClose: () => void;
-  t: (k: string) => string;
-  onViewDetails?: (productData: import('../types').ProductData, rawValue: string) => void;
-}) {
-  const actionUrl = getActionUrl(result.type, result.data, result.rawValue);
-  const iconName = TYPE_ICONS[result.type];
-  const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[iconName] ?? Icons.QrCode;
-
-  const actionLabel = (() => {
-    switch (result.type) {
-      case 'url': return t('actionOpenUrl');
-      case 'phone': return t('actionCall');
-      case 'email': return t('actionEmail');
-      case 'sms': return t('actionSms');
-      case 'location': return t('actionOpenMaps');
-      case 'whatsapp': return t('actionOpenWhatsapp');
-      case 'telegram': return t('actionOpenTelegram');
-      case 'facebook': return t('actionOpenFacebook');
-      case 'instagram': return t('actionOpenInstagram');
-      case 'twitter': return t('actionOpenTwitter');
-      case 'youtube': return t('actionOpenYoutube');
-      default: return null;
-    }
-  })();
-
-  return (
-    <div className="animate-slide-up md-card md-elevated-2 p-5 mb-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary-container flex items-center justify-center">
-            <Icon className="w-6 h-6 text-on-primary-container" />
-          </div>
-          <div>
-            <p className="text-xs text-primary font-semibold uppercase tracking-wide">{t(`type${result.type.charAt(0).toUpperCase() + result.type.slice(1)}`)}</p>
-            <p className="text-sm text-on-surface-variant">{t('scanAutoDetected')}</p>
-          </div>
-        </div>
-        <button onClick={onClose} className="text-outline p-1 md-ripple rounded-full">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="bg-surface-container rounded-2xl p-4 mb-4">
-        <p className="text-on-surface text-sm font-medium break-all leading-relaxed">{result.rawValue}</p>
-      </div>
-
-      {result.productData && (
-        <ProductPreview result={result} t={t} onViewDetails={onViewDetails} />
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        {actionUrl && actionLabel && (
-          <a href={actionUrl} target="_blank" rel="noopener noreferrer" className="md-filled-btn flex items-center gap-2 no-underline">
-            <ExternalLink className="w-4 h-4" />
-            {actionLabel}
-          </a>
-        )}
-        <button onClick={onCopy} className="md-tonal-btn flex items-center gap-2">
-          <Copy className="w-4 h-4" />
-          {t('actionCopy')}
-        </button>
-        <button onClick={onShare} className="md-tonal-btn flex items-center gap-2">
-          <Share2 className="w-4 h-4" />
-          {t('actionShare')}
-        </button>
-        <button onClick={onFavorite} className="md-tonal-btn flex items-center gap-2">
-          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-error' : ''}`} />
-          {isFavorite ? t('actionRemoveFavorite') : t('actionSaveFavorite')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ProductPreview({ result, t, onViewDetails }: { result: DetectedQR; t: (k: string) => string; onViewDetails?: (productData: import('../types').ProductData, rawValue: string) => void }) {
-  const p = result.productData!;
-  return (
-    <div className="bg-tertiary-container rounded-2xl p-4 mb-4">
-      <p className="font-bold text-on-tertiary-container mb-2">{p.productName}</p>
-      <div className="flex items-baseline gap-1 mb-3">
-        <span className="text-xl font-bold text-on-tertiary-container">{p.price}</span>
-        <span className="text-sm text-on-tertiary-container opacity-70">{p.currency}</span>
-      </div>
-      {p.customFields.length > 0 && (
-        <div className="space-y-1">
-          {p.customFields.slice(0, 4).map((f) => (
-            <div key={f.id} className="flex justify-between text-xs text-on-tertiary-container">
-              <span className="opacity-70">{f.name}</span>
-              <span className="font-medium">{f.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className="text-xs text-on-tertiary-container opacity-60 mt-2">{t('typeProduct')}</p>
-      {onViewDetails && (
-        <button
-          onClick={() => onViewDetails(p, result.rawValue)}
-          className="mt-3 w-full bg-on-tertiary-container text-tertiary-container rounded-full py-2.5 text-sm font-semibold md-ripple"
-        >
-          {t('productDetailsTitle')}
-        </button>
-      )}
-    </div>
-  );
-}
+        {/* --- تعديل: عرض الصورة المختارة من المعرض داخل الإطار مع زر الفحص وزر الإغلاق --- */}
+        {selectedImageSrc && (
+          <div className="absolute inset-
