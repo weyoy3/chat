@@ -7,8 +7,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "latest",
     "cors": "latest",
+    "express": "latest",
     "yt-dlp-exec": "latest"
   }
 }
