@@ -1,14 +1,14 @@
 {
   "name": "social-video-downloader",
   "version": "1.0.0",
-  "description": "موقع لتحميل الفيديوهات من وسائل التواصل الاجتماعي",
+  "description": "موقع تحميل فيديوهات",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "yt-dlp-exec": "^2.4.6"
+    "express": "latest",
+    "cors": "latest",
+    "yt-dlp-exec": "latest"
   }
 }
