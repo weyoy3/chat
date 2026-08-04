@@ -1,1 +1,260 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>موقع تحميل فيديوهات شامل</title>
 
+  <style>
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      background: #e9e9e9;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .header {
+      background: #204d74;
+      color: #fff;
+      padding: 16px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 25px auto;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-weight: bold;
+    }
+
+    input, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      margin-bottom: 14px;
+    }
+
+    button {
+      background: #2d7bd6;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1c5fa8;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      border: 1px solid #d5d5d5;
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .thumb-wrap {
+      text-align: center;
+      background: #000;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .thumb-wrap img {
+      max-width: 100%;
+      max-height: 360px;
+      display: block;
+      margin: auto;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+      display: none;
+    }
+
+    .info {
+      background: #e7f1ff;
+      border: 1px solid #9cc2ff;
+      color: #174e8d;
+    }
+
+    .error {
+      background: #ffecec;
+      border: 1px solid #eb8a8a;
+      color: #8f1d1d;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .download-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .download-link-btn {
+      background: #28a745;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .download-link-btn:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    تحميل الفيديوهات من وسائل التواصل الاجتماعي
+  </div>
+
+  <div class="container">
+
+    <label for="videoUrl">رابط الفيديو (يوتيوب، فيسبوك، تيك توك، إنستغرام، تويتر...)</label>
+    <input
+      id="videoUrl"
+      type="url"
+      placeholder="ضع الرابط هنا..."
+    >
+
+    <button id="fetchBtn" onclick="fetchVideoInfo()">جلب روابط التحميل</button>
+
+    <div id="status" class="status"></div>
+
+    <div id="result" class="result">
+      <div class="thumb-wrap" id="thumbWrap"></div>
+
+      <h3 id="videoTitle" style="margin:0 0 10px;"></h3>
+      <div class="small" id="videoDesc"></div>
+
+      <div style="margin:15px 0 5px; font-weight:bold;">
+        روابط التحميل المتاحة:
+      </div>
+
+      <div class="download-links" id="downloadLinks"></div>
+    </div>
+
+  </div>
+
+  <script>
+    function setStatus(message, type = "info") {
+      const el = document.getElementById("status");
+      el.style.display = "block";
+      el.className = "status " + type;
+      el.textContent = message;
+    }
+
+    function clearStatus() {
+      document.getElementById("status").style.display = "none";
+    }
+
+    async function fetchVideoInfo() {
+      clearStatus();
+      const url = document.getElementById("videoUrl").value.trim();
+      const resultDiv = document.getElementById("result");
+      const thumbWrap = document.getElementById("thumbWrap");
+      const videoTitle = document.getElementById("videoTitle");
+      const videoDesc = document.getElementById("videoDesc");
+      const downloadLinksDiv = document.getElementById("downloadLinks");
+      const fetchBtn = document.getElementById("fetchBtn");
+
+      resultDiv.style.display = "none";
+      thumbWrap.innerHTML = "";
+      downloadLinksDiv.innerHTML = "";
+
+      if (!url) {
+        setStatus("من فضلك أدخل الرابط أولاً.", "error");
+        return;
+      }
+
+      setStatus("جاري جلب معلومات الفيديو، قد يستغرق ذلك بضع ثوانٍ...", "info");
+      fetchBtn.disabled = true;
+
+      try {
+        const response = await fetch('/get-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "حدث خطأ أثناء جلب الفيديو.");
+        }
+
+        if (data.thumbnail) {
+          const img = document.createElement("img");
+          img.src = data.thumbnail;
+          img.alt = "صورة معاينة الفيديو";
+          thumbWrap.appendChild(img);
+        }
+
+        videoTitle.textContent = data.title;
+        videoDesc.textContent = data.duration ? `المدة: ${data.duration} ثانية` : "";
+
+        if (data.formats && data.formats.length > 0) {
+          data.formats.forEach(f => {
+            const a = document.createElement("a");
+            a.href = f.url;
+            a.className = "download-link-btn";
+            a.textContent = `تحميل بجودة ${f.quality} (${f.ext})`;
+            a.download = true;
+            a.target = "_blank";
+            downloadLinksDiv.appendChild(a);
+          });
+        } else {
+          setStatus("لم يتم العثور على روابط تحميل مباشرة.", "error");
+          return;
+        }
+
+        resultDiv.style.display = "block";
+        clearStatus();
+
+      } catch (error) {
+        setStatus(error.message, "error");
+      } finally {
+        fetchBtn.disabled = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
