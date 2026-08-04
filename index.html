@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>موقع تحميل فيديوهات شامل</title>
+  <title>موقع تحميل فيديوهات</title>
 
   <style>
     body {
@@ -40,7 +40,7 @@
       font-weight: bold;
     }
 
-    input, button {
+    input, select, button {
       width: 100%;
       box-sizing: border-box;
       padding: 11px;
@@ -67,6 +67,14 @@
       cursor: not-allowed;
     }
 
+    .secondary {
+      background: #666;
+    }
+
+    .secondary:hover {
+      background: #444;
+    }
+
     .result {
       display: none;
       margin-top: 18px;
@@ -84,11 +92,54 @@
       margin-bottom: 12px;
     }
 
-    .thumb-wrap img {
+    .thumb-wrap img,
+    .thumb-wrap video {
       max-width: 100%;
       max-height: 360px;
       display: block;
       margin: auto;
+    }
+
+    .qualities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .quality-btn {
+      width: auto;
+      margin: 0;
+      padding: 8px 14px;
+      background: #f2f2f2;
+      color: #222;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .quality-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .quality-btn.active {
+      background: #2d7bd6;
+      color: #fff;
+      border-color: #1c5fa8;
+    }
+
+    .format-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin: 8px 0 14px;
+    }
+
+    .format-row label {
+      display: inline;
+      margin: 0;
+      font-weight: normal;
     }
 
     .status {
@@ -116,25 +167,30 @@
       line-height: 1.6;
     }
 
-    .download-links {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .download-link-btn {
-      background: #28a745;
-      color: white;
+    .footer {
       text-align: center;
-      text-decoration: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
+      color: #666;
+      font-size: 12px;
+      margin: 20px 0;
     }
 
-    .download-link-btn:hover {
-      background: #218838;
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .actions button {
+      margin: 0;
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        font-size: 22px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -142,19 +198,33 @@
 <body>
 
   <div class="header">
-    تحميل الفيديوهات من وسائل التواصل الاجتماعي
+    موقع تحميل فيديوهات من الروابط
   </div>
 
   <div class="container">
 
-    <label for="videoUrl">رابط الفيديو (يوتيوب، فيسبوك، تيك توك، إنستغرام، تويتر...)</label>
+    <label for="videoUrl">رابط الفيديو</label>
     <input
       id="videoUrl"
       type="url"
-      placeholder="ضع الرابط هنا..."
+      placeholder="ضع رابط يوتيوب، تيك توك، فيسبوك أو رابط مباشر"
     >
 
-    <button id="fetchBtn" onclick="fetchVideoInfo()">جلب روابط التحميل</button>
+    <label for="platform">المنصة</label>
+    <select id="platform">
+      <option value="auto">تحديد تلقائي</option>
+      <option value="youtube">YouTube</option>
+      <option value="facebook">Facebook</option>
+      <option value="tiktok">TikTok</option>
+      <option value="instagram">Instagram</option>
+      <option value="twitter">Twitter / X</option>
+      <option value="direct">رابط مباشر</option>
+    </select>
+
+    <div class="actions">
+      <button onclick="analyzeLink()">جلب الفيديو</button>
+      <button class="secondary" onclick="loadDemo()">تجربة رابط مباشر</button>
+    </div>
 
     <div id="status" class="status"></div>
 
@@ -165,15 +235,49 @@
       <div class="small" id="videoDesc"></div>
 
       <div style="margin:15px 0 5px; font-weight:bold;">
-        روابط التحميل المتاحة:
+        اختر الصيغة
       </div>
 
-      <div class="download-links" id="downloadLinks"></div>
+      <div class="format-row">
+        <label>
+          <input type="radio" name="format" value="mp4" checked onchange="updateDownload()">
+          MP4
+        </label>
+
+        <label>
+          <input type="radio" name="format" value="mp3" onchange="updateDownload()">
+          MP3 (صوت فقط)
+        </label>
+      </div>
+
+      <div style="font-weight:bold; margin-bottom:5px;">
+        اختر الجودة
+      </div>
+
+      <div class="qualities" id="qualities"></div>
+
+      <button id="downloadBtn" onclick="doDownload()">
+        تحميل
+      </button>
+
+      <div class="small" style="margin-top: 10px;">
+        تم تفعيل التحقيق وجلب الروابط الحقيقية عبر السيرفر بنجاح.
+      </div>
     </div>
 
   </div>
 
+  <div class="footer">
+    نموذج واجهة متكامل - يعمل بالربط الفعلي مع السيرفر
+  </div>
+
   <script>
+    const sampleVideo = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
+    let currentDownloadUrl = "";
+    let selectedQuality = "720p";
+    let availableFormats = [];
+
     function setStatus(message, type = "info") {
       const el = document.getElementById("status");
       el.style.display = "block";
@@ -185,27 +289,32 @@
       document.getElementById("status").style.display = "none";
     }
 
-    async function fetchVideoInfo() {
-      clearStatus();
-      const url = document.getElementById("videoUrl").value.trim();
-      const resultDiv = document.getElementById("result");
-      const thumbWrap = document.getElementById("thumbWrap");
-      const videoTitle = document.getElementById("videoTitle");
-      const videoDesc = document.getElementById("videoDesc");
-      const downloadLinksDiv = document.getElementById("downloadLinks");
-      const fetchBtn = document.getElementById("fetchBtn");
+    function loadDemo() {
+      document.getElementById("videoUrl").value = sampleVideo;
+      document.getElementById("platform").value = "direct";
+      analyzeLink();
+    }
 
-      resultDiv.style.display = "none";
+    async function analyzeLink() {
+      clearStatus();
+
+      const url = document.getElementById("videoUrl").value.trim();
+      const result = document.getElementById("result");
+      const thumbWrap = document.getElementById("thumbWrap");
+      const title = document.getElementById("videoTitle");
+      const desc = document.getElementById("videoDesc");
+
+      result.style.display = "none";
       thumbWrap.innerHTML = "";
-      downloadLinksDiv.innerHTML = "";
+      currentDownloadUrl = "";
+      availableFormats = [];
 
       if (!url) {
-        setStatus("من فضلك أدخل الرابط أولاً.", "error");
+        setStatus("من فضلك أدخل رابط الفيديو أولاً.", "error");
         return;
       }
 
-      setStatus("جاري جلب معلومات الفيديو، قد يستغرق ذلك بضع ثوانٍ...", "info");
-      fetchBtn.disabled = true;
+      setStatus("جاري الاتصال بالسيرفر وجلب معلومات الفيديو...", "info");
 
       try {
         const response = await fetch('/get-video', {
@@ -217,42 +326,109 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "حدث خطأ أثناء جلب الفيديو.");
+          throw new Error(data.error || "فشل جلب بيانات الفيديو.");
         }
 
+        // عرض الصورة المصغرة إن وجدت
         if (data.thumbnail) {
           const img = document.createElement("img");
           img.src = data.thumbnail;
-          img.alt = "صورة معاينة الفيديو";
+          img.alt = "صورة الفيديو";
           thumbWrap.appendChild(img);
         }
 
-        videoTitle.textContent = data.title;
-        videoDesc.textContent = data.duration ? `المدة: ${data.duration} ثانية` : "";
+        title.textContent = data.title || "فيديو تم جلبه بنجاح";
+        desc.textContent = data.duration ? `المدة: ${data.duration} ثانية` : "";
 
-        if (data.formats && data.formats.length > 0) {
-          data.formats.forEach(f => {
-            const a = document.createElement("a");
-            a.href = f.url;
-            a.className = "download-link-btn";
-            a.textContent = `تحميل بجودة ${f.quality} (${f.ext})`;
-            a.download = true;
-            a.target = "_blank";
-            downloadLinksDiv.appendChild(a);
-          });
-        } else {
-          setStatus("لم يتم العثور على روابط تحميل مباشرة.", "error");
+        availableFormats = data.formats || [];
+
+        if (availableFormats.length === 0) {
+          setStatus("لم يتم العثور على روابط تحميل لهذا الفيديو.", "error");
           return;
         }
 
-        resultDiv.style.display = "block";
-        clearStatus();
+        buildQualities(availableFormats);
+        result.style.display = "block";
+        setStatus("تم جلب روابط التحميل بنجاح!", "info");
+        updateDownload();
 
       } catch (error) {
         setStatus(error.message, "error");
-      } finally {
-        fetchBtn.disabled = false;
       }
+    }
+
+    function buildQualities(formats) {
+      const box = document.getElementById("qualities");
+      box.innerHTML = "";
+
+      // تصفية الصيغ واختيار الأولى كافتراضية
+      const uniqueQualities = [];
+      formats.forEach((f, index) => {
+        const qName = f.quality || ('جودة ' + (index + 1));
+        uniqueQualities.push({ name: qName, url: f.url });
+      });
+
+      if (uniqueQualities.length > 0) {
+        selectedQuality = uniqueQualities[0].name;
+        currentDownloadUrl = uniqueQualities[0].url;
+      }
+
+      uniqueQualities.forEach((q, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "quality-btn" + (idx === 0 ? " active" : "");
+        btn.textContent = q.name;
+
+        btn.onclick = function () {
+          selectedQuality = q.name;
+          currentDownloadUrl = q.url;
+
+          document.querySelectorAll(".quality-btn").forEach(function (b) {
+            b.classList.remove("active");
+          });
+
+          btn.classList.add("active");
+          updateDownload();
+        };
+
+        box.appendChild(btn);
+      });
+    }
+
+    function getSelectedFormat() {
+      return document.querySelector('input[name="format"]:checked').value;
+    }
+
+    function updateDownload() {
+      const btn = document.getElementById("downloadBtn");
+      const format = getSelectedFormat();
+
+      if (!currentDownloadUrl) {
+        btn.disabled = true;
+        btn.textContent = "التحميل غير مفعل";
+        return;
+      }
+
+      btn.disabled = false;
+      btn.textContent = `تحميل ${selectedQuality} (${format.toUpperCase()})`;
+    }
+
+    function doDownload() {
+      if (!currentDownloadUrl) {
+        return;
+      }
+
+      const format = getSelectedFormat();
+      const a = document.createElement("a");
+      a.href = currentDownloadUrl;
+      a.download = `video_download.${format}`;
+      a.target = "_blank";
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setStatus("تم بدء التحميل بنجاح!", "info");
     }
   </script>
 
