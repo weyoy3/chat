@@ -1,7 +1,6 @@
-flask
-gtts
+Flask
 requests
-imageio-ffmpeg
-mutagen
-gunicorn
 Pillow
+imageio_ffmpeg
+mutagen
+edge-tts
