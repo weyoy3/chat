@@ -5,3 +5,4 @@ Pillow
 imageio_ffmpeg
 mutagen
 edge-tts
+beautifulsoup4
