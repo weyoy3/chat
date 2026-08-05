@@ -7,31 +7,29 @@ import requests
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
-# بيانات فيسبوك من متغيرات البيئة
 PAGE_ID = os.environ.get("PAGE_ID", "")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")
 
 def generate_and_upload_reel():
     """دالة معالجة الفيديو والرفع بشكل آمن"""
-    print("🎬 [Pipeline] بدأ تنفيذ عملية إنشاء الفيديو...")
+    print("🎬 [Pipeline] بدأ تنفيذ عملية إنشاء الفيديو...", flush=True)
     
     audio_path = "output_audio.mp3"
     video_path = "output_reel.mp4"
     
     try:
-        # استيراد المكتبات محلياً داخل الدالة لمنع حدوث Crash عند إقلاع السيرفر الرئيسي
         from gtts import gTTS
         from moviepy.editor import AudioFileClip, ColorClip
         
         news_text = "عاجل: آخر الأخبار على مدار الساعة عبر منصة نبض 24."
         
         # 1. توليد الصوت
-        print("🔊 [gTTS] جاري توليد الملف الصوتي...")
+        print("🔊 [gTTS] جاري توليد الملف الصوتي...", flush=True)
         tts = gTTS(text=news_text, lang='ar', slow=False)
         tts.save(audio_path)
         
-        # 2. إنشاء الفيديو باستخدام ColorClip و AudioFileClip فقط (بدون TextClip لتجنب أخطاء Render)
-        print("🎞️ [MoviePy] جاري دمج الصوت وإنشاء الفيديو...")
+        # 2. إنشاء الفيديو
+        print("🎞️ [MoviePy] جاري دمج الصوت وإنشاء الفيديو...", flush=True)
         audio_clip = AudioFileClip(audio_path)
         duration = audio_clip.duration
         
@@ -39,35 +37,31 @@ def generate_and_upload_reel():
         video_clip = bg_clip.set_audio(audio_clip)
         
         video_clip.write_videofile(video_path, fps=24, codec='libx264', audio_codec='aac', logger=None)
-        print("✅ [MoviePy] تم تصدير الفيديو بنجاح!")
+        print("✅ [MoviePy] تم تصدير الفيديو بنجاح!", flush=True)
         
-        # إغلاق الملفات لتحرير الذاكرة
         audio_clip.close()
         video_clip.close()
         
     except Exception as e:
-        print(f"❌ [Pipeline Error] حدث خطأ أثناء المعالجة: {e}")
+        print(f"❌ [Pipeline Error] حدث خطأ أثناء المعالجة: {e}", flush=True)
         
     finally:
-        # تنظيف الملفات المؤقتة
         if os.path.exists(audio_path):
             os.remove(audio_path)
         if os.path.exists(video_path):
             os.remove(video_path)
-        print("🧹 [Cleanup] تم تنظيف الملفات المؤقتة.")
+        print("🧹 [Cleanup] تم تنظيف الملفات المؤقتة.", flush=True)
 
-# نظام التشغيل التلقائي في الخلفية
 def auto_pilot_loop():
-    time.sleep(25)  # انتظار استقرار السيرفر تماماً
+    time.sleep(25)
     while True:
         try:
-            print("🚀 [Auto-Pilot] بدء المهمة التلقائية...")
+            print("🚀 [Auto-Pilot] بدء المهمة التلقائية...", flush=True)
             generate_and_upload_reel()
         except Exception as e:
-            print(f"❌ [Auto-Pilot Error]: {e}")
-        time.sleep(6 * 3600)  # كل 6 ساعات
+            print(f"❌ [Auto-Pilot Error]: {e}", flush=True)
+        time.sleep(6 * 3600)
 
-# تشغيل خيط الخلفية بأمان
 threading.Thread(target=auto_pilot_loop, daemon=True).start()
 
 @app.route('/')
