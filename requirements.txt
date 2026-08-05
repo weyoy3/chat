@@ -2,3 +2,5 @@ flask
 gtts
 requests
 imageio-ffmpeg
+mutagen
+gunicorn
