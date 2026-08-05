@@ -33,13 +33,13 @@ def generate_reel():
         
         # 1. توليد الملف الصوتي
         print("🔊 [Cloud] جاري توليد الملف الصوتي...", flush=True)
-        tts = gTTS(text=full_speech, lang='ar', tld='com.eg', slow=False)
+        tts = gTTS(text=full_speech, lang='ar', tld='com', slow=False)
         tts.save(audio_path)
 
         audio_info = MP3(audio_path)
         duration = int(audio_info.info.length) + 1
 
-        # 2. تصميم بطاقة الخبر
+        # 2. تصميم بطاقة الخبر مع تأمين الخطوط
         print("🎨 [Cloud] جاري تصميم بطاقة الخبر...", flush=True)
         img = Image.new('RGB', (720, 1280), color=(12, 12, 24))
         draw = ImageDraw.Draw(img)
@@ -48,15 +48,19 @@ def generate_reel():
         draw.rectangle([(50, 70), (670, 240)], fill=(22, 22, 40))
         
         try:
-            font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 42)
-            font_desc = ImageFont.truetype("DejaVuSans.ttf", 28)
+            font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)
+            font_desc = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
         except IOError:
-            font_title = ImageFont.load_default()
-            font_desc = ImageFont.load_default()
+            try:
+                font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 42)
+                font_desc = ImageFont.truetype("DejaVuSans.ttf", 28)
+            except IOError:
+                font_title = ImageFont.load_default()
+                font_desc = ImageFont.load_default()
 
-        draw.text((70, 100), "🔴 شبكة نبض 24 الإخبارية", fill=(255, 75, 75))
-        draw.text((70, 320), title[:70], fill=(255, 255, 255))
-        draw.text((70, 500), description[:180], fill=(180, 190, 210))
+        draw.text((70, 100), "🔴 شبكة نبض 24 الإخبارية", fill=(255, 75, 75), font=font_title)
+        draw.text((70, 320), title[:70], fill=(255, 255, 255), font=font_title)
+        draw.text((70, 500), description[:180], fill=(180, 190, 210), font=font_desc)
         
         img.save(image_path)
 
