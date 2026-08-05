@@ -11,7 +11,6 @@ PAGE_ID = os.environ.get("PAGE_ID", "")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")
 
 def generate_and_upload_reel():
-    """دالة معالجة الفيديو والرفع بشكل آمن"""
     print("🎬 [Pipeline] بدأ تنفيذ عملية إنشاء الفيديو...", flush=True)
     
     audio_path = "output_audio.mp3"
@@ -28,15 +27,25 @@ def generate_and_upload_reel():
         tts = gTTS(text=news_text, lang='ar', slow=False)
         tts.save(audio_path)
         
-        # 2. إنشاء الفيديو
+        # 2. إنشاء الفيديو (بجودة خفيفة وسريعة لتناسب خادم Render المجاني)
         print("🎞️ [MoviePy] جاري دمج الصوت وإنشاء الفيديو...", flush=True)
         audio_clip = AudioFileClip(audio_path)
         duration = audio_clip.duration
         
-        bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 25), duration=duration)
+        # استخدام مقاسات أصغر وأسرع في المعالجة (مثلاً 720x1280) لتجنب استهلاك الذاكرة
+        bg_clip = ColorClip(size=(720, 1280), color=(15, 15, 25), duration=duration)
         video_clip = bg_clip.set_audio(audio_clip)
         
-        video_clip.write_videofile(video_path, fps=24, codec='libx264', audio_codec='aac', logger=None)
+.        # تقليل الـ bitrate والـ preset لتسريع التصدير الفوري وتجنب الـ Restart
+        video_clip.write_videofile(
+            video_path, 
+            fps=15, 
+            codec='libx264', 
+            audio_codec='aac', 
+            preset='ultrafast', 
+            threads=2,
+            logger=None
+        )
         print("✅ [MoviePy] تم تصدير الفيديو بنجاح!", flush=True)
         
         audio_clip.close()
@@ -53,7 +62,7 @@ def generate_and_upload_reel():
         print("🧹 [Cleanup] تم تنظيف الملفات المؤقتة.", flush=True)
 
 def auto_pilot_loop():
-    time.sleep(25)
+    time.sleep(30)
     while True:
         try:
             print("🚀 [Auto-Pilot] بدء المهمة التلقائية...", flush=True)
