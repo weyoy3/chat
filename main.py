@@ -1,90 +1,77 @@
 import os
-import time
-import threading
-from flask import Flask, jsonify
+import subprocess
+from flask import Flask, request, jsonify
+from gtts import gTTS
 import requests
+import imageio_ffmpeg
 
 app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False
 
-PAGE_ID = os.environ.get("PAGE_ID", "")
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")
+@app.route('/generate-reel', methods=['POST'])
+def generate_reel():
+    data = request.get_json() or {}
+    text = data.get('text')
+    page_token = data.get('page_token')
+    
+    if not text or not page_token:
+        return jsonify({"success": False, "error": "Missing text or page_token"}), 400
 
-def generate_and_upload_reel():
-    print("🎬 [Pipeline] بدأ تنفيذ عملية إنشاء الفيديو...", flush=True)
-    
-    audio_path = "output_audio.mp3"
-    video_path = "output_reel.mp4"
-    
+    audio_path = f"audio_{os.getpid()}.mp3"
+    video_path = f"video_{os.getpid()}.mp4"
+
     try:
-        from gtts import gTTS
-        from moviepy.editor import AudioFileClip, ColorClip
-        
-        news_text = "عاجل: آخر الأخبار على مدار الساعة عبر منصة نبض 24."
-        
-        # 1. توليد الصوت
-        print("🔊 [gTTS] جاري توليد الملف الصوتي...", flush=True)
-        tts = gTTS(text=news_text, lang='ar', slow=False)
+        # 1. توليد الملف الصوتي باستخدام gTTS
+        print("🔊 [Cloud] جاري توليد الملف الصوتي...", flush=True)
+        tts = gTTS(text=text, lang='ar', slow=False)
         tts.save(audio_path)
+
+        # 2. الحصول على مسار FFmpeg المعتمد في السحابة
+        ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+
+        # 3. دمج الصوت والفيديو عبر FFmpeg
+        print("🎞️ [Cloud] جاري إنتاج الفيديو الحقيقي...", flush=True)
+        cmd = [
+            ffmpeg_path, '-y',
+            '-f', 'lavfi', '-i', 'color=c=0x0f0f19:s=720x1280',
+            '-i', audio_path,
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-shortest',
+            video_path
+        ]
         
-        # 2. إنشاء الفيديو (بجودة خفيفة وسريعة لتناسب خادم Render المجاني)
-        print("🎞️ [MoviePy] جاري دمج الصوت وإنشاء الفيديو...", flush=True)
-        audio_clip = AudioFileClip(audio_path)
-        duration = audio_clip.duration
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode != 0:
+            error_msg = result.stderr.decode('utf-8', errors='ignore')[-300:]
+            raise Exception(f"FFmpeg Error: {error_msg}")
+
+        # 4. رفع الفيديو مباشرة إلى فيسبوك
+        print("📤 [Cloud] جاري رفع الفيديو إلى فيسبوك...", flush=True)
+        upload_url = "https://graph.facebook.com/v19.0/me/videos"
         
-        # استخدام مقاسات أصغر وأسرع في المعالجة (مثلاً 720x1280) لتجنب استهلاك الذاكرة
-        bg_clip = ColorClip(size=(720, 1280), color=(15, 15, 25), duration=duration)
-        video_clip = bg_clip.set_audio(audio_clip)
-        
-.        # تقليل الـ bitrate والـ preset لتسريع التصدير الفوري وتجنب الـ Restart
-        video_clip.write_videofile(
-            video_path, 
-            fps=15, 
-            codec='libx264', 
-            audio_codec='aac', 
-            preset='ultrafast', 
-            threads=2,
-            logger=None
-        )
-        print("✅ [MoviePy] تم تصدير الفيديو بنجاح!", flush=True)
-        
-        audio_clip.close()
-        video_clip.close()
-        
+        with open(video_path, "rb") as video_file:
+            payload = {
+                "access_token": page_token,
+                "description": f"{text}\n\n#نبض_24 #عاجل #أخبار"
+            }
+            files = {"source": video_file}
+            fb_response = requests.post(upload_url, data=payload, files=files).json()
+
+        if "id" in fb_response:
+            print(f"🎉 [Success] تم النشر برقم: {fb_response['id']}", flush=True)
+            return jsonify({"success": True, "post_id": fb_response["id"]})
+        else:
+            return jsonify({"success": False, "error": fb_response}), 400
+
     except Exception as e:
-        print(f"❌ [Pipeline Error] حدث خطأ أثناء المعالجة: {e}", flush=True)
-        
+        print(f"❌ [Error]: {e}", flush=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
     finally:
         if os.path.exists(audio_path):
             os.remove(audio_path)
         if os.path.exists(video_path):
             os.remove(video_path)
-        print("🧹 [Cleanup] تم تنظيف الملفات المؤقتة.", flush=True)
-
-def auto_pilot_loop():
-    time.sleep(30)
-    while True:
-        try:
-            print("🚀 [Auto-Pilot] بدء المهمة التلقائية...", flush=True)
-            generate_and_upload_reel()
-        except Exception as e:
-            print(f"❌ [Auto-Pilot Error]: {e}", flush=True)
-        time.sleep(6 * 3600)
-
-threading.Thread(target=auto_pilot_loop, daemon=True).start()
-
-@app.route('/')
-def home():
-    return "نبض 24 - Reels Auto-Pilot Server is Live and Stable!"
-
-@app.route('/run-now')
-def run_now():
-    threading.Thread(target=generate_and_upload_reel).start()
-    return jsonify({
-        "status": "success",
-        "message": "تم بدء تنفيذ البايبلاين في الخلفية بنجاح!"
-    }), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 3000))
     app.run(host='0.0.0.0', port=port)
