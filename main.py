@@ -3,8 +3,9 @@ import subprocess
 import traceback
 import shutil
 import threading
+import asyncio
+import edge_tts
 from flask import Flask, request, jsonify
-from gtts import gTTS
 import requests
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
@@ -16,6 +17,12 @@ app = Flask(__name__)
 def home():
     return "Nabd24 Reel Server is Alive! 🚀"
 
+async def generate_professional_voice(text, output_path):
+    # استخدام صوت احترافي رسمي باللغة العربية (يمكنك تغيير الصوت لاحقاً إن أردت)
+    voice = "ar-SA-HamedNeural"  # صوت رجالي رسمي ونبرة إخبارية ممتازة
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(output_path)
+
 def background_processing(title, description, page_token):
     audio_path = f"/tmp/audio_{os.getpid()}_{threading.get_ident()}.mp3"
     image_path = f"/tmp/image_{os.getpid()}_{threading.get_ident()}.jpg"
@@ -24,14 +31,15 @@ def background_processing(title, description, page_token):
     try:
         full_speech = f"{title}. {description}"
         
-        # 1. توليد الصوت
-        tts = gTTS(text=full_speech, lang='ar', slow=False)
-        tts.save(audio_path)
+        # 1. توليد الصوت الاحترافي بالذكاء الاصطناعي
+        print("🔊 [Cloud] جاري توليد الصوت الاحترافي...", flush=True)
+        asyncio.run(generate_professional_voice(full_speech, audio_path))
 
         audio_info = MP3(audio_path)
         duration = int(audio_info.info.length) + 1
 
-        # 2. تصميم الصورة
+        # 2. تصميم الصورة الاحترافية للخبر
+        print("🎨 [Cloud] جاري تصميم بطاقة الخبر...", flush=True)
         img = Image.new('RGB', (720, 1280), color=(12, 12, 24))
         draw = ImageDraw.Draw(img)
         
@@ -44,7 +52,7 @@ def background_processing(title, description, page_token):
         
         img.save(image_path)
 
-        # 3. إعداد FFmpeg
+        # 3. تجهيز FFmpeg
         original_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         ffmpeg_path = "/tmp/ffmpeg_bin"
         if not os.path.exists(ffmpeg_path):
@@ -52,6 +60,7 @@ def background_processing(title, description, page_token):
             os.chmod(ffmpeg_path, 0o755)
 
         # 4. دمج الفيديو
+        print("🎞️ [Cloud] جاري دمج الفيديو...", flush=True)
         cmd = [
             ffmpeg_path, '-y',
             '-loop', '1', '-i', image_path,
@@ -69,6 +78,7 @@ def background_processing(title, description, page_token):
             return
 
         # 5. الرفع لفيسبوك
+        print("📤 [Cloud] جاري رفع الفيديو إلى فيسبوك...", flush=True)
         upload_url = "https://graph.facebook.com/v19.0/me/videos"
         with open(video_path, "rb") as video_file:
             payload = {
@@ -101,11 +111,11 @@ def generate_reel():
         if not page_token:
             return jsonify({"success": False, "error": "Missing page_token"}), 400
 
-        # تشغيل العملية في الخلفية لضمان عدم حدوث Timeout
+        # تشغيل العملية في الخلفية لضمان استجابة السيرفر فوراً دون مشاكل Timeout
         thread = threading.Thread(target=background_processing, args=(title, description, page_token))
         thread.start()
 
-        return jsonify({"success": True, "message": "Reel task started successfully in background!"})
+        return jsonify({"success": True, "message": "Professional Reel task started successfully in background!"})
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
