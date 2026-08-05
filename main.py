@@ -2,6 +2,7 @@ import os
 import subprocess
 import traceback
 import shutil
+import threading
 from flask import Flask, request, jsonify
 from gtts import gTTS
 import requests
@@ -15,33 +16,22 @@ app = Flask(__name__)
 def home():
     return "Nabd24 Reel Server is Alive! 🚀"
 
-@app.route('/generate-reel', methods=['POST'])
-def generate_reel():
-    audio_path = f"/tmp/audio_{os.getpid()}.mp3"
-    image_path = f"/tmp/image_{os.getpid()}.jpg"
-    video_path = f"/tmp/video_{os.getpid()}.mp4"
+def background_processing(title, description, page_token):
+    audio_path = f"/tmp/audio_{os.getpid()}_{threading.get_ident()}.mp3"
+    image_path = f"/tmp/image_{os.getpid()}_{threading.get_ident()}.jpg"
+    video_path = f"/tmp/video_{os.getpid()}_{threading.get_ident()}.mp4"
 
     try:
-        data = request.get_json(silent=True) or {}
-        title = data.get('title', 'عاجل: آخر المستجدات الإخبارية')
-        description = data.get('description', 'تغطية حصرية ومستمرة على مدار الساعة عبر منصة نبض 24.')
-        page_token = data.get('page_token')
-        
-        if not page_token:
-            return jsonify({"success": False, "error": "Missing page_token"}), 400
-
         full_speech = f"{title}. {description}"
         
-        # 1. توليد الملف الصوتي في مجلد المؤقتات
-        print("🔊 [Cloud] جاري توليد الملف الصوتي...", flush=True)
+        # 1. توليد الصوت
         tts = gTTS(text=full_speech, lang='ar', slow=False)
         tts.save(audio_path)
 
         audio_info = MP3(audio_path)
         duration = int(audio_info.info.length) + 1
 
-        # 2. تصميم بطاقة الخبر باستخدام الخط الافتراضي
-        print("🎨 [Cloud] جاري تصميم بطاقة الخبر...", flush=True)
+        # 2. تصميم الصورة
         img = Image.new('RGB', (720, 1280), color=(12, 12, 24))
         draw = ImageDraw.Draw(img)
         
@@ -54,15 +44,14 @@ def generate_reel():
         
         img.save(image_path)
 
-        # 3. تجهيز مسار FFmpeg الآمن للعمل على Render
+        # 3. إعداد FFmpeg
         original_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         ffmpeg_path = "/tmp/ffmpeg_bin"
         if not os.path.exists(ffmpeg_path):
             shutil.copy(original_ffmpeg, ffmpeg_path)
             os.chmod(ffmpeg_path, 0o755)
 
-        # 4. دمج الفيديو عبر FFmpeg
-        print("🎞️ [Cloud] جاري إنتاج الفيديو...", flush=True)
+        # 4. دمج الفيديو
         cmd = [
             ffmpeg_path, '-y',
             '-loop', '1', '-i', image_path,
@@ -76,13 +65,11 @@ def generate_reel():
         
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
-            error_msg = result.stderr.decode('utf-8', errors='ignore')[-300:]
-            return jsonify({"success": False, "error": f"FFmpeg Error: {error_msg}"}), 500
+            print(f"❌ FFmpeg Error: {result.stderr.decode('utf-8', errors='ignore')[-300:]}")
+            return
 
-        # 5. رفع الفيديو مباشرة إلى فيسبوك
-        print("📤 [Cloud] جاري رفع الفيديو إلى فيسبوك...", flush=True)
+        # 5. الرفع لفيسبوك
         upload_url = "https://graph.facebook.com/v19.0/me/videos"
-        
         with open(video_path, "rb") as video_file:
             payload = {
                 "access_token": page_token,
@@ -90,17 +77,10 @@ def generate_reel():
             }
             files = {"source": video_file}
             fb_response = requests.post(upload_url, data=payload, files=files).json()
-
-        if "id" in fb_response:
-            print(f"🎉 [Success] تم النشر برقم: {fb_response['id']}", flush=True)
-            return jsonify({"success": True, "post_id": fb_response["id"]})
-        else:
-            return jsonify({"success": False, "error": fb_response}), 400
+            print(f"🎉 Facebook API Response: {fb_response}")
 
     except Exception as e:
-        error_trace = traceback.format_exc()
-        print(f"❌ [Server Error]: {error_trace}", flush=True)
-        return jsonify({"success": False, "error": str(e), "trace": error_trace}), 500
+        print(f"❌ Background Error: {traceback.format_exc()}")
 
     finally:
         for p in [audio_path, image_path, video_path]:
@@ -109,6 +89,26 @@ def generate_reel():
                     os.remove(p)
                 except:
                     pass
+
+@app.route('/generate-reel', methods=['POST'])
+def generate_reel():
+    try:
+        data = request.get_json(silent=True) or {}
+        title = data.get('title', 'عاجل: آخر المستجدات الإخبارية')
+        description = data.get('description', 'تغطية حصرية ومستمرة عبر منصة نبض 24.')
+        page_token = data.get('page_token')
+        
+        if not page_token:
+            return jsonify({"success": False, "error": "Missing page_token"}), 400
+
+        # تشغيل العملية في الخلفية لضمان عدم حدوث Timeout
+        thread = threading.Thread(target=background_processing, args=(title, description, page_token))
+        thread.start()
+
+        return jsonify({"success": True, "message": "Reel task started successfully in background!"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 3000))
