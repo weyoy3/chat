@@ -1,4 +1,5 @@
 Flask
+gunicorn
 requests
 Pillow
 imageio_ffmpeg
