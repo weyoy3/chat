@@ -26,7 +26,6 @@ trivia_database = [
             " أواني من العسل في مقابر الفراعنة وعمرها أكثر من ثلاثة آلاف سنة"
             " وكانت صالحة للأكل تماماً!"
         ),
-        # فيديو خلفية طبيعي/نحل كمثال
         "video_url": (
             "https://assets.mixkit.co/videos/preview/mixkit-bees-on-a-honeycomb-42994-large.mp4"
         ),
@@ -38,7 +37,6 @@ trivia_database = [
             " سيارة صغيرة؟ بل إن شرايينه الرئيسية يمكن أن يسبح فيها طفل صغير بكل"
             " سهولة!"
         ),
-        # فيديو خلفية بحر/محيط كمثال
         "video_url": (
             "https://assets.mixkit.co/videos/preview/mixkit-sea-of-clouds-and-blue-sky-4115-large.mp4"
         ),
@@ -83,7 +81,6 @@ def create_reel_video(fact_data, output_filename="reel.mp4"):
 
   # قص أو تكرار الفيديو ليطابق طول التعليق الصوتي تماماً
   if video_clip.duration < audio_clip.duration:
-    # لو الفيديو أقصر، يمكن حلقه (Loop) أو تسريعه، هنا نكتفي بضبطه كحد أقصى
     video_clip = video_clip.loop(duration=audio_clip.duration)
   else:
     video_clip = video_clip.subclipped(0, audio_clip.duration)
@@ -119,7 +116,7 @@ def publish_automated_reel():
 
   if not page_id:
     print("⚠️ لم يتم العثور على الصفحة.")
-    return
+    return False
 
   fact = random.choice(trivia_database)
   video_file_path = create_reel_video(fact)
@@ -140,6 +137,8 @@ def publish_automated_reel():
 
   if os.path.exists(video_file_path):
     os.remove(video_file_path)
+  
+  return True
 
 
 def automation_loop():
@@ -155,6 +154,20 @@ def automation_loop():
 @app.route("/")
 def home():
   return "نظام الأوتو-بايلوت المتكامل لصفحة نبض 24 يعمل بكفاءة عالية!"
+
+
+@app.route("/run-now")
+def run_now():
+  """مسار لتشغيل دورة النشر وتصنيع الفيديو يدوياً فوراً عبر متصفح الهاتف"""
+  try:
+    print("⚡ تم طلب التشغيل اليدوي الفوري عبر الرابط...")
+    success = publish_automated_reel()
+    if success:
+      return "✅ تم إنشاء ونشر الفيديو بنجاح! تحقق من السجلات وصفحة فيسبوك."
+    else:
+      return "⚠️ لم يتم العثور على الصفحة أو حدث خطأ، راجع السجلات (Logs)."
+  except Exception as e:
+    return f"❌ حدث خطأ برمجي أثناء المعالجة: {str(e)}"
 
 
 if __name__ == "__main__":
