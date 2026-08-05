@@ -1,6 +1,5 @@
 import os
 import subprocess
-import traceback
 from flask import Flask, request, jsonify
 from gtts import gTTS
 import requests
@@ -21,7 +20,7 @@ def generate_reel():
     video_path = f"video_{os.getpid()}.mp4"
 
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         title = data.get('title', 'عاجل: آخر المستجدات الإخبارية')
         description = data.get('description', 'تغطية حصرية ومستمرة على مدار الساعة عبر منصة نبض 24.')
         page_token = data.get('page_token')
@@ -33,13 +32,13 @@ def generate_reel():
         
         # 1. توليد الملف الصوتي
         print("🔊 [Cloud] جاري توليد الملف الصوتي...", flush=True)
-        tts = gTTS(text=full_speech, lang='ar', tld='com', slow=False)
+        tts = gTTS(text=full_speech, lang='ar', slow=False)
         tts.save(audio_path)
 
         audio_info = MP3(audio_path)
         duration = int(audio_info.info.length) + 1
 
-        # 2. تصميم بطاقة الخبر مع تأمين الخطوط
+        # 2. تصميم بطاقة الخبر باستخدام الخط الافتراضي الآمن
         print("🎨 [Cloud] جاري تصميم بطاقة الخبر...", flush=True)
         img = Image.new('RGB', (720, 1280), color=(12, 12, 24))
         draw = ImageDraw.Draw(img)
@@ -47,20 +46,12 @@ def generate_reel():
         draw.rectangle([(30, 30), (690, 1250)], outline=(0, 229, 255), width=5)
         draw.rectangle([(50, 70), (670, 240)], fill=(22, 22, 40))
         
-        try:
-            font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)
-            font_desc = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
-        except IOError:
-            try:
-                font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 42)
-                font_desc = ImageFont.truetype("DejaVuSans.ttf", 28)
-            except IOError:
-                font_title = ImageFont.load_default()
-                font_desc = ImageFont.load_default()
+        # استخدام الخط الافتراضي لتجنب أي انهيار في النظام
+        font = ImageFont.load_default()
 
-        draw.text((70, 100), "🔴 شبكة نبض 24 الإخبارية", fill=(255, 75, 75), font=font_title)
-        draw.text((70, 320), title[:70], fill=(255, 255, 255), font=font_title)
-        draw.text((70, 500), description[:180], fill=(180, 190, 210), font=font_desc)
+        draw.text((70, 100), "NABD 24 NEWS", fill=(255, 75, 75))
+        draw.text((70, 320), title[:60], fill=(255, 255, 255))
+        draw.text((70, 500), description[:150], fill=(180, 190, 210))
         
         img.save(image_path)
 
@@ -82,9 +73,9 @@ def generate_reel():
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             error_msg = result.stderr.decode('utf-8', errors='ignore')[-300:]
-            raise Exception(f"FFmpeg Error: {error_msg}")
+            return jsonify({"success": False, "error": f"FFmpeg Error: {error_msg}"}), 500
 
-        # 4. رفع الفيديو إلى فيسبوك
+        # 4. رفع الفيديو مباشرة إلى فيسبوك
         print("📤 [Cloud] جاري رفع الفيديو إلى فيسبوك...", flush=True)
         upload_url = "https://graph.facebook.com/v19.0/me/videos"
         
@@ -103,9 +94,8 @@ def generate_reel():
             return jsonify({"success": False, "error": fb_response}), 400
 
     except Exception as e:
-        error_trace = traceback.format_exc()
-        print(f"❌ [Server Error]: {error_trace}", flush=True)
-        return jsonify({"success": False, "error": str(e), "trace": error_trace}), 500
+        print(f"❌ [Server Error]: {str(e)}", flush=True)
+        return jsonify({"success": False, "error": str(e)}), 500
 
     finally:
         for p in [audio_path, image_path, video_path]:
