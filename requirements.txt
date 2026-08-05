@@ -4,3 +4,4 @@ requests
 imageio-ffmpeg
 mutagen
 gunicorn
+Pillow
