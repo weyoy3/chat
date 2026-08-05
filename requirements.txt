@@ -1,4 +1,5 @@
-flask
-gtts
+Flask
+moviepy
+gTTS
 requests
-moviepy==1.0.3
+gunicorn
