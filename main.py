@@ -197,6 +197,10 @@ def post_facebook(title, text, image):
     message = f"{title}\n\n{text}"
     if len(message) > 4500:
         message = message[:4500] + " ..."
+
+    #  فرض اتجاه عربي لكل سطر — بيصلح الكلام المقلوب حول الكلمات الإنجليزية
+    message = "\n".join("\u200F" + line for line in message.split("\n"))
+
     if image:
         r = requests.post(f"https://graph.facebook.com/v20.0/{PAGE_ID}/photos",
                           data={"url": image, "caption": message, "access_token": PAGE_TOKEN})
