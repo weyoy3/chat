@@ -15,8 +15,8 @@ SOURCES = [
 
 OWN_DOMAINS = ["elbalad", "youm7", "masrawy"]
 
-PAGE_ID        = "حط_معرف_صفحتك"
-PAGE_TOKEN     = "حط_توكن_الصفحة"
+PAGE_ID        = "1204286986111478"
+PAGE_TOKEN     = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
 STATE_FILE     = "posted.json"
 TIMERS_FILE    = "timers.json"
 TXT_LOG        = "posts.txt"
