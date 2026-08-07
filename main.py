@@ -7,8 +7,8 @@ from bs4 import BeautifulSoup
 
 # ================= الإعدادات =================
 RSS_URL       = "https://www.elbalad.news/rss.aspx"
-PAGE_ID       = "حط_معرف_صفحتك"
-PAGE_TOKEN    = "حط_توكن_الصفحة"
+PAGE_ID       = "1204286986111478"
+PAGE_TOKEN    = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
 STATE_FILE    = "posted.json"
 TXT_LOG       = "posts.txt"
 MAX_POSTS     = 1
