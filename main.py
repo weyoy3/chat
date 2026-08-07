@@ -12,15 +12,28 @@ PAGE_TOKEN    = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdi
 STATE_FILE    = "posted.json"
 TXT_LOG       = "posts.txt"
 MAX_POSTS     = 1
-SLEEP_SECONDS = 420          # كل 7 دقائق
+SLEEP_SECONDS = 420
 # =============================================
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 def normalize(t):
-    """توحيد شكل العنوان عشان كشف التكرار"""
     t = re.sub(r"[\u064B-\u065F\u0670\u0640]", "", t)
     return re.sub(r"\s+", " ", t).strip()
+
+def already_on_page(title):
+    """شيكة أخيرة: الخبر ده منشور فعلاً على الصفحة؟"""
+    t = normalize(title)
+    try:
+        r = requests.get(f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed",
+                         params={"access_token": PAGE_TOKEN, "limit": 20}, timeout=20)
+        for p in r.json().get("data", []):
+            first_line = (p.get("message") or "").split("\n")[0]
+            if normalize(first_line) == t:
+                return True
+    except Exception:
+        pass
+    return False
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -28,7 +41,7 @@ def load_state():
             data = json.load(open(STATE_FILE, encoding="utf-8"))
             if isinstance(data, dict):
                 return data.get("links", []), data.get("titles", [])
-            return data, []          # صيغة قديمة
+            return data, []
         except Exception:
             return [], []
     return [], []
@@ -90,7 +103,6 @@ def post_facebook(title, text, image):
     return r.json()
 
 def main():
-    # ❤️ نبضة القلب عشان الخدمة ما تنامش
     class _H(BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
@@ -109,7 +121,6 @@ def main():
             feed = feedparser.parse(RSS_URL)
             links, titles = load_state()
 
-            # أول تشغيل: سجّل الأخبار الحالية بدون نشر
             if not os.path.exists(STATE_FILE):
                 for e in feed.entries:
                     links.append(e.link)
@@ -124,8 +135,13 @@ def main():
                 if count >= MAX_POSTS:
                     break
                 t = normalize(e.title)
-                # حماية مزدوجة ضد التكرار: الرابط + العنوان
                 if e.link in links or t in titles:
+                    continue
+                if already_on_page(e.title):
+                    print("⏭️ Already on page — skipping:", e.title)
+                    links.append(e.link)
+                    titles.append(t)
+                    save_state(links, titles)
                     continue
                 print("📰 Processing:", e.title)
                 text, image = fetch_article(e.link)
