@@ -1,4 +1,4 @@
-import os, json, time, re
+import os, json, time, re, calendar
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import requests
@@ -6,13 +6,14 @@ import feedparser
 from bs4 import BeautifulSoup
 
 # ================= الإعدادات =================
-RSS_URL       = "https://www.elbalad.news/rss.aspx"
-PAGE_ID       = "1204286986111478"
-PAGE_TOKEN    = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
-STATE_FILE    = "posted.json"
-TXT_LOG       = "posts.txt"
-MAX_POSTS     = 1
-SLEEP_SECONDS = 420          # كل 7 دقائق
+RSS_URL        = "https://www.elbalad.news/rss.aspx"
+PAGE_ID        = "1204286986111478"
+PAGE_TOKEN     = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
+STATE_FILE     = "posted.json"
+TXT_LOG        = "posts.txt"
+MAX_POSTS      = 1
+SLEEP_SECONDS  = 420    # كل 7 دقائق
+MAX_AGE_MINUTES = 30    # ينشر الأخبار اللي عمرها أقل من 30 دقيقة بس
 # =============================================
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -20,7 +21,6 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 URL_RE = re.compile(r"\S+\.(?:com|net|org|gov\.eg|edu\.eg|eg|io|news)\S*", re.I)
 
 def clean_urls(text):
-    """بيمسح روابط الجريدة بس — ويسيب أي رابط خارجي"""
     def repl(m):
         return "" if "elbalad" in m.group(0).lower() else m.group(0)
     return URL_RE.sub(repl, text)
@@ -29,17 +29,32 @@ def normalize(t):
     t = re.sub(r"[\u064B-\u065F\u0670\u0640]", "", t)
     return re.sub(r"\s+", " ", t).strip()
 
-def already_on_page(title):
-    t = normalize(title)
+def is_fresh(entry):
+    """بينشر الأخبار الحديثة بس (أقل من MAX_AGE_MINUTES)"""
+    tp = entry.get("published_parsed") or entry.get("updated_parsed")
+    if not tp:
+        return True
+    age_minutes = (time.time() - calendar.timegm(tp)) / 60.0
+    return age_minutes <= MAX_AGE_MINUTES
+
+def page_titles():
     try:
         r = requests.get(f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed",
-                         params={"access_token": PAGE_TOKEN, "limit": 20}, timeout=20)
+                         params={"access_token": PAGE_TOKEN, "limit": 50}, timeout=20)
+        out = []
         for p in r.json().get("data", []):
-            first_line = (p.get("message") or "").split("\n")[0]
-            if normalize(first_line) == t:
-                return True
+            first = normalize((p.get("message") or "").split("\n")[0])
+            if first:
+                out.append(first)
+        return out
     except Exception:
-        pass
+        return []
+
+def is_duplicate(title, recent):
+    t = normalize(title)
+    for r in recent:
+        if t == r or (len(t) > 20 and (t in r or r in t)) or t[:35] == r[:35]:
+            return True
     return False
 
 def load_state():
@@ -89,7 +104,6 @@ def pick_image(soup):
 def fetch_article(url):
     soup = BeautifulSoup(requests.get(url, headers=HEADERS, timeout=30).text, "html.parser")
 
-    # فك القوائم: كل <br> وكل عنصر قائمة يبقى سطر مستقل
     for br in soup.find_all("br"):
         br.replace_with("\n")
     for li in soup.find_all("li"):
@@ -103,18 +117,12 @@ def fetch_article(url):
             paras.append(raw)
     text = "\n\n".join(paras)
 
-    # قص الذيول الإعلانية
     for stop in ["اقرأ أيضاً", "اقرأ ايضا", "شارك الخبر", "تابعنا"]:
         text = text.split(stop)[0]
 
-    # مسح جمل "اضغط هنا / هذا الرابط"
     text = re.sub(r"[^\n]*اضغط هنا[^\n]*", "", text)
     text = re.sub(r"[^\n]*هذا الرابط[^\n]*", "", text)
-
-    # مسح روابط الجريدة فقط (الخارجية بتفضل)
     text = clean_urls(text)
-
-    # تنظيف الأسطر الفاضية المتكررة
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     image = pick_image(soup)
@@ -162,15 +170,21 @@ def main():
                 time.sleep(SLEEP_SECONDS)
                 continue
 
+            recent = page_titles()
             count = 0
             for e in feed.entries:
                 if count >= MAX_POSTS:
                     break
+                # 1) فلتر الطزاجة: الأخبار الحديثة بس
+                if not is_fresh(e):
+                    continue
                 t = normalize(e.title)
+                # 2) الذاكرة المحلية
                 if e.link in links or t in titles:
                     continue
-                if already_on_page(e.title):
-                    print("⏭️ Already on page — skipping:", e.title)
+                # 3) شيك الصفحة نفسها
+                if is_duplicate(e.title, recent):
+                    print("⏭️ Duplicate — skipping:", e.title)
                     links.append(e.link)
                     titles.append(t)
                     save_state(links, titles)
@@ -184,6 +198,7 @@ def main():
                 save_to_txt(e.title, text, e.link)
                 links.append(e.link)
                 titles.append(t)
+                recent.append(t)
                 save_state(links, titles)
                 count += 1
                 time.sleep(3)
