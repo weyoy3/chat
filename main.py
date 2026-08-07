@@ -1,19 +1,27 @@
 import os, json, time, re, calendar
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urljoin
 import requests
 import feedparser
 from bs4 import BeautifulSoup
 
 # ================= الإعدادات =================
-RSS_URL        = "https://www.elbalad.news/rss.aspx"
+RSS_URLS = [
+    "https://www.elbalad.news/rss.aspx",
+    "https://youm7.com/rss/SectionRss?SectionID=328",
+    "https://www.masrawy.com/feeds/rssfeedlist?fullfeed=1",
+]
+
+OWN_DOMAINS = ["elbalad", "youm7", "masrawy"]
+
 PAGE_ID        = "1204286986111478"
 PAGE_TOKEN     = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
 STATE_FILE     = "posted.json"
 TXT_LOG        = "posts.txt"
 MAX_POSTS      = 1
-SLEEP_SECONDS  = 420    # كل 7 دقائق
-MAX_AGE_MINUTES = 30    # ينشر الأخبار اللي عمرها أقل من 30 دقيقة بس
+SLEEP_SECONDS  = 420
+MAX_AGE_MINUTES = 30
 # =============================================
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -22,7 +30,8 @@ URL_RE = re.compile(r"\S+\.(?:com|net|org|gov\.eg|edu\.eg|eg|io|news)\S*", re.I)
 
 def clean_urls(text):
     def repl(m):
-        return "" if "elbalad" in m.group(0).lower() else m.group(0)
+        u = m.group(0).lower()
+        return "" if any(d in u for d in OWN_DOMAINS) else m.group(0)
     return URL_RE.sub(repl, text)
 
 def normalize(t):
@@ -30,7 +39,6 @@ def normalize(t):
     return re.sub(r"\s+", " ", t).strip()
 
 def is_fresh(entry):
-    """بينشر الأخبار الحديثة بس (أقل من MAX_AGE_MINUTES)"""
     tp = entry.get("published_parsed") or entry.get("updated_parsed")
     if not tp:
         return True
@@ -126,8 +134,8 @@ def fetch_article(url):
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     image = pick_image(soup)
-    if image and image.startswith("/"):
-        image = "https://www.elbalad.news" + image
+    if image:
+        image = urljoin(url, image)
     return text.strip(), image
 
 def post_facebook(title, text, image):
@@ -158,11 +166,23 @@ def main():
     print("🤖 Bot started on Render!")
     while True:
         try:
-            feed = feedparser.parse(RSS_URL)
+            all_entries = []
+            for url in RSS_URLS:
+                try:
+                    entries = feedparser.parse(url).entries
+                    all_entries += entries
+                    print(f"✅ {url}: {len(entries)} entries")
+                except Exception as ex:
+                    print(f"❌ {url}: {ex}")
+
+            all_entries.sort(key=lambda e: e.get("published_parsed")
+                             or e.get("updated_parsed") or time.gmtime(),
+                             reverse=True)
+
             links, titles = load_state()
 
             if not os.path.exists(STATE_FILE):
-                for e in feed.entries:
+                for e in all_entries:
                     links.append(e.link)
                     titles.append(normalize(e.title))
                 save_state(links, titles)
@@ -172,17 +192,14 @@ def main():
 
             recent = page_titles()
             count = 0
-            for e in feed.entries:
+            for e in all_entries:
                 if count >= MAX_POSTS:
                     break
-                # 1) فلتر الطزاجة: الأخبار الحديثة بس
                 if not is_fresh(e):
                     continue
                 t = normalize(e.title)
-                # 2) الذاكرة المحلية
                 if e.link in links or t in titles:
                     continue
-                # 3) شيك الصفحة نفسها
                 if is_duplicate(e.title, recent):
                     print("⏭️ Duplicate — skipping:", e.title)
                     links.append(e.link)
