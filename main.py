@@ -12,57 +12,36 @@ PAGE_TOKEN    = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdi
 STATE_FILE    = "posted.json"
 TXT_LOG       = "posts.txt"
 MAX_POSTS     = 1
-SLEEP_SECONDS = 420
+SLEEP_SECONDS = 420          # كل 7 دقائق
 # =============================================
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
-STOPWORDS = {
-    "في", "من", "على", "عن", "مع", "بعد", "قبل", "خلال", "حول", "ضد", "بين",
-    "حتى", "منذ", "عبر", "نحو", "اليوم", "غدا", "امس", "التي", "الذي", "التى",
-    "الذين", "انه", "انها", "هو", "هي", "هم", "ما", "لم", "لن", "قد", "كل",
-    "بعض", "غير", "اعلن", "كشف", "قالت", "قال", "يؤكد", "مصدر", "رسميا",
-    "عاجل", "بالفيديو", "بالصور", "صور", "فيديو", "مصر", "جديد", "اول",
-    "اخر", "عدد", "تشيع", "ضبط", "يضبط", "يلقي", "تلقى", "يطلق", "تطلق",
-    "يشهد", "تشهد", "يعقد", "تعقد", "تواصل", "يواصل", "ترتفع", "تنخفض",
-    "تعلن", "تؤكد", "تقرر", "يصدر", "تصدر", "يتوجه", "تزور", "يزور",
-}
+def normalize(t):
+    """توحيد شكل العنوان عشان كشف التكرار"""
+    t = re.sub(r"[\u064B-\u065F\u0670\u0640]", "", t)
+    return re.sub(r"\s+", " ", t).strip()
 
-def clean_word(w):
-    w = re.sub(r"[^\u0600-\u06FF]", "", w)
-    w = re.sub(r"[\u064B-\u065F\u0670\u0640\u0660-\u0669]", "", w)
-    if w and w[0] in "وبلفك" and len(w) > 4:
-        w = w[1:]
-    if w.startswith("ال") and len(w) > 4:
-        w = w[2:]
-    return w
+def load_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            data = json.load(open(STATE_FILE, encoding="utf-8"))
+            if isinstance(data, dict):
+                return data.get("links", []), data.get("titles", [])
+            return data, []          # صيغة قديمة
+        except Exception:
+            return [], []
+    return [], []
 
-def make_hashtags(title, text):
-    tags = []
-    for source in (title, text[:400]):
-        for w in re.split(r"[\s\.\،,؛;:!\?؟«»\"'\-()]+", source):
-            w = clean_word(w)
-            if len(w) < 3 or w in STOPWORDS:
-                continue
-            tag = "#" + w
-            if tag not in tags:
-                tags.append(tag)
-            if len(tags) == 3:
-                return " ".join(tags)
-    return " ".join(tags) if tags else "#اخبار"
+def save_state(links, titles):
+    json.dump({"links": links, "titles": titles},
+              open(STATE_FILE, "w", encoding="utf-8"), ensure_ascii=False)
 
-def load_posted():
-    return json.load(open(STATE_FILE, encoding="utf-8")) if os.path.exists(STATE_FILE) else []
-
-def save_posted(lst):
-    json.dump(lst, open(STATE_FILE, "w", encoding="utf-8"), ensure_ascii=False)
-
-def save_to_txt(title, text, tags, link):
+def save_to_txt(title, text, link):
     with open(TXT_LOG, "a", encoding="utf-8") as f:
         f.write(f"===== {time.strftime('%Y-%m-%d %H:%M')} =====\n")
         f.write(title + "\n\n")
-        f.write(text + "\n\n")
-        f.write(tags + "\n")
+        f.write(text + "\n")
         f.write("الرابط الأصلي: " + link + "\n\n")
 
 def pick_image(soup):
@@ -98,12 +77,10 @@ def fetch_article(url):
         image = "https://www.elbalad.news" + image
     return text.strip(), image
 
-def post_facebook(title, text, image, tags):
+def post_facebook(title, text, image):
     message = f"{title}\n\n{text}"
-    if len(message) > 4200:
-        message = message[:4200] + " ..."
-    message += "\n\n" + tags
-
+    if len(message) > 4500:
+        message = message[:4500] + " ..."
     if image:
         r = requests.post(f"https://graph.facebook.com/v20.0/{PAGE_ID}/photos",
                           data={"url": image, "caption": message, "access_token": PAGE_TOKEN})
@@ -113,6 +90,7 @@ def post_facebook(title, text, image, tags):
     return r.json()
 
 def main():
+    # ❤️ نبضة القلب عشان الخدمة ما تنامش
     class _H(BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
@@ -129,31 +107,36 @@ def main():
     while True:
         try:
             feed = feedparser.parse(RSS_URL)
+            links, titles = load_state()
 
+            # أول تشغيل: سجّل الأخبار الحالية بدون نشر
             if not os.path.exists(STATE_FILE):
-                save_posted([e.link for e in feed.entries])
+                for e in feed.entries:
+                    links.append(e.link)
+                    titles.append(normalize(e.title))
+                save_state(links, titles)
                 print("📋 Baseline saved — هستنى الأخبار الجديدة بس")
                 time.sleep(SLEEP_SECONDS)
                 continue
 
-            posted = load_posted()
             count = 0
             for e in feed.entries:
                 if count >= MAX_POSTS:
                     break
-                if e.link in posted:
+                t = normalize(e.title)
+                # حماية مزدوجة ضد التكرار: الرابط + العنوان
+                if e.link in links or t in titles:
                     continue
                 print("📰 Processing:", e.title)
                 text, image = fetch_article(e.link)
                 if not text:
                     continue
-                tags = make_hashtags(e.title, text)
-                print("🏷️ Hashtags:", tags)
-                result = post_facebook(e.title, text, image, tags)
+                result = post_facebook(e.title, text, image)
                 print("✅ Posted:", result.get("id", "unknown"))
-                save_to_txt(e.title, text, tags, e.link)
-                posted.append(e.link)
-                save_posted(posted)
+                save_to_txt(e.title, text, e.link)
+                links.append(e.link)
+                titles.append(t)
+                save_state(links, titles)
                 count += 1
                 time.sleep(3)
 
