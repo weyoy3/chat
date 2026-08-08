@@ -15,6 +15,9 @@ SOURCES = [
 
 OWN_DOMAINS = ["elbalad", "youm7", "masrawy"]
 
+# الأسماء دي هتتمسح من العنوان والنص نهائياً
+SOURCE_NAMES = ["صدى البلد", "اليوم السابع", "مصراوي", "المصري اليوم"]
+
 PAGE_ID        = "1204286986111478"
 PAGE_TOKEN     = "EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK"
 STATE_FILE     = "posted.json"
@@ -27,6 +30,7 @@ MAX_AGE_MINUTES = 30
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 URL_RE = re.compile(r"\S+\.(?:com|net|org|gov\.eg|edu\.eg|eg|io|news)\S*", re.I)
+QUOTES = "[\"'«»\u201C\u201D]"
 
 BAD_IMG_WORDS = ["icon", "logo", "print", "share", "button", "whatsapp", "facebook",
                  "twitter", "emoji", "arrow", "next", "prev", "placeholder", "loading",
@@ -38,12 +42,20 @@ def clean_urls(text):
         return "" if any(d in u for d in OWN_DOMAINS) else m.group(0)
     return URL_RE.sub(repl, text)
 
+def clean_source_mentions(text):
+    """بيمسح أسماء مواقع الأخبار من الكلام"""
+    for name in SOURCE_NAMES:
+        text = re.sub(QUOTES + r"?\s*" + re.escape(name) + r"\s*" + QUOTES + r"?", "", text)
+    # تنظيف البواقي المعلّقة (لـ / بـ اللي كانت مربوطة بالاسم)
+    text = re.sub(r"[لب]ـ\s*(?=(أن|و|،|\.|\n|$))", "", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text
+
 def normalize(t):
     t = re.sub(r"[\u064B-\u065F\u0670\u0640]", "", t)
     return re.sub(r"\s+", " ", t).strip()
 
 def image_size(url):
-    """بيقيس المقاس الحقيقي للصورة من أول بايتات بس"""
     try:
         with requests.get(url, headers=HEADERS, timeout=15, stream=True) as r:
             if r.status_code != 200:
@@ -54,7 +66,7 @@ def image_size(url):
             return struct.unpack(">II", d[16:24])
         if d[:6] in (b"GIF87a", b"GIF89a"):
             return struct.unpack("<HH", d[6:10])
-        if d[:2] == b"\xff\xd8":  # JPEG
+        if d[:2] == b"\xff\xd8":
             i = 2
             while i < len(d) - 9:
                 if d[i] != 0xFF:
@@ -153,14 +165,12 @@ def pick_image(soup, article_url):
             continue
         candidates.append(urljoin(article_url, src))
 
-    # نقيس المقاس الحقيقي لأول 4 صور ونختار أول واحدة كبيرة
     for src in candidates[:4]:
         w, h = image_size(src)
         print(f"   🖼️  {w}x{h} <- {src[:70]}")
         if w >= 400 and h >= 250:
             return src
 
-    # احتياطي: صورة المشاركة الرسمية
     og = soup.find("meta", property="og:image")
     if og and og.get("content"):
         return urljoin(article_url, og["content"])
@@ -188,6 +198,7 @@ def fetch_article(url):
     text = re.sub(r"[^\n]*اضغط هنا[^\n]*", "", text)
     text = re.sub(r"[^\n]*هذا الرابط[^\n]*", "", text)
     text = clean_urls(text)
+    text = clean_source_mentions(text)          #  مسح اسم الجريدة
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     image = pick_image(soup, url)
@@ -198,7 +209,7 @@ def post_facebook(title, text, image):
     if len(message) > 4500:
         message = message[:4500] + " ..."
 
-    #  فرض اتجاه عربي لكل سطر — بيصلح الكلام المقلوب حول الكلمات الإنجليزية
+    # فرض اتجاه عربي لكل سطر (بيصلح الكلام المقلوب حوالين الكلمات الإنجليزية)
     message = "\n".join("\u200F" + line for line in message.split("\n"))
 
     if image:
@@ -231,21 +242,23 @@ def process_source(source, links, titles, recent, timers):
             break
         if not is_fresh(e):
             continue
-        t = normalize(e.title)
+
+        title = clean_source_mentions(e.title)   #  تنظيف العنوان كمان
+        t = normalize(title)
         if e.link in links or t in titles:
             continue
-        if is_duplicate(e.title, recent):
+        if is_duplicate(title, recent):
             print(f"⏭️ [{name}] duplicate — skipping")
             links.append(e.link); titles.append(t)
             continue
 
-        print(f"📰 [{name}] processing: {e.title}")
+        print(f"📰 [{name}] processing: {title}")
         text, image = fetch_article(e.link)
         if not text:
             continue
-        result = post_facebook(e.title, text, image)
+        result = post_facebook(title, text, image)
         print(f"✅ [{name}] posted:", result.get("id", "unknown"))
-        save_to_txt(e.title, text, e.link, name)
+        save_to_txt(title, text, e.link, name)
 
         links.append(e.link)
         titles.append(t)
