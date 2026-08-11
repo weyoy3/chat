@@ -1,5 +1,5 @@
 """
-بث إذاعة القرآن الكريم مباشر على فيسبوك باستخدام مفتاح بث ثابت (Persistent Stream Key)
+بث إذاعة القرآن الكريم مباشر على فيسبوك (نسخة مستقرة لمنع انهيار الذاكرة)
 """
 
 import logging
@@ -46,10 +46,10 @@ _state = {
 
 
 # =========================
-# صورة الخلفية
+# صورة الخلفية البسيطة
 # =========================
 
-def make_black_png(path, width=480, height=854):
+def make_black_png(path, width=854, height=480):
     def chunk(tag, data):
         c = struct.pack(">I", len(data)) + tag + data
         c += struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
@@ -72,14 +72,14 @@ def build_image():
     try:
         from PIL import Image, ImageDraw
 
-        img = Image.new("RGB", (480, 854), (0, 0, 0))
+        img = Image.new("RGB", (854, 480), (0, 0, 0))
         draw = ImageDraw.Draw(img)
         
         from PIL import ImageFont
         font = ImageFont.load_default()
 
         text = "إذاعة القرآن الكريم"
-        draw.text((150, 400), text, fill=(212, 175, 55), font=font)
+        draw.text((320, 220), text, fill=(212, 175, 55), font=font)
         img.save(IMG)
     except Exception:
         make_black_png(IMG)
@@ -88,7 +88,7 @@ def build_image():
 
 
 # =========================
-# البث بـ ffmpeg مباشرة
+# البث بـ ffmpeg (إعدادات مستقرة وآمنة)
 # =========================
 
 def run_ffmpeg(stream_url):
@@ -102,22 +102,19 @@ def run_ffmpeg(stream_url):
     if not ffmpeg_exe:
         raise RuntimeError("ffmpeg missing")
 
+    # أمر مبسط وخالٍ من أي تعقيدات لتجنب الانهيار (-11)
     cmd = [
         ffmpeg_exe,
-        "-hide_banner", "-loglevel", "warning",
-        "-loop", "1", "-framerate", "15",
+        "-hide_banner",
+        "-loglevel", "warning",
+        "-loop", "1",
+        "-framerate", "10",
         "-i", IMG,
-        "-reconnect", "1",
-        "-reconnect_streamed", "1",
-        "-reconnect_delay_max", "10",
         "-i", RADIO_URL,
         "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-tune", "stillimage",
         "-pix_fmt", "yuv420p",
-        "-r", "15",
-        "-b:v", "600k",
-        "-threads", "1",
+        "-r", "10",
+        "-b:v", "400k",
         "-c:a", "aac",
         "-b:a", "64k",
         "-ar", "44100",
@@ -126,7 +123,7 @@ def run_ffmpeg(stream_url):
         stream_url,
     ]
 
-    log.info("🔴 جاري البدء في البث المباشر عبر مفتاح البث...")
+    log.info("🔴 جاري البدء في البث المباشر المستقر...")
 
     _proc = subprocess.Popen(
         cmd,
@@ -152,7 +149,7 @@ def stream_loop():
             _stop.wait(60)
             continue
 
-        try:
+5        try:
             _state["streaming"] = True
             _state["started_at"] = time.time()
             _state["last_error"] = None
