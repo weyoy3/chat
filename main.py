@@ -1,5 +1,5 @@
 """
-بث إذاعة القرآن الكريم مباشر على فيسبوك (مفتاح بث مباشر ثابت)
+بث إذاعة القرآن الكريم مباشر على فيسبوك باستخدام مفتاح بث ثابت (Persistent Stream Key)
 """
 
 import logging
@@ -76,7 +76,6 @@ def build_image():
         img = Image.new("RGB", (1080, 1920), (0, 0, 0))
         draw = ImageDraw.Draw(img)
         
-        # استخدام الخط الافتراضي لتجنب مشاكل المسارات
         from PIL import ImageFont
         font = ImageFont.load_default()
 
@@ -127,7 +126,7 @@ def run_ffmpeg(stream_url):
         stream_url,
     ]
 
-    log.info(f"🔴 جاري البدء في البث المباشر...")
+    log.info("🔴 جاري البدء في البث المباشر عبر مفتاح البث...")
 
     _proc = subprocess.Popen(
         cmd,
@@ -149,7 +148,7 @@ def stream_loop():
     while not _stop.is_set():
         if not FB_STREAM_URL:
             _state["last_error"] = "missing stream url"
-            log.error("❌ يجيب وضع رابط البث في متغير FB_STREAM_URL في Render")
+            log.error("❌ يجب وضع رابط البث في متغير FB_STREAM_URL في Render")
             _stop.wait(60)
             continue
 
