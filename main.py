@@ -27,8 +27,8 @@ app = Flask(__name__)
 # الإعدادات
 # =========================
 
-FB_PAGE_ID = os.environ.get("1204286986111478", "").strip()
-FB_TOKEN = os.environ.get("EAAfY71sMZAikBSBoRGZBeZAPEwjbKIeDa9S25fLsceSEjI5cZA7Ymo4XSM3mdinqZCNI1Pa5ActYK6cDOkaTcvDUr5oNKLLL0od6C2YY942zAKnpWMKKHTXycUJVOWNjslUJvF9Pi7D5FNFFBhre3hFZAZCIOORdpiKEJZBrG6ZCkgXz13dRDQtFc8w6HnzOcSJOStfjEufFK", "").strip()
+FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "").strip()
+FB_TOKEN = os.environ.get("FB_PAGE_ACCESS_TOKEN", "").strip()
 FB_VERSION = os.environ.get("FB_GRAPH_VERSION", "v23.0").strip()
 
 RADIO_URL = os.environ.get(
