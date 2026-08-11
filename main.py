@@ -1,5 +1,5 @@
 """
-بث إذاعة القرآن الكريم مباشر على فيسبوك (نسخة مستقرة لمنع انهيار الذاكرة)
+بث إذاعة القرآن الكريم مباشر على فيسبوك (نسخة مستقرة وآمنة)
 """
 
 import logging
@@ -88,7 +88,7 @@ def build_image():
 
 
 # =========================
-# البث بـ ffmpeg (إعدادات مستقرة وآمنة)
+# البث بـ ffmpeg
 # =========================
 
 def run_ffmpeg(stream_url):
@@ -102,7 +102,6 @@ def run_ffmpeg(stream_url):
     if not ffmpeg_exe:
         raise RuntimeError("ffmpeg missing")
 
-    # أمر مبسط وخالٍ من أي تعقيدات لتجنب الانهيار (-11)
     cmd = [
         ffmpeg_exe,
         "-hide_banner",
@@ -149,7 +148,7 @@ def stream_loop():
             _stop.wait(60)
             continue
 
-5        try:
+        try:
             _state["streaming"] = True
             _state["started_at"] = time.time()
             _state["last_error"] = None
