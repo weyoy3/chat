@@ -49,7 +49,7 @@ _state = {
 # صورة الخلفية
 # =========================
 
-def make_black_png(path, width=1080, height=1920):
+def make_black_png(path, width=480, height=854):
     def chunk(tag, data):
         c = struct.pack(">I", len(data)) + tag + data
         c += struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
@@ -72,14 +72,14 @@ def build_image():
     try:
         from PIL import Image, ImageDraw
 
-        img = Image.new("RGB", (1080, 1920), (0, 0, 0))
+        img = Image.new("RGB", (480, 854), (0, 0, 0))
         draw = ImageDraw.Draw(img)
         
         from PIL import ImageFont
         font = ImageFont.load_default()
 
         text = "إذاعة القرآن الكريم"
-        draw.text((300, 900), text, fill=(212, 175, 55), font=font)
+        draw.text((150, 400), text, fill=(212, 175, 55), font=font)
         img.save(IMG)
     except Exception:
         make_black_png(IMG)
@@ -105,7 +105,7 @@ def run_ffmpeg(stream_url):
     cmd = [
         ffmpeg_exe,
         "-hide_banner", "-loglevel", "warning",
-        "-loop", "1", "-framerate", "25",
+        "-loop", "1", "-framerate", "15",
         "-i", IMG,
         "-reconnect", "1",
         "-reconnect_streamed", "1",
@@ -115,10 +115,11 @@ def run_ffmpeg(stream_url):
         "-preset", "ultrafast",
         "-tune", "stillimage",
         "-pix_fmt", "yuv420p",
-        "-r", "25",
-        "-b:v", "1500k",
+        "-r", "15",
+        "-b:v", "600k",
+        "-threads", "1",
         "-c:a", "aac",
-        "-b:a", "128k",
+        "-b:a", "64k",
         "-ar", "44100",
         "-ac", "2",
         "-f", "flv",
