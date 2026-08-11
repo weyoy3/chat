@@ -25,7 +25,6 @@ app = Flask(__name__)
 # الإعدادات
 # =========================
 
-# رابط البث الثابت (Server URL + Stream Key مدموجين معاً)
 FB_STREAM_URL = os.environ.get("FB_STREAM_URL", "").strip()
 
 RADIO_URL = os.environ.get(
@@ -106,11 +105,11 @@ def run_ffmpeg(stream_url):
     cmd = [
         ffmpeg_exe,
         "-hide_banner", "-loglevel", "warning",
+        "-loop", "1", "-framerate", "25",
+        "-i", IMG,
         "-reconnect", "1",
         "-reconnect_streamed", "1",
         "-reconnect_delay_max", "10",
-        "-loop", "1", "-framerate", "25",
-        "-i", IMG,
         "-i", RADIO_URL,
         "-c:v", "libx264",
         "-preset", "ultrafast",
